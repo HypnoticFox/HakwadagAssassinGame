@@ -1,0 +1,27 @@
+{
+  "profiles": {
+    "http": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "http://localhost:5028"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "environmentVariables": {
+        "ASPNETCORE_HTTP_PORTS": "8080"
+      },
+      "publishAllPorts": true,
+      "useSSL": false
+    },
+    "Open Urls": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "commandLineArgs": "-WindowStyle hidden -Command \"$Env:VS_DEBUG_PS_ID = $PID; Write-Host 'Running...'; Start-Process 'powershell' '-WindowStyle hidden Start-Process firefox ''-CreateProfile VisualStudio''; Start-Process firefox ''-no-remote -P VisualStudio http://localhost:8080/swagger http://localhost:18888''; Write-Host ''Running...''; Start-Sleep 3; $process = Get-Process -Name firefox | where StartTime -CGT (Get-Date).AddSeconds(-5); Wait-Process -Id $Env:VS_DEBUG_PS_ID; $process.CloseMainWindow();' -PassThru | Wait-Process\""
+    }
+  },
+  "$schema": "https://json.schemastore.org/launchsettings.json"
+}

@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "None",
+      "composeLaunchServiceName": "hakwadagassassingame.web.api",
+      "serviceActions": {
+        "hakwadagassassingame.web.api": "StartDebugging",
+        "aspire-dashboard": "StartWithoutDebugging",
+        "db": "StartWithoutDebugging"
+      }
+    }
+  }
+}

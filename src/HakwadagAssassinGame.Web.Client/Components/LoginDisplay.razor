@@ -1,0 +1,26 @@
+﻿@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject NavigationManager Navigation
+
+<AuthorizeView>
+    <Authorized>
+        @if (GlobalState is not null)
+        {
+            <MudText>Hallo @(GlobalState.UserDisplayName)!</MudText>
+        }
+        <MudButton Variant="Variant.Text" Color="Color.Inherit" Class="ml-2" @onclick="BeginLogOut">Log uit
+        </MudButton>
+    </Authorized>
+    <NotAuthorized>
+        <a href="authentication/login">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code{
+    [CascadingParameter] private GlobalState? GlobalState { get; set; }
+
+    private void BeginLogOut()
+    {
+        Navigation.NavigateToLogout("authentication/logout");
+    }
+
+}

@@ -1,0 +1,60 @@
+﻿@page "/authentication/{action}"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+
+@inject NavigationManager Navigation
+@inject IConfiguration Configuration
+
+<RemoteAuthenticatorView Action="@Action">
+    <LogOut>
+        @{
+            var authority = Configuration.GetValue<string>("Auth0:Authority");
+            var clientId = Configuration.GetValue<string>("Auth0:ClientId");
+
+            Navigation.NavigateTo($"{authority}/v2/logout?client_id={clientId}");
+        }
+    </LogOut>
+    <Registering>
+        @{
+            Navigation.NavigateToLogin("authentication/login");
+        }
+    </Registering>
+    <LoggingIn>
+        <MudPaper Class="pa-4">
+            <MudText>Controleren login status...</MudText>
+        </MudPaper>
+    </LoggingIn>
+    <CompletingLoggingIn>
+        <MudPaper Class="pa-4">
+            <MudText>Inloggen voltooien...</MudText>
+        </MudPaper>
+    </CompletingLoggingIn>
+    <LogInFailed>
+        <MudPaper Class="pa-4">
+            <MudText>Er is iets fout gegaan met het inloggen: "@context"</MudText>
+        </MudPaper>
+    </LogInFailed>
+    <CompletingLogOut>
+        <MudPaper Class="pa-4">
+            <MudText>Uitloggen voltooien...</MudText>
+        </MudPaper>
+    </CompletingLogOut>
+    <LogOutFailed>
+        <MudPaper Class="pa-4">
+            <MudText>Er is iets fout gegaan met het uitloggen: "@context"</MudText>
+        </MudPaper>
+    </LogOutFailed>
+    <LogOutSucceeded>
+        <MudPaper Class="pa-4">
+            <MudText>Je bent uitgelogd.</MudText>
+        </MudPaper>
+    </LogOutSucceeded>
+    <UserProfile>
+        <MudPaper Class="pa-4">
+            <MudText>Het momenteel niet mogelijk om je profiel aan te passen.</MudText>
+        </MudPaper>
+    </UserProfile>
+</RemoteAuthenticatorView>
+
+@code{
+    [Parameter] public string? Action { get; set; }
+}

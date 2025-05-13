@@ -1,0 +1,16 @@
+@inject ILocalStorageService LocalStorage
+
+<MudIconButton Icon="@(DarkLightModeButtonIcon)" Color="Color.Inherit" OnClick="@OnDarkModeToggle"/>
+
+@code {
+    [Parameter] public bool IsDarkMode { get; set; }
+
+    [Parameter] public EventCallback OnDarkModeToggle { get; set; }
+
+    private string DarkLightModeButtonIcon => IsDarkMode switch
+    {
+        true => Icons.Material.Rounded.LightMode,
+        false => Icons.Material.Outlined.DarkMode
+    };
+
+}

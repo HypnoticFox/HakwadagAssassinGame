@@ -1,0 +1,52 @@
+services:
+  hakwadagassassingame.web.api:
+    image: ${DOCKER_REGISTRY-}hakwadagassassingame-api
+    build:
+      context: .
+      dockerfile: src/HakwadagAssassinGame.Web.API/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=Debug
+    depends_on:
+      db:
+        condition: service_healthy
+        required: true
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_HTTP_PORTS: 8080
+      CONNECTIONSTRINGS__POSTGRESQL: "Host=db;Port=5432;Database=project;Username=admin;Password=admin;"
+      OTEL_SERVICE_NAME: "HakwadagAssassinGame"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://aspire-dashboard:18889"
+      CONNECTIONSTRINGS__ApplicationDatabase: "Database=project;User ID=admin;Password=admin;Host=db;Port=5432;"
+    ports:
+      - 8080:8080
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+
+  db:
+    image: postgres
+    command: [ "postgres", "-c", "log_statement=all" ]
+    container_name: postgres-container
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: project
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready --dbname=$${POSTGRES_DB} --username=$${POSTGRES_USER}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard
+    environment:
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+    ports:
+      - 18888:18888
+
+volumes:
+  db-data:

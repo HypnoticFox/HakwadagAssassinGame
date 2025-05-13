@@ -1,0 +1,71 @@
+@using HakwadagAssassinGame.Web.Client.Http
+@implements IDisposable
+
+@inject ILogger<CascadeGlobalState> Logger
+@inject BlazorHttpClient Http
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<CascadingValue Value="_globalState">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [Parameter] public required RenderFragment ChildContent { get; set; }
+
+    private GlobalState? _globalState;
+
+    private AuthenticationStateChangedHandler? _authenticationStateChangedHandler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetGlobalState(AuthenticationStateProvider.GetAuthenticationStateAsync());
+
+        _authenticationStateChangedHandler = async authState => await SetGlobalState(authState);
+        AuthenticationStateProvider.AuthenticationStateChanged += _authenticationStateChangedHandler;
+    }
+
+    private async Task SetGlobalState(Task<AuthenticationState> authStateTask)
+    {
+        try
+        {
+            var authState = await authStateTask;
+            _globalState = new GlobalState(await GetUserDisplayName(authState));
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to set global state");
+        }
+    }
+
+    private const string DefaultDisplayName = "Onbekend";
+
+    private async Task<string> GetUserDisplayName(AuthenticationState authState)
+    {
+        if (authState.User?.Identity is null || !authState.User.Identity.IsAuthenticated) return DefaultDisplayName;
+
+        string? userDisplayName = null;
+
+        try
+        {
+            userDisplayName = await Http.GetFromJsonAsync<string>("/ApplicationUser/displayname");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to get user display name");
+        }
+
+        if (string.IsNullOrEmpty(userDisplayName))
+        {
+            userDisplayName = authState.User.Claims.FirstOrDefault(x => x.Type == "nickname")?.Value;
+        }
+
+        return userDisplayName ?? DefaultDisplayName;
+    }
+
+    public void Dispose()
+    {
+        AuthenticationStateProvider.AuthenticationStateChanged -= _authenticationStateChangedHandler;
+    }
+
+}
