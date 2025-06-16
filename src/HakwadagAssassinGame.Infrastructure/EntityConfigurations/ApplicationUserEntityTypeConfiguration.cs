@@ -8,16 +8,16 @@ internal sealed class ApplicationUserEntityTypeConfiguration : IEntityTypeConfig
 {
     public void Configure(EntityTypeBuilder<ApplicationUser> builder)
     {
-        builder.ToTable("application_user");
+        builder.ToTable("application_users");
 
-        builder.HasKey(x => x.Id);
+        builder.HasKey(u => u.Id);
 
-        builder.Property(x => x.Id)
+        builder.Property(u => u.Id)
             .HasColumnName("id")
             .ValueGeneratedNever()
             .IsRequired();
 
-        builder.Property(x => x.DisplayName)
+        builder.Property(u => u.DisplayName)
             .HasColumnName("display_name")
             .IsRequired();
     }

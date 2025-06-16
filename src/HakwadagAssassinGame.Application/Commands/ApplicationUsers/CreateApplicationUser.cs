@@ -4,7 +4,7 @@ namespace HakwadagAssassinGame.Application.Commands.ApplicationUsers;
 
 public sealed class CreateApplicationUserCommand : ICommand<Result>
 {
-    public required string Id { get; init; }
+    public required string UserId { get; init; }
 
     public required string DisplayName { get; init; }
 }
@@ -13,7 +13,7 @@ public sealed class CreateApplicationUserCommandValidator : AbstractValidator<Cr
 {
     public CreateApplicationUserCommandValidator()
     {
-        RuleFor(x => x.Id).NotEmpty();
+        RuleFor(x => x.UserId).NotEmpty();
 
         RuleFor(x => x.DisplayName)
             .NotEmpty()
@@ -41,11 +41,11 @@ public sealed class CreateApplicationUserCommandHandler : ICommandHandler<Create
     {
         try
         {
-            var cacheKey = $"user:{request.Id}";
+            var cacheKey = $"user:{request.UserId}";
 
             await _cache.GetOrSetAsync<ApplicationUser>(cacheKey,
                 async (_, ct) =>
-                    await CreateApplicationUserInternalAsync(request.Id, request.DisplayName, ct),
+                    await CreateApplicationUserInternalAsync(request.UserId, request.DisplayName, ct),
                 options => options.SetDuration(TimeSpan.FromHours(12)),
                 cancellationToken
             );

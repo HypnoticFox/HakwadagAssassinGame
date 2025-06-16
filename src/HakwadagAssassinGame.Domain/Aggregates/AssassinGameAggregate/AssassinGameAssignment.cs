@@ -9,12 +9,13 @@ public sealed class AssassinGameAssignment : TimeStampedEntity
     {
         PlayerUserId = playerUserId;
         TargetUserId = targetUserId;
-        AssignmentType = assignmentType;
+        AssignmentTypeId = assignmentType.Id;
         _tasks.AddRange(tasks);
     }
 
     public string PlayerUserId { get; }
     public string TargetUserId { get; }
-    public AssassinGameAssignmentType AssignmentType { get; private set; }
+    public int AssignmentTypeId { get; }
+    public AssassinGameAssignmentType AssignmentType => AssassinGameAssignmentType.FromId(AssignmentTypeId);
     public IReadOnlyList<AssassinGameAssignmentTask> Tasks => _tasks;
 }

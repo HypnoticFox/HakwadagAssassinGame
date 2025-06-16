@@ -1,5 +1,6 @@
 using HakwadagAssassinGame.Domain.Aggregates;
 using HakwadagAssassinGame.Domain.Aggregates.ApplicationUserAggregate;
+using HakwadagAssassinGame.Domain.Aggregates.AssassinGameAggregate;
 using Microsoft.EntityFrameworkCore;
 
 namespace HakwadagAssassinGame.Infrastructure;
@@ -15,5 +16,5 @@ public sealed class ApplicationDbQueryables : IApplicationQueryables
 
     public IQueryable<ApplicationUser> Users => _context.Users.AsNoTracking();
 
-    // public IQueryable<AssassinGame> Games => _context.Games.AsNoTracking();
+    public IQueryable<AssassinGame> Games => _context.Games.AsNoTracking();
 }

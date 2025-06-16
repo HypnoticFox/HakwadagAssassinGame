@@ -10,30 +10,30 @@ public sealed class AssassinGameStatus : EnumerationWithCode
     {
     }
 
-    public static IEnumerable<AssassinGameStatus> List()
+    public static IEnumerable<AssassinGameStatus> ToList()
     {
         return GetAll<AssassinGameStatus>();
     }
 
     public static AssassinGameStatus FromId(int id)
     {
-        var state = List().SingleOrDefault(s => s.Id == id);
+        var state = ToList().SingleOrDefault(s => s.Id == id);
 
         if (state == null)
             throw new AssassinGameDomainException(
-                $"'{id}' is not a valid AssassinGameStatus. Possible values: {string.Join(",", List().Select(s => s.Id))}");
+                $"'{id}' is not a valid AssassinGameStatus. Possible values: {string.Join(",", ToList().Select(s => s.Id))}");
 
         return state;
     }
 
     public static AssassinGameStatus FromCode(string code)
     {
-        var state = List()
+        var state = ToList()
             .SingleOrDefault(s => string.Equals(s.Code, code, StringComparison.InvariantCultureIgnoreCase));
 
         if (state == null)
             throw new AssassinGameDomainException(
-                $"'{code}' is not a valid AssassinGameStatus. Possible values: {string.Join(",", List().Select(s => s.Name))}");
+                $"'{code}' is not a valid AssassinGameStatus. Possible values: {string.Join(",", ToList().Select(s => s.Name))}");
 
         return state;
     }

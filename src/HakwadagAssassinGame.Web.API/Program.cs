@@ -1,4 +1,3 @@
-using Carter;
 using FluentValidation;
 using HakwadagAssassinGame.Application.Commands.ApplicationUsers;
 using HakwadagAssassinGame.Application.Mediator;
@@ -9,7 +8,6 @@ using HakwadagAssassinGame.Infrastructure;
 using HakwadagAssassinGame.Infrastructure.Repositories;
 using HakwadagAssassinGame.Utils.Config;
 using HakwadagAssassinGame.Utils.Config.Validation;
-using MediatR;
 using MediatR.NotificationPublishers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -131,7 +129,7 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                 await mediator.Send(new CreateApplicationUserCommand
                 {
-                    Id = userId,
+                    UserId = userId,
                     DisplayName = userNickName
                 });
             }
@@ -182,7 +180,6 @@ if (builder.Environment.IsDevelopment())
 
             x.AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
-                .AddSqlClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation()
                 .AddFusionCacheInstrumentation();
         })

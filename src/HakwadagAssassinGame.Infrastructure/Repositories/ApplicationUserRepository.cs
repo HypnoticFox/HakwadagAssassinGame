@@ -23,11 +23,6 @@ public sealed class ApplicationUserRepository : IApplicationUserRepository
         return applicationUser;
     }
 
-    public void Update(ApplicationUser applicationUser)
-    {
-        _context.Users.Update(applicationUser);
-    }
-
     public async Task<ApplicationUser?> GetAsync(string id, CancellationToken cancellationToken = default)
     {
         var applicationUser = await _context

@@ -9,30 +9,30 @@ public sealed class AssassinGameAssignmentType : EnumerationWithCode
     {
     }
 
-    public static IEnumerable<AssassinGameAssignmentType> List()
+    public static IEnumerable<AssassinGameAssignmentType> ToList()
     {
         return GetAll<AssassinGameAssignmentType>();
     }
 
     public static AssassinGameAssignmentType FromId(int id)
     {
-        var state = List().SingleOrDefault(s => s.Id == id);
+        var state = ToList().SingleOrDefault(s => s.Id == id);
 
         if (state == null)
             throw new AssassinGameDomainException(
-                $"'{id}' is not a valid AssassinGameAssignmentType. Possible values: {string.Join(",", List().Select(s => s.Id))}");
+                $"'{id}' is not a valid AssassinGameAssignmentType. Possible values: {string.Join(",", ToList().Select(s => s.Id))}");
 
         return state;
     }
 
     public static AssassinGameAssignmentType FromCode(string code)
     {
-        var state = List()
+        var state = ToList()
             .SingleOrDefault(s => string.Equals(s.Code, code, StringComparison.InvariantCultureIgnoreCase));
 
         if (state == null)
             throw new AssassinGameDomainException(
-                $"'{code}' is not a valid AssassinGameAssignmentType. Possible values: {string.Join(",", List().Select(s => s.Name))}");
+                $"'{code}' is not a valid AssassinGameAssignmentType. Possible values: {string.Join(",", ToList().Select(s => s.Name))}");
 
         return state;
     }
