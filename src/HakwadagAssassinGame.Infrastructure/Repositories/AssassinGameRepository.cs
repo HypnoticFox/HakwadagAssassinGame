@@ -17,13 +17,13 @@ public sealed class AssassinGameRepository : IAssassinGameRepository
         return _context.SaveChangesAsync(cancellationToken);
     }
 
-    public AssassinGame Add(AssassinGame assassinGame)
+    public Game Add(Game game)
     {
-        _context.Games.Add(assassinGame);
-        return assassinGame;
+        _context.Games.Add(game);
+        return game;
     }
 
-    public async Task<AssassinGame?> GetAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<Game?> GetAsync(int id, CancellationToken cancellationToken = default)
     {
         var assassinGame = await _context
             .Games

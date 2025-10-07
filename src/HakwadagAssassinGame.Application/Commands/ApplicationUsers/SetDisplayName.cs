@@ -24,10 +24,10 @@ public sealed class SetDisplayNameCommandHandler : ICommandHandler<SetDisplayNam
 {
     private readonly IApplicationUserRepository _applicationUserRepository;
     private readonly IFusionCache _cache;
-    private readonly ILogger<CreateApplicationUserCommand> _logger;
+    private readonly ILogger<CreateApplicationUserCommandHandler> _logger;
 
     public SetDisplayNameCommandHandler(IApplicationUserRepository applicationUserRepository, IFusionCache cache,
-        ILogger<CreateApplicationUserCommand> logger)
+        ILogger<CreateApplicationUserCommandHandler> logger)
     {
         _applicationUserRepository = applicationUserRepository;
         _cache = cache;

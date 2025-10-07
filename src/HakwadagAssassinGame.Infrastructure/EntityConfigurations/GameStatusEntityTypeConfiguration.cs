@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HakwadagAssassinGame.Infrastructure.EntityConfigurations;
 
-internal sealed class AssassinGameStatusEntityTypeConfiguration : IEntityTypeConfiguration<AssassinGameStatus>
+internal sealed class GameStatusEntityTypeConfiguration : IEntityTypeConfiguration<GameStatus>
 {
-    public void Configure(EntityTypeBuilder<AssassinGameStatus> builder)
+    public void Configure(EntityTypeBuilder<GameStatus> builder)
     {
-        builder.ToTable("assassin_game_statuses");
+        builder.ToTable("GameStatus");
 
         builder.HasKey(s => s.Id);
 
@@ -25,6 +25,6 @@ internal sealed class AssassinGameStatusEntityTypeConfiguration : IEntityTypeCon
         builder.Property(s => s.Name)
             .IsRequired();
 
-        builder.HasData(AssassinGameStatus.ToList());
+        builder.HasData(GameStatus.ToList());
     }
 }

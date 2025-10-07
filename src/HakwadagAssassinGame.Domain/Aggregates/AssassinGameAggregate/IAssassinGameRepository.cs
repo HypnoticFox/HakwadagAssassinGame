@@ -1,7 +1,7 @@
 namespace HakwadagAssassinGame.Domain.Aggregates.AssassinGameAggregate;
 
-public interface IAssassinGameRepository : IRepository<AssassinGame>
+public interface IAssassinGameRepository : IRepository<Game>
 {
-    AssassinGame Add(AssassinGame applicationUser);
-    Task<AssassinGame?> GetAsync(int id, CancellationToken cancellationToken = default);
+    Game Add(Game applicationUser);
+    Task<Game?> GetAsync(int id, CancellationToken cancellationToken = default);
 }

@@ -80,7 +80,7 @@ services.AddSwaggerGen(options =>
                 {
                     { "openid", "OpenId" },
                     { "profile", "Profile" }
-                }
+                },
             }
         }
     });
@@ -91,7 +91,7 @@ services.AddSwaggerGen(options =>
             {
                 Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "oauth2" }
             },
-            new[] { "openid", "profile" }
+            ["openid", "profile"]
         }
     });
 });
@@ -208,7 +208,6 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1.0");
         options.DocumentTitle = "Hakwadag Assassin Game API";
-
 
         if (config.SwaggerOauth != null)
         {

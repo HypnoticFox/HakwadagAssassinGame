@@ -1,43 +1,45 @@
 namespace HakwadagAssassinGame.Domain.Aggregates.AssassinGameAggregate;
 
-public sealed class AssassinGame : TimeStampedEntity, IAggregateRoot
+public sealed class Game : TimeStampedEntity, IAggregateRoot
 {
-    private readonly List<AssassinGamePlayer> _players = [];
+    private readonly List<Player> _players = [];
+    
+    private Game() { }
 
-    public AssassinGame(string hostApplicationUserid)
+    public Game(string hostApplicationUserid)
     {
         HostApplicationUserId = hostApplicationUserid;
     }
 
-    public int StatusId { get; private set; } = AssassinGameStatus.Lobby.Id;
-    public AssassinGameStatus Status => AssassinGameStatus.FromId(StatusId);
+    public int StatusId { get; private set; } = GameStatus.Lobby.Id;
+    public GameStatus Status => GameStatus.FromId(StatusId);
     public string HostApplicationUserId { get; private set; }
-    public IReadOnlyList<AssassinGamePlayer> Players => _players;
-    public AssassinGameBounty? Bounty { get; private set; }
+    public IReadOnlyList<Player> Players => _players;
+    public Bounty? Bounty { get; private set; }
     public bool AreHighScoresRevealed { get; private set; }
 
     public bool Archived { get; private set; }
 
-    public AssassinGamePlayer AddPlayer(string applicationUserId)
+    public Player AddPlayer(string applicationUserId)
     {
-        var newPlayer = new AssassinGamePlayer(applicationUserId);
+        var newPlayer = new Player(applicationUserId);
         _players.Add(newPlayer);
         return newPlayer;
     }
 
-    public void RemovePlayer(int playerId)
+    public void RemovePlayer(Guid playerId)
     {
         var playerToRemove = _players.Single(p => p.Id == playerId);
         _players.Remove(playerToRemove);
     }
 
-    public AssassinGameBounty SetBounty(AssassinGameBounty bounty)
+    public Bounty SetBounty(Bounty bounty)
     {
         if (Bounty is not null) throw new AssassinGameDomainException("Bounty is already set.");
         Bounty = bounty;
         return bounty;
     }
-
+    
     public void RemoveBounty()
     {
         Bounty = null;
@@ -51,12 +53,12 @@ public sealed class AssassinGame : TimeStampedEntity, IAggregateRoot
     public void StartGame()
     {
         if (_players.Count < 3) throw new AssassinGameDomainException("Not enough players to start the game.");
-        StatusId = AssassinGameStatus.InProgress.Id;
+        StatusId = GameStatus.InProgress.Id;
     }
 
     public void EndGame()
     {
-        StatusId = AssassinGameStatus.Finished.Id;
+        StatusId = GameStatus.Finished.Id;
         Archived = true;
     }
 }

@@ -18,7 +18,7 @@ internal static class BaseEntityConfigurations
 
                 entityConfiguration
                     .Property(nameof(Entity.Id))
-                    .HasColumnName("id")
+                    .HasColumnName("Id")
                     .ValueGeneratedOnAdd();
             }
 

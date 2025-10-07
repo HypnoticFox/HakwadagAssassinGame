@@ -1,20 +1,20 @@
 namespace HakwadagAssassinGame.Domain.Aggregates.AssassinGameAggregate;
 
-public sealed class AssassinGameAssignmentType : EnumerationWithCode
+public sealed class AssignmentType : EnumerationWithCode
 {
-    public static readonly AssassinGameAssignmentType Default = new(1, nameof(Default).ToLowerInvariant(), "Default");
-    public static readonly AssassinGameAssignmentType Betting = new(2, nameof(Betting).ToLowerInvariant(), "Betting");
+    public static readonly AssignmentType Default = new(1, nameof(Default).ToLowerInvariant(), "Default");
+    public static readonly AssignmentType Betting = new(2, nameof(Betting).ToLowerInvariant(), "Betting");
 
-    public AssassinGameAssignmentType(int id, string code, string name) : base(id, code, name)
+    public AssignmentType(int id, string code, string name) : base(id, code, name)
     {
     }
 
-    public static IEnumerable<AssassinGameAssignmentType> ToList()
+    public static IEnumerable<AssignmentType> ToList()
     {
-        return GetAll<AssassinGameAssignmentType>();
+        return GetAll<AssignmentType>();
     }
 
-    public static AssassinGameAssignmentType FromId(int id)
+    public static AssignmentType FromId(int id)
     {
         var state = ToList().SingleOrDefault(s => s.Id == id);
 
@@ -25,7 +25,7 @@ public sealed class AssassinGameAssignmentType : EnumerationWithCode
         return state;
     }
 
-    public static AssassinGameAssignmentType FromCode(string code)
+    public static AssignmentType FromCode(string code)
     {
         var state = ToList()
             .SingleOrDefault(s => string.Equals(s.Code, code, StringComparison.InvariantCultureIgnoreCase));

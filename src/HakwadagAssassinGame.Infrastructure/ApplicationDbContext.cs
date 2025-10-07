@@ -8,20 +8,29 @@ namespace HakwadagAssassinGame.Infrastructure;
 public class ApplicationDbContext(DbContextOptions options) : DbContext(options)
 {
     internal DbSet<ApplicationUser> Users { get; set; }
-    internal DbSet<AssassinGame> Games { get; set; }
-    internal DbSet<AssassinGameStatus> GameStatuses { get; set; }
-    internal DbSet<AssassinGamePlayer> GamePlayers { get; set; }
-    internal DbSet<AssassinGameAssignment> Assignments { get; set; }
-    internal DbSet<AssassinGameAssignmentTask> AssignmentTasks { get; set; }
-    internal DbSet<AssassinGameAssignmentType> AssignmentTypes { get; set; }
-    internal DbSet<AssassinGameAssignmentTaskTemplate> AssignmentTemplates { get; set; }
-    internal DbSet<AssassinGameBounty> Bounties { get; set; }
-    internal DbSet<AssassinGameBountyTemplate> BountyTemplates { get; set; }
+    internal DbSet<Game> Games { get; set; }
+    internal DbSet<GameStatus> GameStatuses { get; set; }
+    internal DbSet<Player> GamePlayers { get; set; }
+    internal DbSet<Assignment> Assignments { get; set; }
+    internal DbSet<AssignmentTask> AssignmentTasks { get; set; }
+    internal DbSet<AssignmentType> AssignmentTypes { get; set; }
+    internal DbSet<AssignmentTaskTemplate> AssignmentTaskTemplates { get; set; }
+    internal DbSet<Bounty> Bounties { get; set; }
+    internal DbSet<BountyTemplate> BountyTemplates { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyBaseEntityConfigurations();
 
         modelBuilder.ApplyConfiguration(new ApplicationUserEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new GameEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new GameStatusEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new PlayerEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new BountyEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new AssignmentEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new AssignmentTaskEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new AssignmentTypeEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new AssignmentTaskTemplateEntityTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new BountyTemplateEntityTypeConfiguration());
     }
 }

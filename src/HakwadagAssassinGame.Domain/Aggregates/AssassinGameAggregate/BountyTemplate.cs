@@ -1,6 +1,6 @@
 namespace HakwadagAssassinGame.Domain.Aggregates.AssassinGameAggregate;
 
-public sealed class AssassinGameBountyTemplate : Entity
+public sealed class BountyTemplate : Entity
 {
     public required string Description { get; init; }
 }

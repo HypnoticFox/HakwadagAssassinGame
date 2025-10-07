@@ -4,19 +4,17 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace HakwadagAssassinGame.Infrastructure.EntityConfigurations;
 
-internal sealed class AssassinGameEntityTypeConfiguraion : IEntityTypeConfiguration<AssassinGame>
+internal sealed class GameEntityTypeConfiguration : IEntityTypeConfiguration<Game>
 {
-    public void Configure(EntityTypeBuilder<AssassinGame> builder)
+    public void Configure(EntityTypeBuilder<Game> builder)
     {
-        builder.ToTable("assassin_games");
-
-        builder.HasKey(g => g.Id);
+        builder.ToTable("Games");
 
         builder.Property(g => g.StatusId)
             .IsRequired();
 
         builder
-            .HasOne<AssassinGameStatus>()
+            .HasOne<GameStatus>()
             .WithMany()
             .HasForeignKey(g => g.StatusId);
 
@@ -27,11 +25,11 @@ internal sealed class AssassinGameEntityTypeConfiguraion : IEntityTypeConfigurat
             .HasMany(g => g.Players)
             .WithOne(p => p.Game)
             .HasForeignKey(p => p.GameId);
-
+        
         builder
-            .HasOne<AssassinGameBounty>(g => g.Bounty)
+            .HasOne<Bounty>(g => g.Bounty)
             .WithOne()
-            .HasForeignKey<AssassinGameBounty>(b => b.GameId);
+            .HasForeignKey<Bounty>(b => b.GameId);
 
         builder.Property(g => g.AreHighScoresRevealed)
             .IsRequired();

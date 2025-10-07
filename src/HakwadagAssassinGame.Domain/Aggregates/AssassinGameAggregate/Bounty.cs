@@ -1,8 +1,9 @@
 namespace HakwadagAssassinGame.Domain.Aggregates.AssassinGameAggregate;
 
-public sealed class AssassinGameAssignmentTaskTemplate : Entity
+public sealed class Bounty : TimeStampedEntity
 {
-    public required int Cost { get; init; }
+    public int GameId { get; }
+    public Guid TargetId { get; }
     public required int Reward { get; init; }
     public required string Description { get; init; }
 }

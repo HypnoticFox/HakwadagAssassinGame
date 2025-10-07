@@ -16,5 +16,5 @@ public sealed class ApplicationDbQueryables : IApplicationQueryables
 
     public IQueryable<ApplicationUser> Users => _context.Users.AsNoTracking();
 
-    public IQueryable<AssassinGame> Games => _context.Games.AsNoTracking();
+    public IQueryable<Game> Games => _context.Games.AsNoTracking();
 }

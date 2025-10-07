@@ -20,7 +20,7 @@ services:
     ports:
       - 8080:8080
     volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${USER_SECRETS_DIRECTORY-~/.microsoft/usersecrets}:/root/.microsoft/usersecrets:ro
 
   db:
     image: postgres
