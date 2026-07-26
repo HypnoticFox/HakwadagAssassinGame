@@ -1,0 +1,58 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HakwadagAssassinGame.Core", "src\HakwadagAssassinGame.Core\HakwadagAssassinGame.Core.csproj", "{AA616318-D9FA-413D-81CF-BD5B1F17D129}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HakwadagAssassinGame.Application", "src\HakwadagAssassinGame.Application\HakwadagAssassinGame.Application.csproj", "{537DD98A-9560-4D00-93C4-6EFA206314D8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HakwadagAssassinGame.Infrastructure", "src\HakwadagAssassinGame.Infrastructure\HakwadagAssassinGame.Infrastructure.csproj", "{04C2FFAC-F547-4D2E-BBEF-77C299F3C5E4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HakwadagAssassinGame.Utils", "src\HakwadagAssassinGame.Utils\HakwadagAssassinGame.Utils.csproj", "{6C786EE2-0DFA-4D16-A6E4-804F2FD4C3C8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HakwadagAssassinGame.Tests", "tests\HakwadagAssassinGame.Tests\HakwadagAssassinGame.Tests.csproj", "{FD5E93A7-C9CC-46E8-95D5-7507083964B1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HakwadagAssassinGame.Web", "src\HakwadagAssassinGame.Web\HakwadagAssassinGame.Web.csproj", "{88A2BEBC-2A3C-414B-8FDF-34A2C686CE8F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B2F4EB9B-0BD3-476A-A09D-9FA92B0FE343}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{1133122A-BD31-4AEA-B149-D08E8C4CB95A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AA616318-D9FA-413D-81CF-BD5B1F17D129}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AA616318-D9FA-413D-81CF-BD5B1F17D129}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AA616318-D9FA-413D-81CF-BD5B1F17D129}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AA616318-D9FA-413D-81CF-BD5B1F17D129}.Release|Any CPU.Build.0 = Release|Any CPU
+		{537DD98A-9560-4D00-93C4-6EFA206314D8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{537DD98A-9560-4D00-93C4-6EFA206314D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{537DD98A-9560-4D00-93C4-6EFA206314D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{537DD98A-9560-4D00-93C4-6EFA206314D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04C2FFAC-F547-4D2E-BBEF-77C299F3C5E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04C2FFAC-F547-4D2E-BBEF-77C299F3C5E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04C2FFAC-F547-4D2E-BBEF-77C299F3C5E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04C2FFAC-F547-4D2E-BBEF-77C299F3C5E4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C786EE2-0DFA-4D16-A6E4-804F2FD4C3C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C786EE2-0DFA-4D16-A6E4-804F2FD4C3C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C786EE2-0DFA-4D16-A6E4-804F2FD4C3C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C786EE2-0DFA-4D16-A6E4-804F2FD4C3C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FD5E93A7-C9CC-46E8-95D5-7507083964B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FD5E93A7-C9CC-46E8-95D5-7507083964B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FD5E93A7-C9CC-46E8-95D5-7507083964B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FD5E93A7-C9CC-46E8-95D5-7507083964B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88A2BEBC-2A3C-414B-8FDF-34A2C686CE8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88A2BEBC-2A3C-414B-8FDF-34A2C686CE8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88A2BEBC-2A3C-414B-8FDF-34A2C686CE8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88A2BEBC-2A3C-414B-8FDF-34A2C686CE8F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{FD5E93A7-C9CC-46E8-95D5-7507083964B1} = {B2F4EB9B-0BD3-476A-A09D-9FA92B0FE343}
+		{537DD98A-9560-4D00-93C4-6EFA206314D8} = {1133122A-BD31-4AEA-B149-D08E8C4CB95A}
+		{AA616318-D9FA-413D-81CF-BD5B1F17D129} = {1133122A-BD31-4AEA-B149-D08E8C4CB95A}
+		{04C2FFAC-F547-4D2E-BBEF-77C299F3C5E4} = {1133122A-BD31-4AEA-B149-D08E8C4CB95A}
+		{6C786EE2-0DFA-4D16-A6E4-804F2FD4C3C8} = {1133122A-BD31-4AEA-B149-D08E8C4CB95A}
+		{88A2BEBC-2A3C-414B-8FDF-34A2C686CE8F} = {1133122A-BD31-4AEA-B149-D08E8C4CB95A}
+	EndGlobalSection
+EndGlobal

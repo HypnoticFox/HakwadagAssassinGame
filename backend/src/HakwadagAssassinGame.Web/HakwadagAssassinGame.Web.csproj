@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\HakwadagAssassinGame.Application\HakwadagAssassinGame.Application.csproj" />
+      <ProjectReference Include="..\HakwadagAssassinGame.Core\HakwadagAssassinGame.Core.csproj" />
+      <ProjectReference Include="..\HakwadagAssassinGame.Infrastructure\HakwadagAssassinGame.Infrastructure.csproj" />
+      <ProjectReference Include="..\HakwadagAssassinGame.Utils\HakwadagAssassinGame.Utils.csproj" />
+    </ItemGroup>
+
+</Project>
