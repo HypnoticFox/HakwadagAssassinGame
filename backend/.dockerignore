@@ -1,0 +1,11 @@
+# Build output and intermediate files are generated inside the image.
+**/bin/
+**/obj/
+
+# IDE metadata is not required to build the backend.
+.vs/
+.idea/
+*.user
+
+# Frontend dependencies are outside the backend build context needs.
+node_modules/

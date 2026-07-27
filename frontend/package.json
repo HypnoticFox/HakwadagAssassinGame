@@ -1,0 +1,38 @@
+{
+  "name": "hakwadag-assassin-game",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.vue",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^10.0.0",
+    "pinia": "latest",
+    "vue": "latest",
+    "vue-router": "latest",
+    "workbox-core": "latest",
+    "workbox-precaching": "latest",
+    "workbox-routing": "latest",
+    "workbox-strategies": "latest",
+    "workbox-window": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@typescript-eslint/eslint-plugin": "latest",
+    "@typescript-eslint/parser": "latest",
+    "@vitejs/plugin-vue": "latest",
+    "@vue/tsconfig": "latest",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "latest",
+    "prettier": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "vite-plugin-pwa": "latest",
+    "vue-tsc": "latest"
+  }
+}

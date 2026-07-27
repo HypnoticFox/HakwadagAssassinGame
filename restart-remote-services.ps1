@@ -1,0 +1,98 @@
+# Restart frontend and backend services without stopping dependencies or zrok2 shares.
+# Use this when dotnet watch or npm run dev don't pick up changes correctly.
+
+param(
+    [switch]$BackendOnly,
+    [switch]$FrontendOnly
+)
+
+$ErrorActionPreference = "Continue"
+
+# --- Load .env.remote if it exists ---
+$envFile = Join-Path $PSScriptRoot ".env.remote"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]*)=(.*)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            # Remove quotes if present
+            $value = $value -replace '^["'']|["'']$', ''
+            [Environment]::SetEnvironmentVariable($key, $value, "Process")
+        }
+    }
+}
+
+# --- Configuration ---
+$ApiShareName = if ($env:ZROK_API_NAME) { $env:ZROK_API_NAME } else { "hakwadag-api" }
+$AppShareName = if ($env:ZROK_APP_NAME) { $env:ZROK_APP_NAME } else { "hakwadag-app" }
+$BackendPort = 5000
+$FrontendPort = 5173
+$ZrokApiUrl = "https://$ApiShareName.shares.zrok.io"
+$ZrokAppUrl = "https://$AppShareName.shares.zrok.io"
+
+$RepoRoot = $PSScriptRoot
+$BackendDir = Join-Path $RepoRoot "backend"
+$FrontendDir = Join-Path $RepoRoot "frontend"
+$BackendProject = Join-Path $BackendDir "src\HakwadagAssassinGame.Web\HakwadagAssassinGame.Web.csproj"
+
+function Write-Status($msg) { Write-Host "[restart] $msg" -ForegroundColor Cyan }
+function Write-Ok($msg) { Write-Host "[restart] $msg" -ForegroundColor Green }
+
+# --- Stop backend ---
+if (-not $FrontendOnly) {
+    Write-Status "Stopping backend..."
+    Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Where-Object {
+        $_.CommandLine -match "HakwadagAssassinGame" -or $_.CommandLine -match "watch"
+    } | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # Also kill any process on the backend port
+    $backendProc = Get-NetTCPConnection -LocalPort $BackendPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+    if ($backendProc) {
+        $backendProc | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+    }
+    Write-Ok "Backend stopped."
+}
+
+# --- Stop frontend ---
+if (-not $BackendOnly) {
+    Write-Status "Stopping frontend..."
+    Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
+        $_.CommandLine -match "vite" -or $_.CommandLine -match "npm"
+    } | Stop-Process -Force -ErrorAction SilentlyContinue
+
+    # Also kill any process on the frontend port
+    $frontendProc = Get-NetTCPConnection -LocalPort $FrontendPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
+    if ($frontendProc) {
+        $frontendProc | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }
+    }
+    Write-Ok "Frontend stopped."
+}
+
+Start-Sleep -Seconds 2
+
+# --- Restart backend ---
+if (-not $FrontendOnly) {
+    Write-Status "Starting backend..."
+    $env:ZROK_FRONTEND_URL = $ZrokAppUrl
+    $env:ASPNETCORE_HTTP_PORTS = $BackendPort
+
+    Start-Process -FilePath "dotnet" -ArgumentList "watch", "run", "--project", $BackendProject, "--no-launch-profile" -WindowStyle Hidden
+    Write-Ok "Backend started on port $BackendPort"
+}
+
+# --- Restart frontend ---
+if (-not $BackendOnly) {
+    Write-Status "Starting frontend..."
+    $env:VITE_API_URL = $ZrokApiUrl
+    $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
+
+    Start-Process -FilePath "npm.cmd" -ArgumentList "run", "dev", "--", "--port", $FrontendPort, "--host" -WorkingDirectory $FrontendDir -WindowStyle Hidden
+    Write-Ok "Frontend started on port $FrontendPort"
+}
+
+Write-Host ""
+Write-Ok "Services restarted."
+Write-Host ""
+Write-Host "  Backend API:  $ZrokApiUrl" -ForegroundColor White
+Write-Host "  Frontend App: $ZrokAppUrl" -ForegroundColor White
+Write-Host ""

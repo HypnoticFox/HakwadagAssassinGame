@@ -139,6 +139,40 @@ Local setup should support:
 * running tests
 * iterating without manual environment setup beyond what is necessary
 
+### Remote Development Scripts
+
+When the user asks to start, stop, or restart remote services, call the corresponding PowerShell script:
+
+* **Start**: `.\start-remote-services.ps1 -Detach`
+* **Stop**: `.\stop-remote-services.ps1`
+* **Restart**: `.\restart-remote-services.ps1`
+
+These scripts manage Redis, backend, frontend, and zrok2 tunnels for remote access.
+
+**Important**: Always use `-Detach` when starting services so the script exits after starting everything in the background.
+
+#### Script Parameters
+
+**start-remote-services.ps1**
+- `-SkipDependencies`: Skip starting Redis (useful if already running)
+- `-SkipCleanup`: Don't register cleanup handlers (services won't stop on Ctrl+C)
+- `-Detach`: Start services in background and exit immediately (required for agent use)
+
+**stop-remote-services.ps1**
+- `-ExcludeDependencies`: Skip stopping dependencies like Redis (default: stops them)
+- `-DeleteReservedNames`: Delete zrok2 reserved names (URLs will change on next start)
+
+**restart-remote-services.ps1**
+- `-BackendOnly`: Only restart the backend (leave frontend running)
+- `-FrontendOnly`: Only restart the frontend (leave backend running)
+
+Examples:
+- Start all services: `.\start-remote-services.ps1 -Detach`
+- Stop everything: `.\stop-remote-services.ps1`
+- Stop without stopping Redis: `.\stop-remote-services.ps1 -ExcludeDependencies`
+- Restart only backend: `.\restart-remote-services.ps1 -BackendOnly`
+- Restart only frontend: `.\restart-remote-services.ps1 -FrontendOnly`
+
 ## API and Implementation Guidance
 
 * Keep API contracts clean and predictable

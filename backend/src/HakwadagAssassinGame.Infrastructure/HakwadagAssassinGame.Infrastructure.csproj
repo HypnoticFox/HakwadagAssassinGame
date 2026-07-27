@@ -12,4 +12,12 @@
       <ProjectReference Include="..\HakwadagAssassinGame.Utils\HakwadagAssassinGame.Utils.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="StackExchange.Redis" Version="3.0.17" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
 </Project>

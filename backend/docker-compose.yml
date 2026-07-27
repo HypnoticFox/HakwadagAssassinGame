@@ -1,0 +1,30 @@
+# Local development dependencies for the backend.
+name: HakwadagAssassinGame
+
+services:
+  # Redis stores temporary game state for local development.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      # Keep Redis data across container restarts.
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - default
+
+# Use a dedicated bridge network so services can address each other by name.
+networks:
+  default:
+    driver: bridge
+
+# Named volume for Redis persistence.
+volumes:
+  redis-data:
+    driver: local

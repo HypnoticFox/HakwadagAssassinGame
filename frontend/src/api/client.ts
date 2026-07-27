@@ -1,0 +1,253 @@
+import type {
+  AssignmentDto,
+  AuthResponse,
+  ConditionDto,
+  CreateGameRequest,
+  GameDto,
+  LeaderboardEntryDto,
+  PlayerDto,
+  SafeTimeBlockDto,
+  SubmitTagRequest,
+  TagSubmissionDto,
+} from '@/types'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+class ApiClient {
+  private token: string | null = null
+
+  constructor() {
+    this.token = localStorage.getItem('hakwadag_token')
+  }
+
+  setToken(token: string) {
+    this.token = token
+    localStorage.setItem('hakwadag_token', token)
+  }
+
+  clearToken() {
+    this.token = null
+    localStorage.removeItem('hakwadag_token')
+  }
+
+  getToken() {
+    return this.token
+  }
+
+  private buildUrl(path: string) {
+    return `${API_URL}${path}`
+  }
+
+  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+    const headers = new Headers(options.headers)
+    headers.set('Accept', 'application/json')
+
+    if (options.body && typeof options.body === 'string') {
+      headers.set('Content-Type', 'application/json')
+    }
+
+    if (this.token) {
+      headers.set('Authorization', `Bearer ${this.token}`)
+    }
+
+    const response = await fetch(this.buildUrl(path), {
+      ...options,
+      headers,
+    })
+
+    if (response.status === 204) {
+      return undefined as T
+    }
+
+    if (response.status === 404) {
+      return null as T
+    }
+
+    if (!response.ok) {
+      let message = `Request failed with status ${response.status}`
+      try {
+        const errorBody = await response.json()
+        if (errorBody && typeof errorBody === 'object') {
+          message =
+            (errorBody as Record<string, unknown>).message?.toString() ||
+            (errorBody as Record<string, unknown>).error?.toString() ||
+            message
+        }
+      } catch {
+        // ignore parse error
+      }
+      throw new ApiError(message, response.status)
+    }
+
+    const text = await response.text()
+    if (!text) {
+      return undefined as T
+    }
+    return JSON.parse(text) as T
+  }
+
+  async sendOtp(email: string): Promise<void> {
+    await this.request('/api/auth/send-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async verifyOtp(email: string, code: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    })
+  }
+
+  async me(): Promise<PlayerDto> {
+    return this.request<PlayerDto>('/api/auth/me')
+  }
+
+  async createGame(request: CreateGameRequest): Promise<GameDto> {
+    return this.request<GameDto>('/api/games', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  }
+
+  async getMyGames(): Promise<GameDto[]> {
+    return this.request<GameDto[]>('/api/games')
+  }
+
+  async getGame(gameId: string): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/${gameId}`)
+  }
+
+  async joinGame(inviteCode: string, displayName: string): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/join/${encodeURIComponent(inviteCode)}`, {
+      method: 'POST',
+      body: JSON.stringify({ displayName }),
+    })
+  }
+
+  async startGame(gameId: string): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/${gameId}/start`, {
+      method: 'POST',
+    })
+  }
+
+  async endGame(gameId: string): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/${gameId}/end`, {
+      method: 'POST',
+    })
+  }
+
+  async leaveGame(gameId: string): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/leave`, {
+      method: 'POST',
+    })
+  }
+
+  async getMyAssignment(gameId: string): Promise<AssignmentDto | null> {
+    return this.request<AssignmentDto | null>(`/api/games/${gameId}/assignments/me`)
+  }
+
+  async submitTag(gameId: string, request: SubmitTagRequest): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/games/${gameId}/tag`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    })
+  }
+
+  async getPendingTag(gameId: string): Promise<TagSubmissionDto | null> {
+    return this.request<TagSubmissionDto | null>(`/api/games/${gameId}/tag/pending`)
+  }
+
+  async confirmTag(gameId: string, tagId: string): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/games/${gameId}/tag/${tagId}/confirm`, {
+      method: 'POST',
+    })
+  }
+
+  async denyTag(gameId: string, tagId: string): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/games/${gameId}/tag/${tagId}/deny`, {
+      method: 'POST',
+    })
+  }
+
+  async voidTag(gameId: string, tagId: string): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/games/${gameId}/tag/${tagId}/void`, {
+      method: 'POST',
+    })
+  }
+
+  async getLeaderboard(gameId: string): Promise<LeaderboardEntryDto[]> {
+    return this.request<LeaderboardEntryDto[]>(`/api/games/${gameId}/leaderboard`)
+  }
+
+  async addAdmin(gameId: string, playerId: string): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/admins`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId }),
+    })
+  }
+
+  async removeAdmin(gameId: string, playerId: string): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/admins/${playerId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async addSafeTime(
+    gameId: string,
+    block: Omit<SafeTimeBlockDto, 'id'>,
+  ): Promise<string> {
+    const response = await this.request<{ blockId: string }>(`/api/games/${gameId}/safe-times`, {
+      method: 'POST',
+      body: JSON.stringify(block),
+    })
+    return response.blockId
+  }
+
+  async removeSafeTime(gameId: string, blockId: string): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/safe-times/${blockId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async addCondition(gameId: string, description: string): Promise<ConditionDto> {
+    return this.request<ConditionDto>(`/api/games/${gameId}/conditions`, {
+      method: 'POST',
+      body: JSON.stringify({ description }),
+    })
+  }
+
+  async getVapidPublicKey(): Promise<string> {
+    const response = await this.request<{ publicKey: string }>('/api/push/vapid-public-key')
+    return response.publicKey
+  }
+
+  async subscribePush(subscription: PushSubscription): Promise<void> {
+    const keys = subscription.toJSON().keys
+    if (!keys?.p256dh || !keys?.auth) {
+      throw new ApiError('Invalid push subscription keys', 400)
+    }
+
+    await this.request<void>('/api/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      }),
+    })
+  }
+}
+
+export const api = new ApiClient()
