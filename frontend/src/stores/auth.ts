@@ -62,6 +62,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function devLogin(email?: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.devLogin(email)
+      token.value = response.token
+      player.value = response.player
+      api.setToken(response.token)
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function logout() {
     token.value = null
     player.value = null
@@ -82,6 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
     loadFromStorage,
     sendOtp,
     verifyOtp,
+    devLogin,
     logout,
     setPlayer,
   }

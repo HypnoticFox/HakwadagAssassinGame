@@ -47,6 +47,12 @@ const router = createRouter({
       component: () => import('@/views/TagConfirmView.vue'),
       meta: { requiresAuth: true },
     },
+    {
+      path: '/dev/dashboard',
+      name: 'dev-dashboard',
+      component: () => import('@/views/DevDashboardView.vue'),
+      meta: { requiresAuth: true, devOnly: true },
+    },
   ],
 })
 
@@ -62,6 +68,10 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresGuest && authStore.isAuthenticated) {
+    return { name: 'home' }
+  }
+
+  if (to.meta.devOnly && !import.meta.env.DEV) {
     return { name: 'home' }
   }
 })

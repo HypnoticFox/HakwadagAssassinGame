@@ -44,6 +44,25 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<TagSubmission>> GetByAssignmentIdAsync(
+        Guid assignmentId,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = await GetIdsAsync($"tag:assignment:{assignmentId}", cancellationToken);
+        var submissions = new List<TagSubmission>(ids.Count);
+        foreach (var id in ids)
+        {
+            var submission = await GetByIdAsync(id, cancellationToken);
+            if (submission is not null)
+            {
+                submissions.Add(submission);
+            }
+        }
+
+        return submissions;
+    }
+
+    /// <inheritdoc />
     public async Task AddAsync(
         TagSubmission submission,
         CancellationToken cancellationToken = default)
@@ -52,6 +71,10 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
         await SetValueAsync(
             Key("tag", submission.Id),
             RedisJsonSerializer.Serialize(submission, GameJsonContext.Default.TagSubmission),
+            cancellationToken);
+        await AddToSetAsync(
+            $"tag:assignment:{submission.AssignmentId}",
+            submission.Id.ToString(),
             cancellationToken);
         await UpdatePendingIndexAsync(submission, cancellationToken);
     }
@@ -71,9 +94,21 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
                 cancellationToken);
         }
 
+        if (existing is not null && existing.AssignmentId != submission.AssignmentId)
+        {
+            await RemoveFromSetAsync(
+                $"tag:assignment:{existing.AssignmentId}",
+                existing.Id.ToString(),
+                cancellationToken);
+        }
+
         await SetValueAsync(
             Key("tag", submission.Id),
             RedisJsonSerializer.Serialize(submission, GameJsonContext.Default.TagSubmission),
+            cancellationToken);
+        await AddToSetAsync(
+            $"tag:assignment:{submission.AssignmentId}",
+            submission.Id.ToString(),
             cancellationToken);
         await UpdatePendingIndexAsync(submission, cancellationToken);
     }

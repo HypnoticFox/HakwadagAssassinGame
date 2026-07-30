@@ -124,6 +124,47 @@ export interface SubmitTagRequest {
   conditionId: string
 }
 
+export interface DevGame {
+  id: string
+  name: string
+  status: GameStatus
+  playerCount: number
+  createdAt: string
+  scheduledEndAt?: string
+}
+
+export interface DevPlayer {
+  playerId: string
+  email: string
+  displayName: string
+  role: GameRole
+  score: number
+  isActive: boolean
+  isParticipating: boolean
+}
+
+export interface DevAssignment {
+  id: string
+  hunterId: string
+  hunterName: string
+  targetId: string
+  targetName: string
+  status: number
+  assignedAt: string
+}
+
+export interface DevTag {
+  id: string
+  assignmentId: string
+  hunterId: string
+  hunterName: string
+  targetId: string
+  targetName: string
+  status: TagStatus
+  submittedAt: string
+  resolvedAt?: string
+}
+
 export interface PushSubscriptionDto {
   endpoint: string
   p256dh: string

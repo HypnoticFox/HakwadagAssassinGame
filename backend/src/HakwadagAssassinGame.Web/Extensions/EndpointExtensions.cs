@@ -1,6 +1,8 @@
 using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Exceptions;
 using HakwadagAssassinGame.Application.Services;
+using HakwadagAssassinGame.Core.Enums;
+using HakwadagAssassinGame.Core.Interfaces;
 using HakwadagAssassinGame.Infrastructure.Realtime;
 using HakwadagAssassinGame.Web.Middleware;
 
@@ -149,6 +151,247 @@ public static class EndpointExtensions
             await service.AddCustomConditionAsync(context.GetRequiredPlayerId(), gameId, request, cancellationToken);
             return Results.Created($"/api/games/{gameId}/conditions", null);
         });
+
+        // Dev-only testing endpoints — not available in production.
+        if (app.Environment.IsDevelopment())
+        {
+            app.MapPost("/api/auth/dev-login", async (DevLoginRequest request, IDevSeedService service, CancellationToken cancellationToken) =>
+            {
+                var response = await service.DevLoginAsync(request, cancellationToken);
+                return Results.Ok(new { token = response.Token, player = response.Player });
+            });
+
+            app.MapPost("/api/dev/seed-game", async (SeedGameRequest request, IDevSeedService service, CancellationToken cancellationToken) =>
+            {
+                var response = await service.SeedGameAsync(request, cancellationToken);
+                return Results.Ok(response);
+            });
+
+            // ── Dev Dashboard — Game list ──────────────────────────────────────
+
+            app.MapGet("/api/dev/games", async (
+                IGameRepository gameRepo,
+                IGamePlayerRepository gamePlayerRepo,
+                CancellationToken ct) =>
+            {
+                var games = await gameRepo.GetAllAsync(ct);
+                var result = new List<DevGameSummaryDto>(games.Count);
+                foreach (var game in games)
+                {
+                    var memberships = await gamePlayerRepo.GetByGameIdAsync(game.Id, ct);
+                    result.Add(new DevGameSummaryDto(
+                        game.Id,
+                        game.Name,
+                        game.Status,
+                        memberships.Count(m => m.IsActive),
+                        game.CreatedAt,
+                        game.ScheduledEndAt));
+                }
+
+                return Results.Ok(result);
+            });
+
+            var devGames = app.MapGroup("/api/dev/games/{gameId:guid}");
+
+            // ── Dev Dashboard — Players in a game ──────────────────────────────
+
+            devGames.MapGet("/players", async (
+                Guid gameId,
+                IGameRepository gameRepo,
+                IGamePlayerRepository gamePlayerRepo,
+                IPlayerRepository playerRepo,
+                CancellationToken ct) =>
+            {
+                var game = await gameRepo.GetByIdAsync(gameId, ct);
+                if (game is null)
+                {
+                    return Results.NotFound(new { error = "Game not found." });
+                }
+
+                var memberships = await gamePlayerRepo.GetByGameIdAsync(gameId, ct);
+                var result = new List<DevPlayerInGameDto>(memberships.Count);
+                foreach (var membership in memberships)
+                {
+                    var player = await playerRepo.GetByIdAsync(membership.PlayerId, ct);
+                    result.Add(new DevPlayerInGameDto(
+                        membership.PlayerId,
+                        player?.Email ?? "unknown",
+                        player?.DisplayName ?? "unknown",
+                        membership.Role,
+                        membership.Score,
+                        membership.IsActive,
+                        membership.IsParticipating));
+                }
+
+                return Results.Ok(result);
+            });
+
+            // ── Dev Dashboard — Assignments in a game ──────────────────────────
+
+            devGames.MapGet("/assignments", async (
+                Guid gameId,
+                IGameRepository gameRepo,
+                IAssignmentRepository assignmentRepo,
+                IPlayerRepository playerRepo,
+                CancellationToken ct) =>
+            {
+                var game = await gameRepo.GetByIdAsync(gameId, ct);
+                if (game is null)
+                {
+                    return Results.NotFound(new { error = "Game not found." });
+                }
+
+                var assignments = await assignmentRepo.GetByGameIdAsync(gameId, ct);
+                var result = new List<DevAssignmentDto>(assignments.Count);
+                foreach (var assignment in assignments)
+                {
+                    var hunter = await playerRepo.GetByIdAsync(assignment.HunterId, ct);
+                    var target = await playerRepo.GetByIdAsync(assignment.TargetId, ct);
+                    result.Add(new DevAssignmentDto(
+                        assignment.Id,
+                        assignment.HunterId,
+                        hunter?.DisplayName ?? "unknown",
+                        assignment.TargetId,
+                        target?.DisplayName ?? "unknown",
+                        assignment.Status,
+                        assignment.AssignedAt));
+                }
+
+                return Results.Ok(result);
+            });
+
+            // ── Dev Dashboard — Tag submissions in a game ──────────────────────
+
+            devGames.MapGet("/tags", async (
+                Guid gameId,
+                IGameRepository gameRepo,
+                IAssignmentRepository assignmentRepo,
+                ITagSubmissionRepository tagSubmissionRepo,
+                IPlayerRepository playerRepo,
+                CancellationToken ct) =>
+            {
+                var game = await gameRepo.GetByIdAsync(gameId, ct);
+                if (game is null)
+                {
+                    return Results.NotFound(new { error = "Game not found." });
+                }
+
+                var assignments = await assignmentRepo.GetByGameIdAsync(gameId, ct);
+                var result = new List<DevTagSubmissionDto>();
+                foreach (var assignment in assignments)
+                {
+                    var tags = await tagSubmissionRepo.GetByAssignmentIdAsync(assignment.Id, ct);
+                    foreach (var tag in tags)
+                    {
+                        var hunter = await playerRepo.GetByIdAsync(tag.HunterId, ct);
+                        var target = await playerRepo.GetByIdAsync(tag.TargetId, ct);
+                        result.Add(new DevTagSubmissionDto(
+                            tag.Id,
+                            tag.AssignmentId,
+                            tag.HunterId,
+                            hunter?.DisplayName ?? "unknown",
+                            tag.TargetId,
+                            target?.DisplayName ?? "unknown",
+                            tag.Status,
+                            tag.SubmittedAt,
+                            tag.ResolvedAt));
+                    }
+                }
+
+                return Results.Ok(result);
+            });
+
+            // ── Dev Quick-Action — Submit tag on behalf of a player ───────────
+
+            devGames.MapPost("/submit-tag", async (
+                Guid gameId,
+                DevSubmitTagRequest request,
+                IGameRepository gameRepo,
+                IPlayerRepository playerRepo,
+                ITagService tagService,
+                CancellationToken ct) =>
+            {
+                var game = await gameRepo.GetByIdAsync(gameId, ct);
+                if (game is null)
+                {
+                    return Results.NotFound(new { error = "Game not found." });
+                }
+
+                var player = await playerRepo.GetByIdAsync(request.PlayerId, ct);
+                if (player is null)
+                {
+                    return Results.NotFound(new { error = "Player not found." });
+                }
+
+                var result = await tagService.SubmitTagAsync(
+                    request.PlayerId,
+                    new SubmitTagRequest(request.AssignmentId, request.ConditionId),
+                    ct);
+                return Results.Ok(result);
+            });
+
+            // ── Dev Quick-Action — Confirm a tag ──────────────────────────────
+
+            app.MapPost("/api/dev/tags/{tagId:guid}/confirm", async (
+                Guid tagId,
+                ITagSubmissionRepository tagSubmissionRepo,
+                ITagService tagService,
+                CancellationToken ct) =>
+            {
+                var submission = await tagSubmissionRepo.GetByIdAsync(tagId, ct);
+                if (submission is null)
+                {
+                    return Results.NotFound(new { error = "Tag submission not found." });
+                }
+
+                var result = await tagService.ConfirmTagAsync(submission.TargetId, tagId, ct);
+                return Results.Ok(result);
+            });
+
+            // ── Dev Quick-Action — Deny a tag ─────────────────────────────────
+
+            app.MapPost("/api/dev/tags/{tagId:guid}/deny", async (
+                Guid tagId,
+                ITagSubmissionRepository tagSubmissionRepo,
+                ITagService tagService,
+                CancellationToken ct) =>
+            {
+                var submission = await tagSubmissionRepo.GetByIdAsync(tagId, ct);
+                if (submission is null)
+                {
+                    return Results.NotFound(new { error = "Tag submission not found." });
+                }
+
+                var result = await tagService.DenyTagAsync(submission.TargetId, tagId, ct);
+                return Results.Ok(result);
+            });
+
+            // ── Dev Quick-Action — End a game ─────────────────────────────────
+
+            devGames.MapPost("/end", async (
+                Guid gameId,
+                IGameRepository gameRepo,
+                IGamePlayerRepository gamePlayerRepo,
+                IGameService gameService,
+                CancellationToken ct) =>
+            {
+                var game = await gameRepo.GetByIdAsync(gameId, ct);
+                if (game is null)
+                {
+                    return Results.NotFound(new { error = "Game not found." });
+                }
+
+                var memberships = await gamePlayerRepo.GetByGameIdAsync(gameId, ct);
+                var creator = memberships.FirstOrDefault(m => m.Role == GameRole.Creator);
+                if (creator is null)
+                {
+                    return Results.NotFound(new { error = "Game creator not found." });
+                }
+
+                var result = await gameService.EndGameAsync(creator.PlayerId, gameId, ct);
+                return Results.Ok(result);
+            });
+        }
 
         app.MapHub<GameHub>("/hubs/game");
     }

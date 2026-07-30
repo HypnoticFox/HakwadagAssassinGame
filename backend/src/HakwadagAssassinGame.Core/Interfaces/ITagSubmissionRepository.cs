@@ -11,6 +11,9 @@ public interface ITagSubmissionRepository
     /// <summary>Gets pending submissions for a target.</summary>
     Task<IReadOnlyList<TagSubmission>> GetPendingByTargetIdAsync(Guid targetId, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets all submissions for an assignment.</summary>
+    Task<IReadOnlyList<TagSubmission>> GetByAssignmentIdAsync(Guid assignmentId, CancellationToken cancellationToken = default);
+
     /// <summary>Adds a tag submission.</summary>
     Task AddAsync(TagSubmission submission, CancellationToken cancellationToken = default);
 

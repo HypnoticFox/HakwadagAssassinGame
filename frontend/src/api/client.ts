@@ -3,6 +3,10 @@ import type {
   AuthResponse,
   ConditionDto,
   CreateGameRequest,
+  DevAssignment,
+  DevGame,
+  DevPlayer,
+  DevTag,
   GameDto,
   LeaderboardEntryDto,
   PlayerDto,
@@ -108,6 +112,69 @@ class ApiClient {
     return this.request<AuthResponse>('/api/auth/verify-otp', {
       method: 'POST',
       body: JSON.stringify({ email, code }),
+    })
+  }
+
+  async devLogin(email?: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/dev-login', {
+      method: 'POST',
+      body: JSON.stringify(email ? { email } : {}),
+    })
+  }
+
+  async seedGame(playerCount?: number): Promise<{
+    game: GameDto
+    players: Array<{ player: PlayerDto; token: string }>
+  }> {
+    return this.request('/api/dev/seed-game', {
+      method: 'POST',
+      body: JSON.stringify(playerCount ? { playerCount } : {}),
+    })
+  }
+
+  async devGetGames(): Promise<DevGame[]> {
+    return this.request<DevGame[]>('/api/dev/games')
+  }
+
+  async devGetGamePlayers(gameId: string): Promise<DevPlayer[]> {
+    return this.request<DevPlayer[]>(`/api/dev/games/${gameId}/players`)
+  }
+
+  async devGetGameAssignments(gameId: string): Promise<DevAssignment[]> {
+    return this.request<DevAssignment[]>(`/api/dev/games/${gameId}/assignments`)
+  }
+
+  async devGetGameTags(gameId: string): Promise<DevTag[]> {
+    return this.request<DevTag[]>(`/api/dev/games/${gameId}/tags`)
+  }
+
+  async devSubmitTag(
+    gameId: string,
+    playerId: string,
+    assignmentId: string,
+    conditionId: string,
+  ): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/dev/games/${gameId}/submit-tag`, {
+      method: 'POST',
+      body: JSON.stringify({ playerId, assignmentId, conditionId }),
+    })
+  }
+
+  async devConfirmTag(tagId: string): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/dev/tags/${tagId}/confirm`, {
+      method: 'POST',
+    })
+  }
+
+  async devDenyTag(tagId: string): Promise<TagSubmissionDto> {
+    return this.request<TagSubmissionDto>(`/api/dev/tags/${tagId}/deny`, {
+      method: 'POST',
+    })
+  }
+
+  async devEndGame(gameId: string): Promise<GameDto> {
+    return this.request<GameDto>(`/api/dev/games/${gameId}/end`, {
+      method: 'POST',
     })
   }
 
@@ -218,10 +285,7 @@ class ApiClient {
     })
   }
 
-  async addSafeTime(
-    gameId: string,
-    block: Omit<SafeTimeBlockDto, 'id'>,
-  ): Promise<string> {
+  async addSafeTime(gameId: string, block: Omit<SafeTimeBlockDto, 'id'>): Promise<string> {
     const response = await this.request<{ blockId: string }>(`/api/games/${gameId}/safe-times`, {
       method: 'POST',
       body: JSON.stringify(block),

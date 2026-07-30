@@ -2,12 +2,15 @@
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
+import DevPlayerSwitcher from '@/components/DevPlayerSwitcher.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import { useAuthStore } from '@/stores'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const router = useRouter()
+
+const isDev = import.meta.env.DEV
 
 async function logout() {
   authStore.logout()
@@ -18,24 +21,15 @@ async function logout() {
 <template>
   <div class="app-shell">
     <header class="app-header">
-      <RouterLink
-        class="app-title"
-        to="/"
-      >
+      <RouterLink class="app-title" to="/">
         <span class="app-title__icon">⚔</span>
         {{ $t('app.name') }}
       </RouterLink>
       <nav :aria-label="t('app.nav.mainNavigation')">
-        <RouterLink
-          v-if="authStore.isAuthenticated"
-          to="/"
-        >
+        <RouterLink v-if="authStore.isAuthenticated" to="/">
           {{ $t('app.nav.home') }}
         </RouterLink>
-        <RouterLink
-          v-if="!authStore.isAuthenticated"
-          to="/login"
-        >
+        <RouterLink v-if="!authStore.isAuthenticated" to="/login">
           {{ $t('app.nav.login') }}
         </RouterLink>
         <button
@@ -52,14 +46,13 @@ async function logout() {
 
     <main class="app-content">
       <RouterView v-slot="{ Component }">
-        <Transition
-          name="page"
-          mode="out-in"
-        >
+        <Transition name="page" mode="out-in">
           <component :is="Component" />
         </Transition>
       </RouterView>
     </main>
+
+    <DevPlayerSwitcher v-if="isDev" />
   </div>
 </template>
 

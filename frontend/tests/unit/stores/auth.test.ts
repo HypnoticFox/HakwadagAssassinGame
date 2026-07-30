@@ -11,6 +11,7 @@ vi.mock('@/api/client', () => ({
     clearToken: vi.fn(),
     sendOtp: vi.fn(),
     verifyOtp: vi.fn(),
+    devLogin: vi.fn(),
     me: vi.fn(),
   },
 }))
@@ -125,6 +126,48 @@ describe('auth store', () => {
 
       await expect(store.verifyOtp('a@b.c', '000')).rejects.toThrow('Invalid code')
       expect(store.error).toBe('Invalid code')
+      expect(store.isLoading).toBe(false)
+    })
+  })
+
+  describe('devLogin', () => {
+    it('stores token and player on success', async () => {
+      const response: AuthResponse = {
+        token: 'dev-token',
+        player: mockPlayer(),
+      }
+      vi.mocked(api.devLogin).mockResolvedValue(response)
+      const store = useAuthStore()
+
+      await store.devLogin('dev@example.com')
+
+      expect(api.devLogin).toHaveBeenCalledWith('dev@example.com')
+      expect(store.token).toBe('dev-token')
+      expect(store.player).toEqual(mockPlayer())
+      expect(api.setToken).toHaveBeenCalledWith('dev-token')
+      expect(store.isAuthenticated).toBe(true)
+    })
+
+    it('works without an email', async () => {
+      const response: AuthResponse = {
+        token: 'dev-token',
+        player: mockPlayer(),
+      }
+      vi.mocked(api.devLogin).mockResolvedValue(response)
+      const store = useAuthStore()
+
+      await store.devLogin()
+
+      expect(api.devLogin).toHaveBeenCalledWith(undefined)
+      expect(store.token).toBe('dev-token')
+    })
+
+    it('sets error and rethrows on failure', async () => {
+      vi.mocked(api.devLogin).mockRejectedValue(new Error('Dev login failed'))
+      const store = useAuthStore()
+
+      await expect(store.devLogin('dev@example.com')).rejects.toThrow('Dev login failed')
+      expect(store.error).toBe('Dev login failed')
       expect(store.isLoading).toBe(false)
     })
   })
