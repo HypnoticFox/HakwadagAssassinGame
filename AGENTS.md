@@ -53,6 +53,35 @@ Each part has its own directory. Both directories use:
 * Format code with **ESLint + Prettier**
 * Keep linting and formatting rules consistent across the frontend codebase
 
+### Frontend styling and theming
+
+The frontend uses a **CSS custom properties (variables) system** for all colors, spacing, and visual tokens. There is no CSS framework (no Tailwind, Bootstrap, etc.).
+
+**Theme system:**
+- Design tokens are defined in `src/assets/main.css` under `:root` (light theme) and `[data-theme="dark"]` (dark theme)
+- The `useTheme` composable (`src/composables/useTheme.ts`) manages theme state, persists to localStorage, and respects system preference
+- A `ThemeToggle` component in the header allows users to switch themes
+
+**Styling rules:**
+- **Never use hardcoded color values** (hex, rgb, named colors) in component or view styles
+- **Always use CSS variables** from the design token system (e.g., `var(--text)`, `var(--surface)`, `var(--primary)`)
+- Use scoped styles in Vue components (`<style scoped>`)
+- When adding new components or views, reference existing tokens — do not introduce new color values
+- If a new semantic color is needed, add it to the token system in `main.css` for both light and dark themes
+
+**Key tokens:**
+- Surfaces: `--background`, `--surface`, `--surface-muted`
+- Text: `--text`, `--text-secondary`, `--text-muted`, `--text-faint`, `--text-inverse`
+- Borders: `--border`, `--border-input`
+- Primary: `--primary`, `--primary-hover`, `--primary-dark`, `--primary-light`
+- Semantic: `--danger`, `--warning`, `--success` (plus `-bg` and `-text` variants)
+- Focus: `--focus`
+- Shadows: `--shadow-sm`, `--shadow`, `--shadow-lg`
+- Radius: `--radius-sm`, `--radius`, `--radius-lg`, `--radius-xl`, `--radius-full`
+
+**Changing the color scheme:**
+Edit the token values in `src/assets/main.css` under `:root` and `[data-theme="dark"]`. All components will update automatically.
+
 ## Backend
 
 The backend uses **clean architecture** with four layers:
