@@ -74,7 +74,7 @@ const emit = defineEmits<{
 }
 
 .button:focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -84,42 +84,42 @@ const emit = defineEmits<{
 }
 
 .button--primary {
-  background: #1d4ed8;
+  background: var(--primary);
   box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .button--primary:hover:not(:disabled) {
-  background: #1e40af;
+  background: var(--primary-hover);
 }
 
 .button--secondary {
-  background: #e2e8f0;
-  color: #172554;
+  background: var(--surface-muted);
+  color: var(--text);
 }
 
 .button--secondary:hover:not(:disabled) {
-  background: #cbd5e1;
+  background: var(--border-input);
 }
 
 .button--danger {
-  background: #dc2626;
-  color: white;
+  background: var(--danger);
+  color: var(--text-inverse);
 }
 
 .button--danger:hover:not(:disabled) {
-  background: #b91c1c;
+  background: var(--danger-hover);
 }
 
 .button--ghost {
   background: transparent;
-  color: #1d4ed8;
+  color: var(--primary);
   padding-left: 0.75rem;
   padding-right: 0.75rem;
 }
 
 .button--ghost:hover:not(:disabled) {
-  background: #eff6ff;
+  background: var(--primary-light);
 }
 
 .button--large {
@@ -154,8 +154,8 @@ const emit = defineEmits<{
 
 .button--secondary .button__spinner,
 .button--ghost .button__spinner {
-  border-color: rgba(23, 37, 84, 0.2);
-  border-top-color: #172554;
+  border-color: var(--primary-ring);
+  border-top-color: var(--primary);
 }
 
 @keyframes spin {

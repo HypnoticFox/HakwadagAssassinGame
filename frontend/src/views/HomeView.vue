@@ -200,15 +200,15 @@ async function onJoin() {
 }
 
 .home-subtitle {
-  color: #64748b;
+  color: var(--text-muted);
   margin: 0.5rem 0 0;
 }
 
 .player-chip {
   align-items: center;
   align-self: start;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 9999px;
   display: flex;
   gap: 0.625rem;
@@ -218,9 +218,9 @@ async function onJoin() {
 
 .player-chip-avatar {
   align-items: center;
-  background: #1d4ed8;
+  background: var(--primary);
   border-radius: 50%;
-  color: white;
+  color: var(--text-inverse);
   display: flex;
   font-size: 0.75rem;
   font-weight: 700;
@@ -251,10 +251,10 @@ async function onJoin() {
 }
 
 .games-empty {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
-  color: #64748b;
+  color: var(--text-muted);
   padding: 1.5rem;
   text-align: center;
 }
@@ -269,9 +269,9 @@ async function onJoin() {
 }
 
 .form-error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.5rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin: 0;
   padding: 0.75rem;

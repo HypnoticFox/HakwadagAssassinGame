@@ -82,7 +82,7 @@ onMounted(async () => {
 
 .loading,
 .empty {
-  color: #64748b;
+  color: var(--text-muted);
   padding: 2rem 0;
   text-align: center;
 }

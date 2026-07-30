@@ -57,8 +57,8 @@ defineProps<{
 
 .player-item {
   align-items: center;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   display: flex;
   gap: 0.875rem;
@@ -67,9 +67,9 @@ defineProps<{
 
 .player-avatar {
   align-items: center;
-  background: #1d4ed8;
+  background: var(--primary);
   border-radius: 50%;
-  color: white;
+  color: var(--text-inverse);
   display: flex;
   flex-shrink: 0;
   font-size: 0.875rem;
@@ -96,7 +96,7 @@ defineProps<{
 }
 
 .player-email {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.875rem;
   margin: 0;
   overflow: hidden;
@@ -105,7 +105,7 @@ defineProps<{
 }
 
 .player-list-empty {
-  color: #64748b;
+  color: var(--text-muted);
   margin: 0;
 }
 </style>

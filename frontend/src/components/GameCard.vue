@@ -43,8 +43,8 @@ const emit = defineEmits<{
 
 <style scoped>
 .game-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   cursor: pointer;
   display: grid;
@@ -58,12 +58,12 @@ const emit = defineEmits<{
 }
 
 .game-card:hover {
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow);
   transform: translateY(-2px);
 }
 
 .game-card:focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -90,22 +90,22 @@ const emit = defineEmits<{
 }
 
 .status--not-started {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .status--active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status--ended {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--surface-muted);
+  color: var(--text-muted);
 }
 
 .game-card__details {
-  color: #64748b;
+  color: var(--text-muted);
   display: flex;
   font-size: 0.875rem;
   gap: 1rem;

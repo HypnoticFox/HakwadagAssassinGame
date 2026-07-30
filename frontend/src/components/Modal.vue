@@ -87,7 +87,7 @@ function onBackdropClick(event: MouseEvent) {
 <style scoped>
 .modal-backdrop {
   align-items: center;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--backdrop);
   backdrop-filter: blur(2px);
   display: flex;
   inset: 0;
@@ -99,16 +99,16 @@ function onBackdropClick(event: MouseEvent) {
 
 .modal {
   animation: modal-in 0.25s ease-out;
-  background: white;
+  background: var(--surface);
   border-radius: 1rem;
-  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2);
+  box-shadow: var(--shadow-lg);
   max-width: 28rem;
   width: 100%;
 }
 
 .modal-header {
   align-items: center;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   padding: 1rem 1.25rem;
@@ -125,7 +125,7 @@ function onBackdropClick(event: MouseEvent) {
   background: transparent;
   border: 0;
   border-radius: 0.5rem;
-  color: #64748b;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   height: 2.25rem;
@@ -135,12 +135,12 @@ function onBackdropClick(event: MouseEvent) {
 }
 
 .modal-close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--surface-muted);
+  color: var(--text);
 }
 
 .modal-close:focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -149,7 +149,7 @@ function onBackdropClick(event: MouseEvent) {
 }
 
 .modal-footer {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
   display: flex;
   gap: 0.75rem;
   justify-content: flex-end;

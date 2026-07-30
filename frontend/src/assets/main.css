@@ -3,19 +3,63 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=DM+Sans:wght@400;500;700&display=swap');
 
 :root {
+  /* Primary */
   --primary: #1d4ed8;
+  --primary-hover: #1e40af;
   --primary-dark: #172554;
   --primary-light: #eff6ff;
+  --primary-ring: rgba(29, 78, 216, 0.15);
+
+  /* Backgrounds */
   --background: #f8fafc;
   --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+
+  /* Text */
   --text: #0f172a;
+  --text-secondary: #334155;
   --text-muted: #64748b;
+  --text-faint: #94a3b8;
+  --text-inverse: #ffffff;
+
+  /* Borders */
   --border: #e2e8f0;
+  --border-input: #cbd5e1;
+
+  /* Semantic colors */
   --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --danger-bg: #fef2f2;
+  --danger-text: #991b1b;
+  --danger-ring: rgba(220, 38, 38, 0.15);
   --warning: #f59e0b;
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
   --success: #16a34a;
-  --radius: 1rem;
+  --success-bg: #dcfce7;
+  --success-text: #166534;
+
+  /* Focus */
+  --focus: #fbbf24;
+
+  /* Shadows */
+  --shadow-sm: 0 4px 14px rgba(15, 23, 42, 0.08);
   --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 20px 40px rgba(15, 23, 42, 0.2);
+
+  /* Radius */
+  --radius-sm: 0.5rem;
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-full: 9999px;
+
+  /* Toggle */
+  --toggle-bg: #cbd5e1;
+  --toggle-active: #22c55e;
+
+  /* Backdrop */
+  --backdrop: rgba(15, 23, 42, 0.6);
 
   color: var(--text);
   background: var(--background);
@@ -31,6 +75,50 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+[data-theme="dark"] {
+  --primary: #3b82f6;
+  --primary-hover: #60a5fa;
+  --primary-dark: #1e3a5f;
+  --primary-light: #1e293b;
+  --primary-ring: rgba(59, 130, 246, 0.2);
+
+  --background: #0f172a;
+  --surface: #1e293b;
+  --surface-muted: #334155;
+
+  --text: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-faint: #64748b;
+  --text-inverse: #ffffff;
+
+  --border: #334155;
+  --border-input: #475569;
+
+  --danger: #ef4444;
+  --danger-hover: #f87171;
+  --danger-bg: rgba(239, 68, 68, 0.1);
+  --danger-text: #fca5a5;
+  --danger-ring: rgba(239, 68, 68, 0.2);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-text: #fcd34d;
+  --success: #22c55e;
+  --success-bg: rgba(34, 197, 94, 0.1);
+  --success-text: #86efac;
+
+  --focus: #fbbf24;
+
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.2);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.35);
+
+  --toggle-bg: #475569;
+  --toggle-active: #22c55e;
+
+  --backdrop: rgba(0, 0, 0, 0.7);
 }
 
 * {
@@ -85,7 +173,7 @@ a {
 .app-header {
   align-items: center;
   background: var(--primary-dark);
-  color: white;
+  color: var(--text-inverse);
   display: flex;
   justify-content: space-between;
   padding: 1rem 1.25rem;
@@ -119,7 +207,7 @@ nav a {
 }
 
 nav a.router-link-active {
-  color: #fbbf24;
+  color: var(--focus);
 }
 
 .app-content {
@@ -146,9 +234,9 @@ nav a.router-link-active {
   align-items: center;
   background: var(--primary);
   border: 0;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 14px rgba(29, 78, 216, 0.25);
-  color: white;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 25%, transparent);
+  color: var(--text-inverse);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -163,13 +251,13 @@ nav a.router-link-active {
 }
 
 .primary-button:hover {
-  background: #1e40af;
+  background: var(--primary-hover);
 }
 
 .primary-button:focus-visible,
 a:focus-visible,
 button:focus-visible {
-  outline: 3px solid var(--warning);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 

@@ -81,21 +81,21 @@ const model = computed({
 }
 
 .input-label {
-  color: #334155;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
 }
 
 .input-required {
-  color: #dc2626;
+  color: var(--danger);
 }
 
 .input {
   appearance: none;
-  background: white;
-  border: 1px solid #cbd5e1;
+  background: var(--surface);
+  border: 1px solid var(--border-input);
   border-radius: 0.75rem;
-  color: #0f172a;
+  color: var(--text);
   font-family: inherit;
   font-size: 1rem;
   min-height: 2.875rem;
@@ -107,26 +107,26 @@ const model = computed({
 }
 
 .input:focus {
-  border-color: #1d4ed8;
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
   outline: none;
 }
 
 .input--error {
-  border-color: #dc2626;
+  border-color: var(--danger);
 }
 
 .input--error:focus {
-  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+  box-shadow: 0 0 0 3px var(--danger-ring);
 }
 
 .input-error {
-  color: #dc2626;
+  color: var(--danger);
   font-size: 0.875rem;
   margin: 0;
 }
 
 .input::placeholder {
-  color: #94a3b8;
+  color: var(--text-faint);
 }
 </style>

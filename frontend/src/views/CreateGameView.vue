@@ -113,9 +113,9 @@ async function onSubmit() {
 }
 
 .form-error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.5rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin: 0;
   padding: 0.75rem;

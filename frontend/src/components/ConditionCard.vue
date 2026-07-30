@@ -54,8 +54,8 @@ const displayText = computed(() => {
 
 <style scoped>
 .condition-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.875rem;
   display: grid;
   gap: 0.375rem;
@@ -72,23 +72,23 @@ const displayText = computed(() => {
 }
 
 .condition-card--selectable:hover {
-  border-color: #1d4ed8;
+  border-color: var(--primary);
 }
 
 .condition-card--selected {
-  border-color: #1d4ed8;
-  box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
 }
 
 .condition-card__type {
-  color: #1d4ed8;
+  color: var(--primary);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .condition-card__description {
-  color: #0f172a;
+  color: var(--text);
   font-size: 0.9375rem;
   margin: 0;
 }

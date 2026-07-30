@@ -157,10 +157,10 @@ async function onSubmitTag() {
 <style scoped>
 .target-card {
   align-items: center;
-  background: linear-gradient(135deg, #1d4ed8 0%, #172554 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   border-radius: 1.25rem;
   box-shadow: 0 12px 32px rgba(23, 37, 84, 0.25);
-  color: white;
+  color: var(--text-inverse);
   display: flex;
   gap: 1rem;
   margin-bottom: 1.5rem;
@@ -169,9 +169,9 @@ async function onSubmitTag() {
 
 .target-avatar {
   align-items: center;
-  background: white;
+  background: var(--text-inverse);
   border-radius: 50%;
-  color: #172554;
+  color: var(--primary-dark);
   display: flex;
   flex-shrink: 0;
   font-size: 1.5rem;
@@ -213,14 +213,14 @@ async function onSubmitTag() {
 }
 
 .submit-modal p {
-  color: #475569;
+  color: var(--text-muted);
   margin: 0 0 1rem;
 }
 
 .form-error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.5rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin: 0 0 1rem;
   padding: 0.75rem;
@@ -228,7 +228,7 @@ async function onSubmitTag() {
 
 .loading,
 .empty {
-  color: #64748b;
+  color: var(--text-muted);
   padding: 2rem 0;
   text-align: center;
 }
@@ -238,7 +238,7 @@ async function onSubmitTag() {
 }
 
 .empty-hint {
-  color: #94a3b8;
+  color: var(--text-faint);
   font-size: 0.875rem;
 }
 </style>

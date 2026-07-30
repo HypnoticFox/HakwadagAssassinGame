@@ -416,15 +416,15 @@ const formattedCreatedAt = computed(() => {
 }
 
 .game-meta {
-  color: #64748b;
+  color: var(--text-muted);
   margin: 0.5rem 0 0;
 }
 
 .left-banner {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
   border-radius: 0.75rem;
-  color: #92400e;
+  color: var(--warning-text);
   padding: 0.75rem 1rem;
   margin-bottom: 1.5rem;
   text-align: center;
@@ -442,8 +442,8 @@ const formattedCreatedAt = computed(() => {
 
 .invite-card {
   align-items: center;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   display: flex;
   justify-content: space-between;
@@ -453,7 +453,7 @@ const formattedCreatedAt = computed(() => {
 }
 
 .invite-label {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.875rem;
   margin: 0;
 }
@@ -473,14 +473,14 @@ const formattedCreatedAt = computed(() => {
 }
 
 .detail-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1rem;
 }
 
 .detail-label {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 700;
   margin: 0;
@@ -512,8 +512,8 @@ const formattedCreatedAt = computed(() => {
 
 .safe-time-item {
   align-items: center;
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   display: flex;
   gap: 0.75rem;
@@ -542,15 +542,15 @@ const formattedCreatedAt = computed(() => {
 }
 
 .participation-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   padding: 1rem 1.25rem;
   margin-bottom: 1.5rem;
 }
 
 .participation-label {
-  color: #64748b;
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 700;
   margin: 0 0 0.5rem;
@@ -566,7 +566,7 @@ const formattedCreatedAt = computed(() => {
 }
 
 .toggle-text {
-  color: #1e293b;
+  color: var(--text-secondary);
   font-size: 0.9375rem;
   font-weight: 500;
 }
@@ -587,7 +587,7 @@ const formattedCreatedAt = computed(() => {
 }
 
 .toggle-slider {
-  background: #cbd5e1;
+  background: var(--toggle-bg);
   border-radius: 1.5rem;
   bottom: 0;
   cursor: pointer;
@@ -599,7 +599,7 @@ const formattedCreatedAt = computed(() => {
 }
 
 .toggle-slider::before {
-  background: white;
+  background: var(--text-inverse);
   border-radius: 50%;
   content: '';
   height: 1.125rem;
@@ -611,7 +611,7 @@ const formattedCreatedAt = computed(() => {
 }
 
 .toggle-input:checked + .toggle-slider {
-  background: #22c55e;
+  background: var(--toggle-active);
 }
 
 .toggle-input:checked + .toggle-slider::before {
@@ -619,20 +619,20 @@ const formattedCreatedAt = computed(() => {
 }
 
 .toggle-input:focus-visible + .toggle-slider {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
 .min-participants-note {
-  color: #94a3b8;
+  color: var(--text-faint);
   font-size: 0.8125rem;
   margin: 0.5rem 0 0;
 }
 
 .form-error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.5rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin: 0;
   padding: 0.75rem;
@@ -640,7 +640,7 @@ const formattedCreatedAt = computed(() => {
 
 .loading,
 .empty {
-  color: #64748b;
+  color: var(--text-muted);
   padding: 2rem 0;
   text-align: center;
 }

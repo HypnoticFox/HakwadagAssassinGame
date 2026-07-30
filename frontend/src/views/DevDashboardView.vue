@@ -378,7 +378,7 @@ onUnmounted(() => {
 }
 
 .dev-dashboard__refresh {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   color: var(--text);
@@ -403,13 +403,13 @@ onUnmounted(() => {
 .dev-dashboard__refresh--active {
   background: var(--primary);
   border-color: var(--primary);
-  color: white;
+  color: var(--text-inverse);
 }
 
 .dev-dashboard__error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.75rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin: 0;
   padding: 0.75rem 1rem;
@@ -427,7 +427,7 @@ onUnmounted(() => {
 }
 
 .dev-dashboard__empty {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
   color: var(--text-muted);
@@ -436,7 +436,7 @@ onUnmounted(() => {
 }
 
 .dev-dashboard__game {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
   overflow: hidden;
@@ -487,18 +487,18 @@ onUnmounted(() => {
 }
 
 .status--not-started {
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--border);
+  color: var(--text-muted);
 }
 
 .status--active {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status--ended {
   background: #fee2e2;
-  color: #991b1b;
+  color: var(--danger-text);
 }
 
 .dev-dashboard__game-meta {
@@ -583,23 +583,23 @@ onUnmounted(() => {
 }
 
 .tag-status--pending {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .tag-status--confirmed {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .tag-status--denied {
   background: #fee2e2;
-  color: #991b1b;
+  color: var(--danger-text);
 }
 
 .tag-status--voided {
-  background: #e2e8f0;
-  color: #475569;
+  background: var(--border);
+  color: var(--text-muted);
 }
 
 @media (min-width: 640px) {

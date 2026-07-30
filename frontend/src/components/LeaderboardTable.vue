@@ -65,8 +65,8 @@ defineProps<{
 
 <style scoped>
 .leaderboard-table-wrapper {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   overflow: hidden;
 }
@@ -83,19 +83,19 @@ defineProps<{
 }
 
 .leaderboard-table th {
-  background: #f8fafc;
-  color: #475569;
+  background: var(--background);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .leaderboard-table td {
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border);
 }
 
 .leader-row {
-  background: #eff6ff;
+  background: var(--primary-light);
 }
 
 .numeric {
@@ -108,9 +108,9 @@ defineProps<{
 
 .rank-badge {
   align-items: center;
-  background: #e2e8f0;
+  background: var(--border);
   border-radius: 50%;
-  color: #475569;
+  color: var(--text-muted);
   display: inline-flex;
   font-size: 0.75rem;
   font-weight: 700;
@@ -120,8 +120,8 @@ defineProps<{
 }
 
 .leader-row .rank-badge {
-  background: #1d4ed8;
-  color: white;
+  background: var(--primary);
+  color: var(--text-inverse);
 }
 
 .player-cell {
@@ -132,9 +132,9 @@ defineProps<{
 
 .player-avatar {
   align-items: center;
-  background: #1d4ed8;
+  background: var(--primary);
   border-radius: 50%;
-  color: white;
+  color: var(--text-inverse);
   display: flex;
   flex-shrink: 0;
   font-size: 0.75rem;
@@ -156,7 +156,7 @@ defineProps<{
 }
 
 .score {
-  color: #1d4ed8;
+  color: var(--primary);
   font-weight: 700;
 }
 </style>

@@ -172,7 +172,7 @@ const isResolved = computed(() => {
 
 <style scoped>
 .tag-status {
-  color: #64748b;
+  color: var(--text-muted);
   margin-bottom: 1.5rem;
 }
 
@@ -185,28 +185,28 @@ const isResolved = computed(() => {
 }
 
 .status--0 {
-  background: #fef3c7;
-  color: #92400e;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .status--1 {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status--2 {
   background: #fee2e2;
-  color: #991b1b;
+  color: var(--danger-text);
 }
 
 .status--3 {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--surface-muted);
+  color: var(--text-muted);
 }
 
 .tag-card {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 1rem;
   display: grid;
   gap: 0.75rem;
@@ -215,7 +215,7 @@ const isResolved = computed(() => {
 }
 
 .tag-card p {
-  color: #334155;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -226,9 +226,9 @@ const isResolved = computed(() => {
 }
 
 .form-error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.5rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin-top: 1rem;
   padding: 0.75rem;
@@ -236,7 +236,7 @@ const isResolved = computed(() => {
 
 .loading,
 .empty {
-  color: #64748b;
+  color: var(--text-muted);
   padding: 2rem 0;
   text-align: center;
 }

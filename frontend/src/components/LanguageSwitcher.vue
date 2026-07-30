@@ -60,7 +60,7 @@ function onLocaleChange(event: Event) {
 }
 
 .language-switcher__select:focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 </style>

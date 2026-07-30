@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import DevPlayerSwitcher from '@/components/DevPlayerSwitcher.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import { useAuthStore } from '@/stores'
 
 const { t } = useI18n()
@@ -40,6 +41,7 @@ async function logout() {
         >
           {{ $t('app.nav.logout') }}
         </button>
+        <ThemeToggle />
         <LanguageSwitcher />
       </nav>
     </header>
@@ -75,7 +77,7 @@ async function logout() {
 }
 
 .logout-button:focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 

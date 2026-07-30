@@ -175,9 +175,9 @@ function onBack() {
 }
 
 .login-card {
-  background: white;
+  background: var(--surface);
   border-radius: 1.25rem;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--shadow);
   max-width: 24rem;
   padding: 2rem 1.5rem;
   width: 100%;
@@ -190,7 +190,7 @@ function onBack() {
 }
 
 .login-subtitle {
-  color: #64748b;
+  color: var(--text-muted);
   margin: 0.5rem 0 1.5rem;
 }
 
@@ -200,16 +200,16 @@ function onBack() {
 }
 
 .form-error {
-  background: #fef2f2;
+  background: var(--danger-bg);
   border-radius: 0.5rem;
-  color: #991b1b;
+  color: var(--danger-text);
   font-size: 0.875rem;
   margin: 0;
   padding: 0.75rem;
 }
 
 .eyebrow {
-  color: #1d4ed8;
+  color: var(--primary);
   font-size: 0.875rem;
   font-weight: 700;
   margin: 0;
