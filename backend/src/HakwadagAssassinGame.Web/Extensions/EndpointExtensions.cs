@@ -67,6 +67,16 @@ public static class EndpointExtensions
             await service.LeaveGameAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
             return Results.Ok();
         });
+        games.MapPost("/{gameId:guid}/rejoin", async (HttpContext context, Guid gameId, IGameService service, CancellationToken cancellationToken) =>
+        {
+            var game = await service.RejoinGameAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
+            return Results.Ok(game);
+        });
+        games.MapPut("/{gameId:guid}/participation", async (HttpContext context, Guid gameId, SetParticipationRequest request, IAdminService service, CancellationToken cancellationToken) =>
+        {
+            await service.SetParticipationAsync(context.GetRequiredPlayerId(), gameId, request.IsParticipating, cancellationToken);
+            return Results.Ok();
+        });
 
         var assignments = games.MapGroup("/{gameId:guid}/assignments");
         assignments.MapGet("/me", async (HttpContext context, Guid gameId, IAssignmentService service, CancellationToken cancellationToken) =>

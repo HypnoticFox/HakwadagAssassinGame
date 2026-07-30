@@ -55,7 +55,7 @@ async function onSubmitTag() {
   <section class="page-section">
     <div v-if="assignmentStore.currentAssignment">
       <p class="eyebrow">
-        Your target
+        {{ $t('assignment.eyebrow') }}
       </p>
       <div class="target-card">
         <div class="target-avatar">
@@ -73,13 +73,13 @@ async function onSubmitTag() {
             {{ assignmentStore.currentAssignment.target.displayName }}
           </h1>
           <p class="target-hint">
-            Tag them under one of the conditions below.
+            {{ $t('assignment.hint') }}
           </p>
         </div>
       </div>
 
       <div class="conditions-section">
-        <h2>Conditions</h2>
+        <h2>{{ $t('assignment.conditions') }}</h2>
         <div class="conditions-list">
           <ConditionCard
             v-for="condition in assignmentStore.currentAssignment.conditions"
@@ -97,7 +97,7 @@ async function onSubmitTag() {
         full-width
         @click="router.push(`/games/${gameId}/leaderboard`)"
       >
-        View leaderboard
+        {{ $t('assignment.viewLeaderboard') }}
       </Button>
     </div>
 
@@ -105,30 +105,30 @@ async function onSubmitTag() {
       v-else-if="assignmentStore.isLoading"
       class="loading"
     >
-      Loading assignment...
+      {{ $t('assignment.loading') }}
     </div>
     <div
       v-else
       class="empty"
     >
-      <p>No active assignment.</p>
+      <p>{{ $t('assignment.noAssignment') }}</p>
       <p
         v-if="gameStore.currentGame?.status !== GameStatus.Active"
         class="empty-hint"
       >
-        The game hasn't started yet.
+        {{ $t('assignment.gameNotStarted') }}
       </p>
       <Button @click="router.push(`/games/${gameId}`)">
-        Back to game
+        {{ $t('common.backToGame') }}
       </Button>
     </div>
 
     <Modal
       :open="submitModalOpen"
-      title="Confirm tag"
+      :title="$t('assignment.confirmTag.title')"
       @close="submitModalOpen = false"
     >
-      <p>You're about to submit a tag. Make sure the condition was met before confirming.</p>
+      <p>{{ $t('assignment.confirmTag.message') }}</p>
       <p
         v-if="localError"
         class="form-error"
@@ -141,13 +141,13 @@ async function onSubmitTag() {
           variant="secondary"
           @click="submitModalOpen = false"
         >
-          Cancel
+          {{ $t('common.cancel') }}
         </Button>
         <Button
           :loading="tagStore.isLoading"
           @click="onSubmitTag"
         >
-          Submit tag
+          {{ $t('assignment.confirmTag.submit') }}
         </Button>
       </template>
     </Modal>

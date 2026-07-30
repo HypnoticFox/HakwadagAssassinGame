@@ -182,14 +182,56 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  async function setParticipation(gameId: string, isParticipating: boolean) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.setParticipation(gameId, isParticipating)
+      if (currentGame.value) {
+        await loadGame(gameId)
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function leaveGame(gameId: string) {
     isLoading.value = true
     error.value = null
     try {
+      const wasActive = currentGame.value?.status === GameStatus.Active
       await api.leaveGame(gameId)
-      currentGame.value = null
-      recentGames.value = recentGames.value.filter((g) => g.id !== gameId)
-      writeRecentGames(recentGames.value)
+      if (wasActive) {
+        // Reload game to get updated participation status
+        // Player remains a member, just not participating
+        await loadGame(gameId)
+      } else {
+        currentGame.value = null
+        recentGames.value = recentGames.value.filter((g) => g.id !== gameId)
+        writeRecentGames(recentGames.value)
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function rejoinGame(gameId: string) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const game = await api.rejoinGame(gameId)
+      updateCurrentGame(game)
+      return game
     } catch (err) {
       if (err instanceof Error) {
         error.value = err.message
@@ -243,6 +285,8 @@ export const useGameStore = defineStore('game', () => {
     startGame,
     endGame,
     leaveGame,
+    rejoinGame,
+    setParticipation,
     addAdmin,
     removeAdmin,
     addSafeTime,

@@ -4,7 +4,6 @@ import { GameStatus, gameStatusLabel, type GameDto } from '@/types'
 defineProps<{
   game: GameDto
 }>()
-
 const emit = defineEmits<{
   click: [gameId: string]
 }>()
@@ -33,10 +32,10 @@ const emit = defineEmits<{
     </span>
     <span class="game-card__details">
       <span class="game-card__players">
-        {{ game.playerCount }} / {{ game.maxPlayers }} players
+        {{ game.playerCount }} / {{ game.maxPlayers }} {{ $t('common.players') }}
       </span>
       <span class="game-card__points">
-        {{ game.basePointsPerTag }} pts per tag
+        {{ game.basePointsPerTag }} {{ $t('common.ptsPerTag') }}
       </span>
     </span>
   </button>

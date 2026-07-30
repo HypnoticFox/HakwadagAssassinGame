@@ -4,6 +4,7 @@ import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { StaleWhileRevalidate } from 'workbox-strategies'
+import nlMessages from './i18n/nl.json'
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -19,8 +20,8 @@ self.addEventListener('push', (event) => {
   const data = event.data?.json() as { title?: string; body?: string; url?: string } | undefined
 
   event.waitUntil(
-    self.registration.showNotification(data?.title ?? 'Hakwadag update', {
-      body: data?.body ?? 'You have a new game notification.',
+    self.registration.showNotification(data?.title ?? nlMessages.serviceWorker.notificationTitle, {
+      body: data?.body ?? nlMessages.serviceWorker.notificationBody,
       icon: '/icons/icon.svg',
       badge: '/icons/icon.svg',
       data: { url: data?.url ?? '/' },

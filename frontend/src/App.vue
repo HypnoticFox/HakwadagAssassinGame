@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { RouterLink, RouterView, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
+import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import { useAuthStore } from '@/stores'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const router = useRouter()
 
@@ -20,20 +23,20 @@ async function logout() {
         to="/"
       >
         <span class="app-title__icon">⚔</span>
-        Hakwadag
+        {{ $t('app.name') }}
       </RouterLink>
-      <nav aria-label="Main navigation">
+      <nav :aria-label="t('app.nav.mainNavigation')">
         <RouterLink
           v-if="authStore.isAuthenticated"
           to="/"
         >
-          Home
+          {{ $t('app.nav.home') }}
         </RouterLink>
         <RouterLink
           v-if="!authStore.isAuthenticated"
           to="/login"
         >
-          Login
+          {{ $t('app.nav.login') }}
         </RouterLink>
         <button
           v-if="authStore.isAuthenticated"
@@ -41,8 +44,9 @@ async function logout() {
           class="logout-button"
           @click="logout"
         >
-          Log out
+          {{ $t('app.nav.logout') }}
         </button>
+        <LanguageSwitcher />
       </nav>
     </header>
 

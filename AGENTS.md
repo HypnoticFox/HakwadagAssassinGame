@@ -112,25 +112,40 @@ The game is temporary by design.
 
 ## Testing
 
-The **Tests** project uses **xUnit v3**.
+The backend uses **xUnit v3** for unit and integration tests. The frontend uses **Vitest** for unit tests and **Playwright with TypeScript** for end-to-end tests.
+
+### Testing requirements
+
+* **New features require new tests.** Do not merge feature code without corresponding test coverage.
+* **Bug fixes require a regression test.** Before fixing a bug, write a test that reproduces the bug (and fails). Then fix the bug so the test passes. This ensures the bug doesn't regress.
+* **Changes to existing behavior require updating the corresponding tests.** If a test fails because behavior changed intentionally, update the test to reflect the new expected behavior. Do not leave failing tests or delete them to make the build pass.
+
+### Test levels
+
+Write tests at three levels:
+
+* **Unit tests** — Test individual classes, methods, and business rules in isolation. Fast, focused, and numerous. Cover domain logic, value objects, and application use cases.
+* **Integration tests** — Test how components work together. Cover infrastructure concerns (Redis, Postgres), API endpoints, and external integrations. Use real dependencies where practical, test containers or mocks where not.
+* **End-to-end (E2E) tests** — Test complete user flows from frontend to backend using **Playwright with TypeScript**. Cover critical paths like game creation, joining, tagging, and notifications. Run against a real or realistic environment.
 
 ### Testing expectations
 
-* Add tests for new behavior
-* Update tests when behavior changes
 * Prefer tests at the appropriate layer:
-
-  * domain tests for business rules
-  * application tests for use cases
-  * integration tests for infrastructure and API behavior where useful
+  * Unit tests for business rules and domain logic
+  * Integration tests for use cases, infrastructure, and API behavior
+  * E2E tests for critical user journeys
 * Keep tests readable and focused on behavior
+* Name tests clearly: what is being tested and what the expected outcome is
+* One assertion per test when practical; multiple assertions only when they test the same logical behavior
 
 ## Local Development
 
 The backend should include:
 
-* a **Dockerfile**
-* a **docker compose** file for local development
+* a **Dockerfile** for building a production container image (the backend runs as a container in production)
+* a **docker compose** file for starting backend dependencies (e.g. Redis, Postgres)
+
+The docker compose file only manages dependencies — the backend itself is run directly (e.g. via `dotnet run` or `dotnet watch`), not containerized through compose.
 
 Local setup should support:
 
@@ -172,6 +187,17 @@ Examples:
 - Stop without stopping Redis: `.\stop-remote-services.ps1 -ExcludeDependencies`
 - Restart only backend: `.\restart-remote-services.ps1 -BackendOnly`
 - Restart only frontend: `.\restart-remote-services.ps1 -FrontendOnly`
+
+### Debugging with Log Files
+
+When services are started with `-Detach`, output is redirected to log files in the `.logs/` directory:
+
+- `backend-stdout.log` / `backend-stderr.log` - Backend build output, runtime logs, and dotnet watch messages
+- `frontend-stdout.log` / `frontend-stderr.log` - Vite dev server output and npm messages
+- `zrok-api-stdout.log` / `zrok-api-stderr.log` - API tunnel status
+- `zrok-app-stdout.log` / `zrok-app-stderr.log` - Frontend tunnel status
+
+Use these logs to debug issues when services aren't responding or behaving unexpectedly. The `.logs/` directory is gitignored.
 
 ## API and Implementation Guidance
 

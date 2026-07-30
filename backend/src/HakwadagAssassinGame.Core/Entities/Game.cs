@@ -15,13 +15,13 @@ public sealed class Game
         DateTimeOffset scheduledEndAt,
         int maxPlayers,
         int basePointsPerTag,
-        Dictionary<ConditionType, int>? conditionBonuses,
+        Dictionary<ConditionType, int> conditionBonuses,
         TimeSpan confirmationTimeout,
-        List<SafeTimeBlock>? safeTimeBlocks)
+        List<SafeTimeBlock> safeTimeBlocks)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(inviteCode);
-        ArgumentOutOfRangeException.ThrowIfLessThan(maxPlayers, 2);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxPlayers, 3);
         ArgumentOutOfRangeException.ThrowIfNegative(basePointsPerTag);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(confirmationTimeout, TimeSpan.Zero);
 
@@ -64,9 +64,9 @@ public sealed class Game
             scheduledEndAt,
             maxPlayers,
             basePointsPerTag,
-            conditionBonuses is null ? null : new Dictionary<ConditionType, int>(conditionBonuses),
+            conditionBonuses is null ? new Dictionary<ConditionType, int>() : new Dictionary<ConditionType, int>(conditionBonuses),
             confirmationTimeout ?? TimeSpan.FromMinutes(5),
-            safeTimeBlocks?.ToList());
+            safeTimeBlocks?.ToList() ?? []);
 
     /// <summary>Gets the game identifier.</summary>
     public Guid Id { get; private set; }

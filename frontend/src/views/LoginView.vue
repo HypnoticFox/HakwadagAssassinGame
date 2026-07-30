@@ -1,24 +1,50 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
 import { useAuthStore } from '@/stores'
 
 const router = useRouter()
+const { t } = useI18n()
 const authStore = useAuthStore()
 
-const email = ref('')
+const email = ref(sessionStorage.getItem('login_email') ?? '')
 const code = ref('')
-const step = ref<'email' | 'code'>('email')
+const step = ref<'email' | 'code'>(
+  (sessionStorage.getItem('login_step') as 'email' | 'code') ?? 'email',
+)
 const localError = ref<string | null>(null)
+
+watch(step, (v) => sessionStorage.setItem('login_step', v))
+watch(email, (v) => sessionStorage.setItem('login_email', v))
+
+onMounted(() => {
+  if (step.value === 'code') {
+    const sentAt = sessionStorage.getItem('login_otp_sent_at')
+    if (!sentAt || !email.value) {
+      step.value = 'email'
+    } else {
+      const elapsed = Date.now() - parseInt(sentAt, 10)
+      if (elapsed > 5 * 60 * 1000) {
+        step.value = 'email'
+        sessionStorage.removeItem('login_step')
+        sessionStorage.removeItem('login_email')
+        sessionStorage.removeItem('login_otp_sent_at')
+        localError.value = t('login.codeExpired')
+      }
+    }
+  }
+})
 
 async function onSendOtp() {
   if (!email.value) return
   localError.value = null
   try {
     await authStore.sendOtp(email.value)
+    sessionStorage.setItem('login_otp_sent_at', Date.now().toString())
     step.value = 'code'
   } catch (err) {
     if (err instanceof Error) {
@@ -32,6 +58,9 @@ async function onVerifyOtp() {
   localError.value = null
   try {
     await authStore.verifyOtp(email.value, code.value)
+    sessionStorage.removeItem('login_step')
+    sessionStorage.removeItem('login_email')
+    sessionStorage.removeItem('login_otp_sent_at')
     await router.push('/')
   } catch (err) {
     if (err instanceof Error) {
@@ -44,6 +73,9 @@ function onBack() {
   step.value = 'email'
   code.value = ''
   localError.value = null
+  sessionStorage.removeItem('login_step')
+  sessionStorage.removeItem('login_email')
+  sessionStorage.removeItem('login_otp_sent_at')
 }
 </script>
 
@@ -51,13 +83,13 @@ function onBack() {
   <section class="login-page">
     <div class="login-card">
       <p class="eyebrow">
-        Welcome back
+        {{ $t('login.eyebrow') }}
       </p>
       <h1 class="login-title">
-        Sign in to Hakwadag
+        {{ $t('login.title') }}
       </h1>
       <p class="login-subtitle">
-        We'll send a one-time code to your email.
+        {{ $t('login.subtitle') }}
       </p>
 
       <form
@@ -67,9 +99,9 @@ function onBack() {
       >
         <Input
           v-model="email"
-          label="Email"
+          :label="$t('login.email')"
           type="email"
-          placeholder="you@example.com"
+          :placeholder="$t('login.emailPlaceholder')"
           autocomplete="email"
           required
         />
@@ -86,7 +118,7 @@ function onBack() {
           full-width
           :loading="authStore.isLoading"
         >
-          Send code
+          {{ $t('login.sendCode') }}
         </Button>
       </form>
 
@@ -97,10 +129,10 @@ function onBack() {
       >
         <Input
           v-model="code"
-          label="Verification code"
+          :label="$t('login.verificationCode')"
           type="text"
           inputmode="numeric"
-          placeholder="123456"
+          :placeholder="$t('login.verificationCodePlaceholder')"
           autocomplete="one-time-code"
           required
           :error="null"
@@ -118,7 +150,7 @@ function onBack() {
           full-width
           :loading="authStore.isLoading"
         >
-          Verify
+          {{ $t('login.verify') }}
         </Button>
         <Button
           type="button"
@@ -126,7 +158,7 @@ function onBack() {
           full-width
           @click="onBack"
         >
-          Use a different email
+          {{ $t('login.useDifferentEmail') }}
         </Button>
       </form>
     </div>

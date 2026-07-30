@@ -1,9 +1,12 @@
+using System.Runtime.CompilerServices;
 using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Exceptions;
 using HakwadagAssassinGame.Core.Entities;
 using HakwadagAssassinGame.Core.Entities.Conditions;
 using HakwadagAssassinGame.Core.Enums;
 using HakwadagAssassinGame.Core.Interfaces;
+
+[assembly: InternalsVisibleTo("HakwadagAssassinGame.Tests")]
 
 namespace HakwadagAssassinGame.Application.Services;
 
@@ -90,10 +93,10 @@ internal static class ServiceHelpers
 
     public static List<Guid> CreateDerangement(IReadOnlyList<GamePlayer> memberships)
     {
-        var players = memberships.Where(membership => membership.IsActive).Select(membership => membership.PlayerId).ToList();
-        if (players.Count < 2)
+        var players = memberships.Where(membership => membership.IsActive && membership.IsParticipating).Select(membership => membership.PlayerId).ToList();
+        if (players.Count < 3)
         {
-            throw new InvalidGameStateException("At least two active players are required.");
+            throw new InvalidGameStateException("At least three participating players are required.");
         }
 
         var targets = players.ToList();

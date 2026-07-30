@@ -17,9 +17,9 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
       },
       manifest: {
-        name: 'Hakwadag Assassin Game',
+        name: 'Hakwadag Tagspel',
         short_name: 'Hakwadag',
-        description: 'A real-world tagging game for your group.',
+        description: 'Een tagspel in het echt voor je groep.',
         theme_color: '#172554',
         background_color: '#f8fafc',
         display: 'standalone',

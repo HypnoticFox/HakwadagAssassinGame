@@ -2,6 +2,7 @@ using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Exceptions;
 using HakwadagAssassinGame.Core.Entities;
 using HakwadagAssassinGame.Core.Entities.Conditions;
+using HakwadagAssassinGame.Core.Enums;
 using HakwadagAssassinGame.Core.Interfaces;
 
 namespace HakwadagAssassinGame.Application.Services;
@@ -23,6 +24,9 @@ public interface IAdminService
 
     /// <summary>Adds a custom condition to a game's condition library.</summary>
     Task AddCustomConditionAsync(Guid playerId, Guid gameId, AddCustomConditionRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Sets whether an admin participates in the game.</summary>
+    Task SetParticipationAsync(Guid playerId, Guid gameId, bool isParticipating, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Default game administration service.</summary>
@@ -101,6 +105,21 @@ public sealed class AdminService : IAdminService
         await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
         ArgumentException.ThrowIfNullOrWhiteSpace(request.Description);
         await conditionLibrary.AddAsync(gameId, CustomCondition.Create(request.Description), cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task SetParticipationAsync(Guid playerId, Guid gameId, bool isParticipating, CancellationToken cancellationToken = default)
+    {
+        await RequireAdminAsync(playerId, gameId, cancellationToken);
+        var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        var membership = await ServiceHelpers.RequireMembershipAsync(gamePlayerRepository, gameId, playerId, cancellationToken);
+        if (game.Status != GameStatus.NotStarted)
+        {
+            throw new InvalidGameStateException("Participation can only be changed before the game starts.");
+        }
+
+        membership.SetParticipating(isParticipating);
+        await gamePlayerRepository.UpdateAsync(membership, cancellationToken);
     }
 
     private async Task<GamePlayer> RequireAdminAsync(Guid playerId, Guid gameId, CancellationToken cancellationToken)

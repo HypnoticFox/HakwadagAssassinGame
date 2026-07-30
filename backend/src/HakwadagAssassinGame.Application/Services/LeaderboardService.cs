@@ -37,9 +37,10 @@ public sealed class LeaderboardService : ILeaderboardService
     {
         await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
         var memberships = await gamePlayerRepository.GetByGameIdAsync(gameId, cancellationToken);
+        var participatingMemberships = memberships.Where(m => m.IsActive && m.IsParticipating).ToList();
         var assignments = await assignmentRepository.GetByGameIdAsync(gameId, cancellationToken);
-        var entries = new List<LeaderboardEntryDto>(memberships.Count);
-        foreach (var membership in memberships)
+        var entries = new List<LeaderboardEntryDto>(participatingMemberships.Count);
+        foreach (var membership in participatingMemberships)
         {
             var player = await ServiceHelpers.RequirePlayerAsync(playerRepository, membership.PlayerId, cancellationToken);
             var tags = assignments.Count(assignment => assignment.HunterId == player.Id && assignment.Status == AssignmentStatus.Completed);

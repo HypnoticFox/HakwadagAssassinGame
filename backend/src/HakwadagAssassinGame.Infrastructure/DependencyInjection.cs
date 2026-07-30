@@ -6,6 +6,7 @@ using HakwadagAssassinGame.Infrastructure.Realtime;
 using HakwadagAssassinGame.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
 namespace HakwadagAssassinGame.Infrastructure;
@@ -32,6 +33,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<ITagSubmissionRepository, RedisTagSubmissionRepository>();
         services.AddScoped<IConditionLibrary, RedisConditionLibrary>();
 
+        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IOtpService, RedisOtpService>();
         services.AddScoped<ITokenStore, RedisTokenStore>();
         services.AddScoped<IInviteCodeGenerator, RandomInviteCodeGenerator>();

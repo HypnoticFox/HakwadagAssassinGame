@@ -12,22 +12,22 @@ defineProps<{
       <thead>
         <tr>
           <th scope="col">
-            Rank
+            {{ $t('leaderboard.table.rank') }}
           </th>
           <th scope="col">
-            Player
+            {{ $t('leaderboard.table.player') }}
           </th>
           <th
             scope="col"
             class="numeric"
           >
-            Tags
+            {{ $t('leaderboard.table.tags') }}
           </th>
           <th
             scope="col"
             class="numeric"
           >
-            Score
+            {{ $t('leaderboard.table.score') }}
           </th>
         </tr>
       </thead>

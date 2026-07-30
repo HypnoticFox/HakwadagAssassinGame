@@ -1,6 +1,12 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+useI18n()
+</script>
+
 <template>
   <section class="page-section">
-    <h1>About the game</h1>
-    <p>Hakwadag is designed for temporary, in-person games with your group.</p>
+    <h1>{{ $t('about.title') }}</h1>
+    <p>{{ $t('about.description') }}</p>
   </section>
 </template>

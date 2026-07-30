@@ -34,6 +34,7 @@ $RepoRoot = $PSScriptRoot
 $BackendDir = Join-Path $RepoRoot "backend"
 $FrontendDir = Join-Path $RepoRoot "frontend"
 $BackendProject = Join-Path $BackendDir "src\HakwadagAssassinGame.Web\HakwadagAssassinGame.Web.csproj"
+$LogDir = Join-Path $RepoRoot ".logs"
 
 function Write-Status($msg) { Write-Host "[restart] $msg" -ForegroundColor Cyan }
 function Write-Ok($msg) { Write-Host "[restart] $msg" -ForegroundColor Green }
@@ -75,9 +76,14 @@ if (-not $FrontendOnly) {
     Write-Status "Starting backend..."
     $env:ZROK_FRONTEND_URL = $ZrokAppUrl
     $env:ASPNETCORE_HTTP_PORTS = $BackendPort
+    $env:ASPNETCORE_ENVIRONMENT = "Development"
 
-    Start-Process -FilePath "dotnet" -ArgumentList "watch", "run", "--project", $BackendProject, "--no-launch-profile" -WindowStyle Hidden
-    Write-Ok "Backend started on port $BackendPort"
+    $backendStdout = Join-Path $LogDir "backend-stdout.log"
+    $backendStderr = Join-Path $LogDir "backend-stderr.log"
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "dotnet watch run --project `"$BackendProject`" --no-launch-profile > `"$backendStdout`" 2> `"$backendStderr`"" `
+        -WindowStyle Hidden
+    Write-Ok "Backend started on port $BackendPort (logs: .logs/backend-*.log)"
 }
 
 # --- Restart frontend ---
@@ -86,8 +92,12 @@ if (-not $BackendOnly) {
     $env:VITE_API_URL = $ZrokApiUrl
     $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
 
-    Start-Process -FilePath "npm.cmd" -ArgumentList "run", "dev", "--", "--port", $FrontendPort, "--host" -WorkingDirectory $FrontendDir -WindowStyle Hidden
-    Write-Ok "Frontend started on port $FrontendPort"
+    $frontendStdout = Join-Path $LogDir "frontend-stdout.log"
+    $frontendStderr = Join-Path $LogDir "frontend-stderr.log"
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "cd /d `"$FrontendDir`" && npm run dev -- --port $FrontendPort --host > `"$frontendStdout`" 2> `"$frontendStderr`"" `
+        -WindowStyle Hidden
+    Write-Ok "Frontend started on port $FrontendPort (logs: .logs/frontend-*.log)"
 }
 
 Write-Host ""

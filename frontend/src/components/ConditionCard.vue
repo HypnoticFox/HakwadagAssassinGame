@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { ConditionType, conditionTypeLabel, type ConditionDto } from '@/types'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   condition: ConditionDto
@@ -19,15 +22,15 @@ const displayText = computed(() => {
   }
   switch (props.condition.type) {
     case ConditionType.WithSpecificPerson:
-      return `With ${props.condition.targetPersonName || 'a specific person'}`
+      return t('condition.withSpecificPerson', { name: props.condition.targetPersonName || t('condition.withSpecificPersonDefault') })
     case ConditionType.Alone:
-      return 'Target is alone'
+      return t('condition.alone')
     case ConditionType.WithXPeople:
-      return `With at least ${props.condition.minPeople ?? 2} other people`
+      return t('condition.withXPeople', { count: props.condition.minPeople ?? 2 })
     case ConditionType.MundaneAction:
-      return `While target is ${props.condition.action || 'doing something'}`
+      return t('condition.duringAction', { action: props.condition.action || t('condition.duringActionDefault') })
     default:
-      return 'Custom condition'
+      return t('condition.custom')
   }
 })
 </script>

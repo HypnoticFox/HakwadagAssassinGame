@@ -6,11 +6,11 @@ namespace HakwadagAssassinGame.Core.Entities;
 public sealed class SafeTimeBlock
 {
     [JsonConstructor]
-    public SafeTimeBlock(TimeSpan startTime, TimeSpan endTime, DayOfWeek? day, Guid? id = null)
+    public SafeTimeBlock(TimeSpan startTime, TimeSpan endTime, DayOfWeek? day, Guid id)
     {
         ValidateTime(startTime, nameof(startTime));
         ValidateTime(endTime, nameof(endTime));
-        Id = id ?? Guid.NewGuid();
+        Id = id;
         StartTime = startTime;
         EndTime = endTime;
         Day = day;
@@ -18,7 +18,7 @@ public sealed class SafeTimeBlock
 
     /// <summary>Creates a safe-time block. End times earlier than start times cross midnight.</summary>
     public static SafeTimeBlock Create(TimeSpan startTime, TimeSpan endTime, DayOfWeek? day = null, Guid? id = null) =>
-        new(startTime, endTime, day, id);
+        new(startTime, endTime, day, id ?? Guid.NewGuid());
 
     /// <summary>Gets the identifier of the block.</summary>
     public Guid Id { get; private set; }

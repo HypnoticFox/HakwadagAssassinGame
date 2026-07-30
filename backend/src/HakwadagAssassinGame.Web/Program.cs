@@ -40,3 +40,8 @@ app.UseMiddleware<AuthenticationMiddleware>();
 app.MapEndpoints();
 
 app.Run();
+
+// Make the auto-generated Program class visible for test projects using WebApplicationFactory.
+public partial class Program
+{
+}

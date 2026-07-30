@@ -1,0 +1,201 @@
+{
+  "app": {
+    "name": "Hakwadag",
+    "nav": {
+      "home": "Home",
+      "login": "Inloggen",
+      "logout": "Uitloggen",
+      "mainNavigation": "Hoofdnavigatie"
+    }
+  },
+  "common": {
+    "loading": "Laden...",
+    "backHome": "Terug naar home",
+    "backToGame": "Terug naar spel",
+    "cancel": "Annuleren",
+    "close": "Sluiten",
+    "confirm": "Bevestigen",
+    "copy": "Kopiëren",
+    "copied": "Gekopieerd!",
+    "remove": "Verwijderen",
+    "players": "spelers",
+    "ptsPerTag": "ptn per tag"
+  },
+  "home": {
+    "eyebrow": "Tagspel in het echt",
+    "title": "Welkom bij Hakwadag",
+    "subtitle": "Doe mee aan een spel, ontdek je opdracht en tag je doelwit onder de juiste voorwaarden.",
+    "createGame": "Spel aanmaken",
+    "joinGame": "Deelnemen aan spel",
+    "enableNotifications": "Meldingen inschakelen",
+    "yourGames": "Jouw spellen",
+    "noGames": "Nog geen spellen. Maak er een aan of doe mee met een spel van een vriend.",
+    "joinModal": {
+      "title": "Deelnemen aan spel",
+      "inviteCode": "Uitnodigingscode",
+      "inviteCodePlaceholder": "Voer uitnodigingscode in",
+      "displayName": "Weergavenaam",
+      "displayNamePlaceholder": "Jouw naam",
+      "join": "Deelnemen",
+      "defaultPlayerName": "Speler"
+    }
+  },
+  "login": {
+    "eyebrow": "Welkom terug",
+    "title": "Inloggen bij Hakwadag",
+    "subtitle": "We sturen een eenmalige code naar je e-mail.",
+    "email": "E-mail",
+    "emailPlaceholder": "jij@voorbeeld.nl",
+    "sendCode": "Code versturen",
+    "verificationCode": "Verificatiecode",
+    "verificationCodePlaceholder": "123456",
+    "verify": "Verifiëren",
+    "useDifferentEmail": "Ander e-mailadres gebruiken",
+    "codeExpired": "De verificatiecode is verlopen. Vraag een nieuwe aan."
+  },
+  "createGame": {
+    "eyebrow": "Nieuw spel",
+    "title": "Spel aanmaken",
+    "subtitle": "Stel de regels in voor het tagspel van je groep.",
+    "gameName": "Spelnaam",
+    "gameNamePlaceholder": "Vrijdagavond Assassin",
+    "duration": "Duur (uren)",
+    "maxPlayers": "Max. spelers",
+    "basePointsPerTag": "Basispunten per tag",
+    "confirmationTimeout": "Bevestigingstime-out (minuten)",
+    "create": "Spel aanmaken"
+  },
+  "gameDetail": {
+    "startGame": "Spel starten",
+    "endGame": "Spel beëindigen",
+    "inviteCode": "Uitnodigingscode",
+    "maxPlayers": "Max. spelers",
+    "pointsPerTag": "Punten per tag",
+    "timeout": "Time-out",
+    "created": "Aangemaakt",
+    "safeTimes": "Veilige tijden",
+    "myAssignment": "Mijn opdracht",
+    "leaderboard": "Scorebord",
+    "adminPanel": "Beheerpaneel",
+    "leaveGame": "Spel verlaten",
+    "rejoinGame": "Opnieuw deelnemen",
+    "leaveConfirm": "Weet je zeker dat je dit spel wilt verlaten?",
+    "leaveConfirmActive": "Weet je zeker dat je wilt stoppen met deelnemen? Je kunt later opnieuw deelnemen, maar je score wordt gereset.",
+    "youLeftGame": "Je doet niet meer mee aan dit spel. Je score is gereset. Klik hieronder om opnieuw deel te nemen.",
+    "loading": "Spel laden...",
+    "notFound": "Spel niet gevonden.",
+    "participating": "Ik doe mee aan het spel",
+    "notParticipating": "Ik doe niet mee (alleen beheerder)",
+    "minParticipants": "Minimaal 3 deelnemers vereist om te starten",
+    "participationLabel": "Jouw deelname",
+    "admin": {
+      "title": "Beheerpaneel",
+      "conditions": "Voorwaarden",
+      "newCondition": "Nieuwe voorwaarde",
+      "newConditionPlaceholder": "Beschrijf de voorwaarde",
+      "addCondition": "Voorwaarde toevoegen",
+      "safeTimeBlock": "Veilig tijdvak",
+      "startTime": "Starttijd",
+      "endTime": "Eindtijd",
+      "addSafeTime": "Veilige tijd toevoegen"
+    }
+  },
+  "assignment": {
+    "eyebrow": "Jouw doelwit",
+    "hint": "Tag ze onder een van de onderstaande voorwaarden.",
+    "conditions": "Voorwaarden",
+    "viewLeaderboard": "Scorebord bekijken",
+    "loading": "Opdracht laden...",
+    "noAssignment": "Geen actieve opdracht.",
+    "gameNotStarted": "Het spel is nog niet gestart.",
+    "confirmTag": {
+      "title": "Tag bevestigen",
+      "message": "Je staat op het punt een tag in te dienen. Zorg dat aan de voorwaarde is voldaan voordat je bevestigt.",
+      "submit": "Tag indienen"
+    }
+  },
+  "leaderboard": {
+    "eyebrow": "Live stand",
+    "title": "Scorebord",
+    "subtitle": "Scores worden in realtime bijgewerkt wanneer tags worden bevestigd.",
+    "loading": "Scorebord laden...",
+    "noScores": "Nog geen scores.",
+    "myAssignment": "Mijn opdracht",
+    "backToGame": "Terug naar spel",
+    "table": {
+      "rank": "Rang",
+      "player": "Speler",
+      "tags": "Tags",
+      "score": "Score"
+    }
+  },
+  "tagConfirm": {
+    "eyebrow": "Tagbeoordeling",
+    "title": "Tag in behandeling",
+    "status": "Status:",
+    "hunter": "Jager:",
+    "target": "Doelwit:",
+    "submitted": "Ingediend:",
+    "resolved": "Opgelost:",
+    "deny": "Afwijzen",
+    "confirm": "Bevestigen",
+    "voidTag": "Tag ongeldig maken",
+    "backToLeaderboard": "Terug naar scorebord",
+    "loading": "Tag laden...",
+    "notFound": "Tag niet gevonden of al opgelost."
+  },
+  "about": {
+    "title": "Over het spel",
+    "description": "Hakwadag is ontworpen voor tijdelijke spellen in het echt met je groep."
+  },
+  "status": {
+    "game": {
+      "notStarted": "Niet gestart",
+      "active": "Actief",
+      "ended": "Beëindigd"
+    },
+    "role": {
+      "player": "Speler",
+      "creator": "Maker",
+      "coAdmin": "Medebeheerder"
+    },
+    "tag": {
+      "pending": "In behandeling",
+      "confirmed": "Bevestigd",
+      "denied": "Afgewezen",
+      "voided": "Ongeldig"
+    },
+    "conditionType": {
+      "withSpecificPerson": "Met specifiek persoon",
+      "alone": "Alleen",
+      "withGroup": "Met groep",
+      "duringAction": "Tijdens actie",
+      "custom": "Aangepast"
+    }
+  },
+  "condition": {
+    "withSpecificPerson": "Met {name}",
+    "withSpecificPersonDefault": "Met een specifiek persoon",
+    "alone": "Doelwit is alleen",
+    "withXPeople": "Met minstens {count} andere mensen",
+    "duringAction": "Terwijl doelwit {action} aan het doen is",
+    "duringActionDefault": "Terwijl doelwit iets aan het doen is",
+    "custom": "Aangepaste voorwaarde"
+  },
+  "playerList": {
+    "empty": "Nog geen spelers."
+  },
+  "language": {
+    "label": "Taal",
+    "dutch": "Nederlands",
+    "english": "Engels"
+  },
+  "serviceWorker": {
+    "notificationTitle": "Hakwadag update",
+    "notificationBody": "Je hebt een nieuwe spelmelding."
+  },
+  "meta": {
+    "description": "Een tagspel in het echt voor je groep.",
+    "appName": "Hakwadag Tagspel"
+  }
+}

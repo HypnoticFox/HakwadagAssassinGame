@@ -24,6 +24,7 @@ public sealed class GamePlayer
         Role = role;
         Score = 0;
         IsActive = true;
+        IsParticipating = true;
     }
 
     /// <summary>Creates a game membership.</summary>
@@ -44,6 +45,15 @@ public sealed class GamePlayer
 
     /// <summary>Gets a value indicating whether the player is still active in the game.</summary>
     public bool IsActive { get; private set; }
+
+    /// <summary>Gets a value indicating whether the player is participating in the game.</summary>
+    public bool IsParticipating { get; private set; }
+
+    /// <summary>Sets whether the player is participating in the game.</summary>
+    public void SetParticipating(bool isParticipating) => IsParticipating = isParticipating;
+
+    /// <summary>Resets the player's score to zero.</summary>
+    public void ResetScore() => Score = 0;
 
     /// <summary>Adds points to the player's score.</summary>
     public void AddScore(int points)

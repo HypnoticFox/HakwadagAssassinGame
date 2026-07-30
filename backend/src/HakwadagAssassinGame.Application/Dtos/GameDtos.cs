@@ -28,8 +28,13 @@ public record GameDto(
     int BasePointsPerTag,
     TimeSpan ConfirmationTimeout,
     int PlayerCount,
+    int ParticipantCount,
+    bool IsParticipating,
     GameRole MyRole,
     List<SafeTimeBlockDto> SafeTimeBlocks);
 
 /// <summary>Supplies the display name used when joining a game.</summary>
 public record JoinGameRequest(string DisplayName);
+
+/// <summary>Sets whether an admin participates in the game.</summary>
+public record SetParticipationRequest(bool IsParticipating);

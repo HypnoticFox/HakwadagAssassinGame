@@ -32,6 +32,9 @@ public interface IGameService
 
     /// <summary>Leaves a game and repairs affected assignments.</summary>
     Task LeaveGameAsync(Guid playerId, Guid gameId, CancellationToken cancellationToken = default);
+
+    /// <summary>Rejoins a game the player previously left during active play.</summary>
+    Task<GameDto> RejoinGameAsync(Guid playerId, Guid gameId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Default game orchestration service.</summary>
@@ -105,26 +108,93 @@ public sealed class GameService : IGameService
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
         var game = await gameRepository.GetByInviteCodeAsync(inviteCode.Trim(), cancellationToken)
             ?? throw new GameNotFoundException(Guid.Empty);
-        if (game.Status != GameStatus.NotStarted)
+        if (game.Status != GameStatus.NotStarted && game.Status != GameStatus.Active)
         {
-            throw new InvalidGameStateException("Players can only join a game before it starts.");
+            throw new InvalidGameStateException("Players can only join a game before it starts or while it is active.");
         }
 
         var membership = await gamePlayerRepository.GetAsync(game.Id, playerId, cancellationToken);
-        if (membership is { IsActive: true })
+        if (membership is { IsActive: true, IsParticipating: true })
         {
             throw new InvalidGameStateException("The player is already in this game.");
         }
 
-        var memberships = await gamePlayerRepository.GetByGameIdAsync(game.Id, cancellationToken);
-        if (memberships.Count(m => m.IsActive) >= game.MaxPlayers)
+        if (membership is { IsActive: false })
         {
-            throw new InvalidGameStateException("The game is full.");
+            throw new InvalidGameStateException("The player has permanently left this game and cannot rejoin.");
+        }
+
+        var memberships = await gamePlayerRepository.GetByGameIdAsync(game.Id, cancellationToken);
+
+        if (membership is null)
+        {
+            // New player — check capacity
+            if (memberships.Count(m => m.IsActive) >= game.MaxPlayers)
+            {
+                throw new InvalidGameStateException("The game is full.");
+            }
         }
 
         player.ChangeDisplayName(displayName.Trim());
         await playerRepository.UpdateAsync(player, cancellationToken);
-        await gamePlayerRepository.AddAsync(GamePlayer.Create(game.Id, playerId), cancellationToken);
+
+        if (membership is { IsActive: true, IsParticipating: false })
+        {
+            // Rejoining — reset score and re-enable participation
+            membership.SetParticipating(true);
+            membership.ResetScore();
+            await gamePlayerRepository.UpdateAsync(membership, cancellationToken);
+
+            if (game.Status == GameStatus.Active)
+            {
+                // Gather all participating players (including the rejoining player)
+                var allParticipating = memberships
+                    .Where(m => m.IsActive && m.IsParticipating && m.PlayerId != playerId)
+                    .Concat([membership])
+                    .ToList();
+
+                if (allParticipating.Count >= 3)
+                {
+                    var players = await LoadPlayersAsync(allParticipating, cancellationToken);
+                    var targets = ServiceHelpers.CreateDerangement(allParticipating);
+
+                    // Create assignment for the rejoining player
+                    var rejoinIndex = allParticipating.FindIndex(m => m.PlayerId == playerId);
+                    if (rejoinIndex >= 0)
+                    {
+                        var conditions = await ServiceHelpers.CreateConditions(
+                            game.Id, playerId, players, conditionLibrary, cancellationToken);
+                        var assignment = Assignment.Create(
+                            game.Id, playerId, targets[rejoinIndex], conditions);
+                        await assignmentRepository.AddAsync(assignment, cancellationToken);
+                    }
+
+                    // Repair assignments for players whose target was the rejoining player
+                    var activeAssignments = await assignmentRepository.GetByGameIdAsync(game.Id, cancellationToken);
+                    foreach (var affected in activeAssignments.Where(a =>
+                        a.Status == AssignmentStatus.TargetLeft && a.TargetId == playerId))
+                    {
+                        var hunterIndex = allParticipating.FindIndex(m => m.PlayerId == affected.HunterId);
+                        if (hunterIndex < 0)
+                        {
+                            continue;
+                        }
+
+                        var replacementConditions = await ServiceHelpers.CreateConditions(
+                            game.Id, affected.HunterId, players, conditionLibrary, cancellationToken);
+                        var replacement = Assignment.Create(
+                            game.Id, affected.HunterId, targets[hunterIndex], replacementConditions);
+                        await assignmentRepository.AddAsync(replacement, cancellationToken);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // New player
+            await gamePlayerRepository.AddAsync(GamePlayer.Create(game.Id, playerId), cancellationToken);
+        }
+
         return await ToDtoAsync(game, playerId, cancellationToken);
     }
 
@@ -133,16 +203,17 @@ public sealed class GameService : IGameService
     {
         var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
         var creator = await ServiceHelpers.RequireMembershipAsync(gamePlayerRepository, gameId, playerId, cancellationToken);
-        if (creator.Role != GameRole.Creator)
+        if (!ServiceHelpers.IsAdmin(creator))
         {
-            throw new UnauthorizedException("Only the creator can start a game.");
+            throw new UnauthorizedException("Only a game administrator can start the game.");
         }
 
         var memberships = (await gamePlayerRepository.GetByGameIdAsync(gameId, cancellationToken))
             .Where(membership => membership.IsActive).ToList();
-        if (memberships.Count < 2)
+        var participants = memberships.Where(m => m.IsParticipating).ToList();
+        if (participants.Count < 3)
         {
-            throw new InvalidGameStateException("At least two active players are required to start a game.");
+            throw new InvalidGameStateException("At least three participating players are required to start a game.");
         }
 
         try
@@ -154,19 +225,19 @@ public sealed class GameService : IGameService
             throw new InvalidGameStateException(exception.Message);
         }
 
-        var players = await LoadPlayersAsync(memberships, cancellationToken);
-        var targets = ServiceHelpers.CreateDerangement(memberships);
-        for (var index = 0; index < memberships.Count; index++)
+        var players = await LoadPlayersAsync(participants, cancellationToken);
+        var targets = ServiceHelpers.CreateDerangement(participants);
+        for (var index = 0; index < participants.Count; index++)
         {
             var conditions = await ServiceHelpers.CreateConditions(
                 gameId,
-                memberships[index].PlayerId,
+                participants[index].PlayerId,
                 players,
                 conditionLibrary,
                 cancellationToken);
             var assignment = Assignment.Create(
                 gameId,
-                memberships[index].PlayerId,
+                participants[index].PlayerId,
                 targets[index],
                 conditions);
             await assignmentRepository.AddAsync(assignment, cancellationToken);
@@ -231,7 +302,15 @@ public sealed class GameService : IGameService
         var memberships = (await gamePlayerRepository.GetByGameIdAsync(gameId, cancellationToken))
             .Where(item => item.IsActive).ToList();
         var assignments = await assignmentRepository.GetByGameIdAsync(gameId, cancellationToken);
-        membership.Deactivate();
+        if (game.Status == GameStatus.Active)
+        {
+            membership.SetParticipating(false);
+        }
+        else
+        {
+            membership.Deactivate();
+        }
+
         await gamePlayerRepository.UpdateAsync(membership, cancellationToken);
 
         foreach (var assignment in assignments.Where(item => item.Status == AssignmentStatus.Active &&
@@ -258,8 +337,8 @@ public sealed class GameService : IGameService
             }
         }
 
-        var remaining = memberships.Where(item => item.PlayerId != playerId).ToList();
-        if (game.Status == GameStatus.Active && remaining.Count >= 2)
+        var remaining = memberships.Where(item => item.PlayerId != playerId && item.IsParticipating).ToList();
+        if (game.Status == GameStatus.Active && remaining.Count >= 3)
         {
             var players = await LoadPlayersAsync(remaining, cancellationToken);
             var targets = ServiceHelpers.CreateDerangement(remaining);
@@ -287,6 +366,76 @@ public sealed class GameService : IGameService
         }
     }
 
+    /// <inheritdoc />
+    public async Task<GameDto> RejoinGameAsync(Guid playerId, Guid gameId, CancellationToken cancellationToken = default)
+    {
+        var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        var membership = await ServiceHelpers.RequireMembershipAsync(gamePlayerRepository, gameId, playerId, cancellationToken);
+
+        if (!membership.IsActive)
+        {
+            throw new InvalidGameStateException("The player has permanently left this game and cannot rejoin.");
+        }
+
+        if (membership.IsParticipating)
+        {
+            throw new InvalidGameStateException("The player is already participating in this game.");
+        }
+
+        if (game.Status != GameStatus.Active)
+        {
+            throw new InvalidGameStateException("Players can only rejoin during an active game.");
+        }
+
+        // Re-enable participation and reset score
+        membership.SetParticipating(true);
+        membership.ResetScore();
+        await gamePlayerRepository.UpdateAsync(membership, cancellationToken);
+
+        // Gather all participating players (including the rejoining player)
+        var memberships = await gamePlayerRepository.GetByGameIdAsync(gameId, cancellationToken);
+        var allParticipating = memberships
+            .Where(m => m.IsActive && m.IsParticipating)
+            .ToList();
+
+        if (allParticipating.Count >= 3)
+        {
+            var players = await LoadPlayersAsync(allParticipating, cancellationToken);
+            var targets = ServiceHelpers.CreateDerangement(allParticipating);
+
+            // Create assignment for the rejoining player
+            var rejoinIndex = allParticipating.FindIndex(m => m.PlayerId == playerId);
+            if (rejoinIndex >= 0)
+            {
+                var conditions = await ServiceHelpers.CreateConditions(
+                    game.Id, playerId, players, conditionLibrary, cancellationToken);
+                var assignment = Assignment.Create(
+                    game.Id, playerId, targets[rejoinIndex], conditions);
+                await assignmentRepository.AddAsync(assignment, cancellationToken);
+            }
+
+            // Repair assignments for players whose target was the rejoining player
+            var activeAssignments = await assignmentRepository.GetByGameIdAsync(gameId, cancellationToken);
+            foreach (var affected in activeAssignments.Where(a =>
+                a.Status == AssignmentStatus.TargetLeft && a.TargetId == playerId))
+            {
+                var hunterIndex = allParticipating.FindIndex(m => m.PlayerId == affected.HunterId);
+                if (hunterIndex < 0)
+                {
+                    continue;
+                }
+
+                var replacementConditions = await ServiceHelpers.CreateConditions(
+                    game.Id, affected.HunterId, players, conditionLibrary, cancellationToken);
+                var replacement = Assignment.Create(
+                    game.Id, affected.HunterId, targets[hunterIndex], replacementConditions);
+                await assignmentRepository.AddAsync(replacement, cancellationToken);
+            }
+        }
+
+        return await ToDtoAsync(game, playerId, cancellationToken);
+    }
+
     private async Task<GameDto> ToDtoAsync(Game game, Guid playerId, CancellationToken cancellationToken)
     {
         var memberships = await gamePlayerRepository.GetByGameIdAsync(game.Id, cancellationToken);
@@ -304,6 +453,8 @@ public sealed class GameService : IGameService
             game.BasePointsPerTag,
             game.ConfirmationTimeout,
             memberships.Count(item => item.IsActive),
+            memberships.Count(m => m.IsActive && m.IsParticipating),
+            membership.IsParticipating,
             membership.Role,
             game.SafeTimeBlocks.Select(block => new SafeTimeBlockDto(block.Id, block.StartTime, block.EndTime, block.Day)).ToList());
     }

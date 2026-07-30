@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { PlayerDto } from '@/types'
+
+const { t } = useI18n()
 
 defineProps<{
   players: PlayerDto[]
@@ -39,7 +42,7 @@ defineProps<{
     v-else
     class="player-list-empty"
   >
-    {{ emptyText || 'No players yet.' }}
+    {{ emptyText || t('playerList.empty') }}
   </p>
 </template>
 

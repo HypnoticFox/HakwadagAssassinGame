@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 defineProps<{
   open: boolean
   title: string
@@ -35,7 +39,7 @@ function onBackdropClick(event: MouseEvent) {
             <button
               type="button"
               class="modal-close"
-              aria-label="Close"
+              :aria-label="t('common.close')"
               @click="emit('close')"
             >
               <svg

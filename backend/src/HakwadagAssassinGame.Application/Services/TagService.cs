@@ -233,7 +233,7 @@ public sealed class TagService : ITagService
 
         var memberships = (await gamePlayerRepository.GetByGameIdAsync(game.Id, cancellationToken))
             .Where(item => item.IsActive).ToList();
-        if (memberships.Count < 2)
+        if (memberships.Count < 3)
         {
             return;
         }

@@ -51,6 +51,7 @@ class ApiClient {
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers)
     headers.set('Accept', 'application/json')
+    headers.set('skip_zrok_interstitial', '1')
 
     if (options.body && typeof options.body === 'string') {
       headers.set('Content-Type', 'application/json')
@@ -148,8 +149,21 @@ class ApiClient {
     })
   }
 
+  async setParticipation(gameId: string, isParticipating: boolean): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/participation`, {
+      method: 'PUT',
+      body: JSON.stringify({ isParticipating }),
+    })
+  }
+
   async leaveGame(gameId: string): Promise<void> {
     await this.request<void>(`/api/games/${gameId}/leave`, {
+      method: 'POST',
+    })
+  }
+
+  async rejoinGame(gameId: string): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/${gameId}/rejoin`, {
       method: 'POST',
     })
   }

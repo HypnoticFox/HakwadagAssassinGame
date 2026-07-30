@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 export enum GameStatus {
   NotStarted = 0,
   Active = 1,
@@ -56,6 +58,8 @@ export interface GameDto {
   basePointsPerTag: number
   confirmationTimeout: string
   playerCount: number
+  participantCount: number
+  isParticipating: boolean
   myRole: GameRole
   safeTimeBlocks: SafeTimeBlockDto[]
 }
@@ -142,50 +146,50 @@ export interface GameEvent {
 export function gameStatusLabel(status: GameStatus): string {
   switch (status) {
     case GameStatus.NotStarted:
-      return 'Not started'
+      return i18n.global.t('status.game.notStarted')
     case GameStatus.Active:
-      return 'Active'
+      return i18n.global.t('status.game.active')
     case GameStatus.Ended:
-      return 'Ended'
+      return i18n.global.t('status.game.ended')
   }
 }
 
 export function gameRoleLabel(role: GameRole): string {
   switch (role) {
     case GameRole.Player:
-      return 'Player'
+      return i18n.global.t('status.role.player')
     case GameRole.Creator:
-      return 'Creator'
+      return i18n.global.t('status.role.creator')
     case GameRole.CoAdmin:
-      return 'Co-admin'
+      return i18n.global.t('status.role.coAdmin')
   }
 }
 
 export function tagStatusLabel(status: TagStatus): string {
   switch (status) {
     case TagStatus.Pending:
-      return 'Pending'
+      return i18n.global.t('status.tag.pending')
     case TagStatus.Confirmed:
-      return 'Confirmed'
+      return i18n.global.t('status.tag.confirmed')
     case TagStatus.Denied:
-      return 'Denied'
+      return i18n.global.t('status.tag.denied')
     case TagStatus.Voided:
-      return 'Voided'
+      return i18n.global.t('status.tag.voided')
   }
 }
 
 export function conditionTypeLabel(type: ConditionType): string {
   switch (type) {
     case ConditionType.WithSpecificPerson:
-      return 'With specific person'
+      return i18n.global.t('status.conditionType.withSpecificPerson')
     case ConditionType.Alone:
-      return 'Alone'
+      return i18n.global.t('status.conditionType.alone')
     case ConditionType.WithXPeople:
-      return 'With group'
+      return i18n.global.t('status.conditionType.withGroup')
     case ConditionType.MundaneAction:
-      return 'During action'
+      return i18n.global.t('status.conditionType.duringAction')
     case ConditionType.Custom:
-      return 'Custom'
+      return i18n.global.t('status.conditionType.custom')
   }
 }
 

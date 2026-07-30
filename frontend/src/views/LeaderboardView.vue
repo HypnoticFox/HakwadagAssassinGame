@@ -25,10 +25,10 @@ onMounted(async () => {
 <template>
   <section class="page-section">
     <p class="eyebrow">
-      Live standings
+      {{ $t('leaderboard.eyebrow') }}
     </p>
-    <h1>Leaderboard</h1>
-    <p>Scores update in real time as tags are confirmed.</p>
+    <h1>{{ $t('leaderboard.title') }}</h1>
+    <p>{{ $t('leaderboard.subtitle') }}</p>
 
     <div class="leaderboard-wrapper">
       <LeaderboardTable
@@ -39,13 +39,13 @@ onMounted(async () => {
         v-else-if="leaderboardStore.isLoading"
         class="loading"
       >
-        Loading leaderboard...
+        {{ $t('leaderboard.loading') }}
       </div>
       <div
         v-else
         class="empty"
       >
-        <p>No scores yet.</p>
+        <p>{{ $t('leaderboard.noScores') }}</p>
       </div>
     </div>
 
@@ -56,14 +56,14 @@ onMounted(async () => {
         full-width
         @click="router.push(`/games/${gameId}/assignment`)"
       >
-        My assignment
+        {{ $t('leaderboard.myAssignment') }}
       </Button>
       <Button
         variant="secondary"
         full-width
         @click="router.push(`/games/${gameId}`)"
       >
-        Back to game
+        {{ $t('leaderboard.backToGame') }}
       </Button>
     </div>
   </section>

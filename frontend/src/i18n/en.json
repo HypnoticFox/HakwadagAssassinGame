@@ -1,0 +1,201 @@
+{
+  "app": {
+    "name": "Hakwadag",
+    "nav": {
+      "home": "Home",
+      "login": "Login",
+      "logout": "Log out",
+      "mainNavigation": "Main navigation"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "backHome": "Back home",
+    "backToGame": "Back to game",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "remove": "Remove",
+    "players": "players",
+    "ptsPerTag": "pts per tag"
+  },
+  "home": {
+    "eyebrow": "Real-world tagging game",
+    "title": "Welcome to Hakwadag",
+    "subtitle": "Join a game, discover your assignment, and tag your target under the right conditions.",
+    "createGame": "Create a game",
+    "joinGame": "Join a game",
+    "enableNotifications": "Enable notifications",
+    "yourGames": "Your games",
+    "noGames": "No games yet. Create one or join a friend's game.",
+    "joinModal": {
+      "title": "Join a game",
+      "inviteCode": "Invite code",
+      "inviteCodePlaceholder": "Enter invite code",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Your name",
+      "join": "Join",
+      "defaultPlayerName": "Player"
+    }
+  },
+  "login": {
+    "eyebrow": "Welcome back",
+    "title": "Sign in to Hakwadag",
+    "subtitle": "We'll send a one-time code to your email.",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "sendCode": "Send code",
+    "verificationCode": "Verification code",
+    "verificationCodePlaceholder": "123456",
+    "verify": "Verify",
+    "useDifferentEmail": "Use a different email",
+    "codeExpired": "The verification code has expired. Please request a new one."
+  },
+  "createGame": {
+    "eyebrow": "New game",
+    "title": "Create a game",
+    "subtitle": "Set the rules for your group's tagging game.",
+    "gameName": "Game name",
+    "gameNamePlaceholder": "Friday Night Assassin",
+    "duration": "Duration (hours)",
+    "maxPlayers": "Max players",
+    "basePointsPerTag": "Base points per tag",
+    "confirmationTimeout": "Confirmation timeout (minutes)",
+    "create": "Create game"
+  },
+  "gameDetail": {
+    "startGame": "Start game",
+    "endGame": "End game",
+    "inviteCode": "Invite code",
+    "maxPlayers": "Max players",
+    "pointsPerTag": "Points per tag",
+    "timeout": "Timeout",
+    "created": "Created",
+    "safeTimes": "Safe times",
+    "myAssignment": "My assignment",
+    "leaderboard": "Leaderboard",
+    "adminPanel": "Admin panel",
+    "leaveGame": "Leave game",
+    "rejoinGame": "Rejoin Game",
+    "leaveConfirm": "Are you sure you want to leave this game?",
+    "leaveConfirmActive": "Are you sure you want to leave? You can rejoin later, but your score will be reset.",
+    "youLeftGame": "You have left this game. Your score was reset. Click below to rejoin.",
+    "loading": "Loading game...",
+    "notFound": "Game not found.",
+    "participating": "Participating in game",
+    "notParticipating": "Not participating (moderator only)",
+    "minParticipants": "At least 3 participants required to start",
+    "participationLabel": "Your participation",
+    "admin": {
+      "title": "Admin panel",
+      "conditions": "Conditions",
+      "newCondition": "New condition",
+      "newConditionPlaceholder": "Describe the condition",
+      "addCondition": "Add condition",
+      "safeTimeBlock": "Safe time block",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "addSafeTime": "Add safe time"
+    }
+  },
+  "assignment": {
+    "eyebrow": "Your target",
+    "hint": "Tag them under one of the conditions below.",
+    "conditions": "Conditions",
+    "viewLeaderboard": "View leaderboard",
+    "loading": "Loading assignment...",
+    "noAssignment": "No active assignment.",
+    "gameNotStarted": "The game hasn't started yet.",
+    "confirmTag": {
+      "title": "Confirm tag",
+      "message": "You're about to submit a tag. Make sure the condition was met before confirming.",
+      "submit": "Submit tag"
+    }
+  },
+  "leaderboard": {
+    "eyebrow": "Live standings",
+    "title": "Leaderboard",
+    "subtitle": "Scores update in real time as tags are confirmed.",
+    "loading": "Loading leaderboard...",
+    "noScores": "No scores yet.",
+    "myAssignment": "My assignment",
+    "backToGame": "Back to game",
+    "table": {
+      "rank": "Rank",
+      "player": "Player",
+      "tags": "Tags",
+      "score": "Score"
+    }
+  },
+  "tagConfirm": {
+    "eyebrow": "Tag review",
+    "title": "Pending tag",
+    "status": "Status:",
+    "hunter": "Hunter:",
+    "target": "Target:",
+    "submitted": "Submitted:",
+    "resolved": "Resolved:",
+    "deny": "Deny",
+    "confirm": "Confirm",
+    "voidTag": "Void tag",
+    "backToLeaderboard": "Back to leaderboard",
+    "loading": "Loading tag...",
+    "notFound": "Tag not found or already resolved."
+  },
+  "about": {
+    "title": "About the game",
+    "description": "Hakwadag is designed for temporary, in-person games with your group."
+  },
+  "status": {
+    "game": {
+      "notStarted": "Not started",
+      "active": "Active",
+      "ended": "Ended"
+    },
+    "role": {
+      "player": "Player",
+      "creator": "Creator",
+      "coAdmin": "Co-admin"
+    },
+    "tag": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "denied": "Denied",
+      "voided": "Voided"
+    },
+    "conditionType": {
+      "withSpecificPerson": "With specific person",
+      "alone": "Alone",
+      "withGroup": "With group",
+      "duringAction": "During action",
+      "custom": "Custom"
+    }
+  },
+  "condition": {
+    "withSpecificPerson": "With {name}",
+    "withSpecificPersonDefault": "With a specific person",
+    "alone": "Target is alone",
+    "withXPeople": "With at least {count} other people",
+    "duringAction": "While target is {action}",
+    "duringActionDefault": "While target is doing something",
+    "custom": "Custom condition"
+  },
+  "playerList": {
+    "empty": "No players yet."
+  },
+  "language": {
+    "label": "Language",
+    "dutch": "Nederlands",
+    "english": "English"
+  },
+  "serviceWorker": {
+    "notificationTitle": "Hakwadag update",
+    "notificationBody": "You have a new game notification."
+  },
+  "meta": {
+    "description": "A real-world tagging game for your group.",
+    "appName": "Hakwadag Assassin Game"
+  }
+}

@@ -77,6 +77,11 @@ Write-Status "Stopping frontend..."
 Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 Write-Ok "Frontend stopped."
 
+# --- Stop zrok2 processes ---
+Write-Status "Stopping zrok2 processes..."
+Get-Process -Name "zrok2" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Write-Ok "zrok2 processes stopped."
+
 # --- Stop dependencies (default) ---
 if (-not $ExcludeDependencies) {
     Write-Status "Stopping dependencies..."

@@ -35,6 +35,7 @@ $RepoRoot = $PSScriptRoot
 $BackendDir = Join-Path $RepoRoot "backend"
 $FrontendDir = Join-Path $RepoRoot "frontend"
 $BackendProject = Join-Path $BackendDir "src\HakwadagAssassinGame.Web\HakwadagAssassinGame.Web.csproj"
+$LogDir = Join-Path $RepoRoot ".logs"
 
 # Track background jobs for cleanup
 $jobs = @()
@@ -174,11 +175,19 @@ Write-Ok "Reserved names: $ApiShareName, $AppShareName"
 Write-Status "Starting backend on port $BackendPort..."
 
 if ($Detach) {
-    # Use Start-Process for true background execution that survives script exit
-    $env:ZROK_FRONTEND_URL = $ZrokAppUrl
+    # Create log directory
+    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+    
+    # Use cmd /c with shell redirection to avoid file handle issues
     $env:ASPNETCORE_HTTP_PORTS = $BackendPort
-    Start-Process -FilePath "dotnet" -ArgumentList "watch", "run", "--project", $BackendProject, "--no-launch-profile" -WindowStyle Hidden
-    Write-Ok "Backend started on port $BackendPort"
+    $env:ASPNETCORE_ENVIRONMENT = "Development"
+    $env:ZROK_FRONTEND_URL = $ZrokAppUrl
+    $backendStdout = Join-Path $LogDir "backend-stdout.log"
+    $backendStderr = Join-Path $LogDir "backend-stderr.log"
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "dotnet watch run --project `"$BackendProject`" --no-launch-profile > `"$backendStdout`" 2> `"$backendStderr`"" `
+        -WindowStyle Hidden
+    Write-Ok "Backend started on port $BackendPort (logs: .logs/backend-*.log)"
 } else {
     $env:ZROK_FRONTEND_URL = $ZrokAppUrl
     $env:ASPNETCORE_HTTP_PORTS = $BackendPort
@@ -199,8 +208,12 @@ Write-Status "Starting frontend on port $FrontendPort..."
 if ($Detach) {
     $env:VITE_API_URL = $ZrokApiUrl
     $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
-    Start-Process -FilePath "npm.cmd" -ArgumentList "run", "dev", "--", "--port", $FrontendPort, "--host" -WorkingDirectory $FrontendDir -WindowStyle Hidden
-    Write-Ok "Frontend started on port $FrontendPort"
+    $frontendStdout = Join-Path $LogDir "frontend-stdout.log"
+    $frontendStderr = Join-Path $LogDir "frontend-stderr.log"
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "cd /d `"$FrontendDir`" && npm run dev -- --port $FrontendPort --host > `"$frontendStdout`" 2> `"$frontendStderr`"" `
+        -WindowStyle Hidden
+    Write-Ok "Frontend started on port $FrontendPort (logs: .logs/frontend-*.log)"
 } else {
     $env:VITE_API_URL = $ZrokApiUrl
     $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
@@ -224,10 +237,18 @@ Start-Sleep -Seconds 5
 Write-Status "Creating zrok2 public shares..."
 
 if ($Detach) {
-    # Use Start-Process for true background execution
-    Start-Process -FilePath "zrok2" -ArgumentList "share", "public", "localhost:$BackendPort", "-n", "public:$ApiShareName" -WindowStyle Hidden
-    Start-Process -FilePath "zrok2" -ArgumentList "share", "public", "localhost:$FrontendPort", "-n", "public:$AppShareName" -WindowStyle Hidden
-    Write-Ok "zrok2 shares created"
+    # Use cmd /c with shell redirection to avoid file handle issues
+    $zrokApiStdout = Join-Path $LogDir "zrok-api-stdout.log"
+    $zrokApiStderr = Join-Path $LogDir "zrok-api-stderr.log"
+    $zrokAppStdout = Join-Path $LogDir "zrok-app-stdout.log"
+    $zrokAppStderr = Join-Path $LogDir "zrok-app-stderr.log"
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "zrok2 share public localhost:$BackendPort -n public:$ApiShareName > `"$zrokApiStdout`" 2> `"$zrokApiStderr`"" `
+        -WindowStyle Hidden
+    Start-Process -FilePath "cmd.exe" `
+        -ArgumentList "/c", "zrok2 share public localhost:$FrontendPort -n public:$AppShareName > `"$zrokAppStdout`" 2> `"$zrokAppStderr`"" `
+        -WindowStyle Hidden
+    Write-Ok "zrok2 shares created (logs: .logs/zrok-*.log)"
 } else {
     $apiShareJob = Start-Job -ScriptBlock {
         param($port, $name)

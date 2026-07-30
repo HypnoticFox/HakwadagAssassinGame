@@ -38,10 +38,10 @@ async function onSubmit() {
 <template>
   <section class="page-section">
     <p class="eyebrow">
-      New game
+      {{ $t('createGame.eyebrow') }}
     </p>
-    <h1>Create a game</h1>
-    <p>Set the rules for your group's tagging game.</p>
+    <h1>{{ $t('createGame.title') }}</h1>
+    <p>{{ $t('createGame.subtitle') }}</p>
 
     <form
       class="create-form"
@@ -49,13 +49,13 @@ async function onSubmit() {
     >
       <Input
         v-model="name"
-        label="Game name"
-        placeholder="Friday Night Assassin"
+        :label="$t('createGame.gameName')"
+        :placeholder="$t('createGame.gameNamePlaceholder')"
         required
       />
       <Input
         v-model="durationHours"
-        label="Duration (hours)"
+        :label="$t('createGame.duration')"
         type="number"
         inputmode="numeric"
         min="1"
@@ -63,14 +63,14 @@ async function onSubmit() {
       />
       <Input
         v-model="maxPlayers"
-        label="Max players"
+        :label="$t('createGame.maxPlayers')"
         type="number"
         inputmode="numeric"
         min="2"
       />
       <Input
         v-model="basePointsPerTag"
-        label="Base points per tag"
+        :label="$t('createGame.basePointsPerTag')"
         type="number"
         inputmode="numeric"
         min="1"
@@ -78,7 +78,7 @@ async function onSubmit() {
       />
       <Input
         v-model="confirmationTimeoutMinutes"
-        label="Confirmation timeout (minutes)"
+        :label="$t('createGame.confirmationTimeout')"
         type="number"
         inputmode="numeric"
         min="1"
@@ -99,7 +99,7 @@ async function onSubmit() {
         full-width
         :loading="gameStore.isLoading"
       >
-        Create game
+        {{ $t('createGame.create') }}
       </Button>
     </form>
   </section>

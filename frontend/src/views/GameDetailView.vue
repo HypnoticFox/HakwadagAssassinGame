@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
@@ -18,6 +19,7 @@ import {
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const gameStore = useGameStore()
 
 const gameId = computed(() => route.params.id as string)
@@ -26,7 +28,6 @@ const adminPanelOpen = ref(false)
 const newCondition = ref('')
 const safeTimeStart = ref('')
 const safeTimeEnd = ref('')
-const safeTimeDay = ref('0')
 const localError = ref<string | null>(null)
 
 useGameSignalR(gameId.value)
@@ -69,11 +70,28 @@ async function onEnd() {
 }
 
 async function onLeave() {
-  if (!confirm('Are you sure you want to leave this game?')) return
+  const confirmKey =
+    gameStore.currentGame?.status === GameStatus.Active
+      ? 'gameDetail.leaveConfirmActive'
+      : 'gameDetail.leaveConfirm'
+  if (!confirm(t(confirmKey))) return
   localError.value = null
   try {
     await gameStore.leaveGame(gameId.value)
-    await router.push('/')
+    if (gameStore.currentGame?.status !== GameStatus.Active) {
+      await router.push('/')
+    }
+  } catch (err) {
+    if (err instanceof Error) {
+      localError.value = err.message
+    }
+  }
+}
+
+async function onRejoin() {
+  localError.value = null
+  try {
+    await gameStore.rejoinGame(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
       localError.value = err.message
@@ -101,7 +119,6 @@ async function onAddSafeTime() {
     await gameStore.addSafeTime(gameId.value, {
       startTime: safeTimeStart.value,
       endTime: safeTimeEnd.value,
-      day: Number(safeTimeDay.value),
     })
     safeTimeStart.value = ''
     safeTimeEnd.value = ''
@@ -141,7 +158,7 @@ const formattedCreatedAt = computed(() => {
           <h1>{{ gameStore.currentGame.name }}</h1>
           <p class="game-meta">
             {{ gameRoleLabel(gameStore.currentGame.myRole) }} ·
-            {{ gameStore.currentGame.playerCount }} players
+            {{ gameStore.currentGame.participantCount }} {{ $t('common.players') }}
           </p>
         </div>
         <div class="game-actions">
@@ -150,22 +167,49 @@ const formattedCreatedAt = computed(() => {
             size="large"
             @click="onStart"
           >
-            Start game
+            {{ $t('gameDetail.startGame') }}
           </Button>
           <Button
             v-if="canEndGame(gameStore.currentGame.myRole, gameStore.currentGame.status)"
             variant="danger"
             @click="onEnd"
           >
-            End game
+            {{ $t('gameDetail.endGame') }}
           </Button>
         </div>
+      </div>
+
+      <div
+        v-if="gameStore.currentGame.status === GameStatus.Active && !gameStore.currentGame.isParticipating"
+        class="left-banner"
+      >
+        <p>{{ $t('gameDetail.youLeftGame') }}</p>
+      </div>
+
+      <div
+        v-if="isGameAdmin(gameStore.currentGame.myRole) && gameStore.currentGame.status === GameStatus.NotStarted"
+        class="participation-card"
+      >
+        <p class="participation-label">{{ $t('gameDetail.participationLabel') }}</p>
+        <label class="toggle-row">
+          <span class="toggle-text">{{ gameStore.currentGame.isParticipating ? $t('gameDetail.participating') : $t('gameDetail.notParticipating') }}</span>
+          <div class="toggle-switch">
+            <input
+              type="checkbox"
+              class="toggle-input"
+              :checked="gameStore.currentGame.isParticipating"
+              @change="gameStore.setParticipation(gameId, ($event.target as HTMLInputElement).checked)"
+            />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+        <p class="min-participants-note">{{ $t('gameDetail.minParticipants') }}</p>
       </div>
 
       <div class="invite-card">
         <div>
           <p class="invite-label">
-            Invite code
+            {{ $t('gameDetail.inviteCode') }}
           </p>
           <p class="invite-code">
             {{ gameStore.currentGame.inviteCode }}
@@ -175,14 +219,14 @@ const formattedCreatedAt = computed(() => {
           variant="secondary"
           @click="copyInviteCode"
         >
-          {{ copied ? 'Copied!' : 'Copy' }}
+          {{ copied ? $t('common.copied') : $t('common.copy') }}
         </Button>
       </div>
 
       <div class="detail-grid">
         <div class="detail-card">
           <p class="detail-label">
-            Max players
+            {{ $t('gameDetail.maxPlayers') }}
           </p>
           <p class="detail-value">
             {{ gameStore.currentGame.maxPlayers }}
@@ -190,7 +234,7 @@ const formattedCreatedAt = computed(() => {
         </div>
         <div class="detail-card">
           <p class="detail-label">
-            Points per tag
+            {{ $t('gameDetail.pointsPerTag') }}
           </p>
           <p class="detail-value">
             {{ gameStore.currentGame.basePointsPerTag }}
@@ -198,7 +242,7 @@ const formattedCreatedAt = computed(() => {
         </div>
         <div class="detail-card">
           <p class="detail-label">
-            Timeout
+            {{ $t('gameDetail.timeout') }}
           </p>
           <p class="detail-value">
             {{ gameStore.currentGame.confirmationTimeout }}
@@ -206,7 +250,7 @@ const formattedCreatedAt = computed(() => {
         </div>
         <div class="detail-card">
           <p class="detail-label">
-            Created
+            {{ $t('gameDetail.created') }}
           </p>
           <p class="detail-value">
             {{ formattedCreatedAt }}
@@ -218,7 +262,7 @@ const formattedCreatedAt = computed(() => {
         v-if="gameStore.currentGame.safeTimeBlocks.length > 0"
         class="safe-times"
       >
-        <h2>Safe times</h2>
+        <h2>{{ $t('gameDetail.safeTimes') }}</h2>
         <ul class="safe-time-list">
           <li
             v-for="block in gameStore.currentGame.safeTimeBlocks"
@@ -226,16 +270,12 @@ const formattedCreatedAt = computed(() => {
             class="safe-time-item"
           >
             <span>{{ block.startTime }} – {{ block.endTime }}</span>
-            <span
-              v-if="block.day !== undefined"
-              class="safe-time-day"
-            >Day {{ block.day }}</span>
             <Button
               v-if="isGameAdmin(gameStore.currentGame.myRole)"
               variant="ghost"
               @click="onRemoveSafeTime(block.id)"
             >
-              Remove
+              {{ $t('common.remove') }}
             </Button>
           </li>
         </ul>
@@ -243,12 +283,12 @@ const formattedCreatedAt = computed(() => {
 
       <div class="action-grid">
         <Button
-          v-if="gameStore.currentGame.status === GameStatus.Active"
+          v-if="gameStore.currentGame.status === GameStatus.Active && gameStore.currentGame.isParticipating"
           size="large"
           full-width
           @click="router.push(`/games/${gameId}/assignment`)"
         >
-          My assignment
+          {{ $t('gameDetail.myAssignment') }}
         </Button>
         <Button
           variant="secondary"
@@ -256,7 +296,7 @@ const formattedCreatedAt = computed(() => {
           full-width
           @click="router.push(`/games/${gameId}/leaderboard`)"
         >
-          Leaderboard
+          {{ $t('gameDetail.leaderboard') }}
         </Button>
       </div>
 
@@ -269,15 +309,35 @@ const formattedCreatedAt = computed(() => {
           full-width
           @click="adminPanelOpen = true"
         >
-          Admin panel
+          {{ $t('gameDetail.adminPanel') }}
         </Button>
       </div>
 
+      <!-- Leave/Rejoin button based on participation status -->
+      <div v-if="gameStore.currentGame.status === GameStatus.Active">
+        <Button
+          v-if="gameStore.currentGame.isParticipating"
+          variant="ghost"
+          @click="onLeave"
+        >
+          {{ $t('gameDetail.leaveGame') }}
+        </Button>
+        <Button
+          v-else
+          variant="secondary"
+          size="large"
+          full-width
+          @click="onRejoin"
+        >
+          {{ $t('gameDetail.rejoinGame') }}
+        </Button>
+      </div>
       <Button
+        v-else
         variant="ghost"
         @click="onLeave"
       >
-        Leave game
+        {{ $t('gameDetail.leaveGame') }}
       </Button>
 
       <p
@@ -293,63 +353,55 @@ const formattedCreatedAt = computed(() => {
       v-else-if="gameStore.isLoading"
       class="loading"
     >
-      Loading game...
+      {{ $t('gameDetail.loading') }}
     </div>
     <div
       v-else
       class="empty"
     >
-      <p>Game not found.</p>
+      <p>{{ $t('gameDetail.notFound') }}</p>
       <Button @click="router.push('/')">
-        Back home
+        {{ $t('common.backHome') }}
       </Button>
     </div>
 
     <Modal
       :open="adminPanelOpen"
-      title="Admin panel"
+      :title="$t('gameDetail.admin.title')"
       @close="adminPanelOpen = false"
     >
       <div class="admin-form">
-        <h3>Conditions</h3>
+        <h3>{{ $t('gameDetail.admin.conditions') }}</h3>
         <Input
           v-model="newCondition"
-          label="New condition"
-          placeholder="Describe the condition"
+          :label="$t('gameDetail.admin.newCondition')"
+          :placeholder="$t('gameDetail.admin.newConditionPlaceholder')"
         />
         <Button
           full-width
           @click="onAddCondition"
         >
-          Add condition
+          {{ $t('gameDetail.admin.addCondition') }}
         </Button>
 
-        <h3>Safe time block</h3>
+        <h3>{{ $t('gameDetail.admin.safeTimeBlock') }}</h3>
         <Input
           v-model="safeTimeStart"
-          label="Start time"
+          :label="$t('gameDetail.admin.startTime')"
           type="time"
           required
         />
         <Input
           v-model="safeTimeEnd"
-          label="End time"
+          :label="$t('gameDetail.admin.endTime')"
           type="time"
           required
-        />
-        <Input
-          v-model="safeTimeDay"
-          label="Day (0 = Sunday)"
-          type="number"
-          inputmode="numeric"
-          min="0"
-          max="6"
         />
         <Button
           full-width
           @click="onAddSafeTime"
         >
-          Add safe time
+          {{ $t('gameDetail.admin.addSafeTime') }}
         </Button>
       </div>
     </Modal>
@@ -366,6 +418,21 @@ const formattedCreatedAt = computed(() => {
 .game-meta {
   color: #64748b;
   margin: 0.5rem 0 0;
+}
+
+.left-banner {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.75rem;
+  color: #92400e;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.left-banner p {
+  margin: 0;
+  font-weight: 500;
 }
 
 .game-actions {
@@ -454,16 +521,6 @@ const formattedCreatedAt = computed(() => {
   padding: 0.75rem 1rem;
 }
 
-.safe-time-day {
-  background: #eff6ff;
-  border-radius: 9999px;
-  color: #1d4ed8;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.25rem 0.625rem;
-  text-transform: uppercase;
-}
-
 .action-grid {
   display: grid;
   gap: 0.75rem;
@@ -481,6 +538,94 @@ const formattedCreatedAt = computed(() => {
 
 .admin-form h3 {
   font-size: 1rem;
+  margin: 0.5rem 0 0;
+}
+
+.participation-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.participation-label {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.toggle-row {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.toggle-text {
+  color: #1e293b;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.toggle-switch {
+  flex-shrink: 0;
+  height: 1.5rem;
+  position: relative;
+  width: 2.75rem;
+}
+
+.toggle-input {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  position: absolute;
+  width: 0;
+}
+
+.toggle-slider {
+  background: #cbd5e1;
+  border-radius: 1.5rem;
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+  background: white;
+  border-radius: 50%;
+  content: '';
+  height: 1.125rem;
+  left: 0.1875rem;
+  position: absolute;
+  top: 0.1875rem;
+  transition: transform 0.2s;
+  width: 1.125rem;
+}
+
+.toggle-input:checked + .toggle-slider {
+  background: #22c55e;
+}
+
+.toggle-input:checked + .toggle-slider::before {
+  transform: translateX(1.25rem);
+}
+
+.toggle-input:focus-visible + .toggle-slider {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.min-participants-note {
+  color: #94a3b8;
+  font-size: 0.8125rem;
   margin: 0.5rem 0 0;
 }
 

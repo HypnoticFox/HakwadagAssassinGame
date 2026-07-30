@@ -76,11 +76,11 @@ const isResolved = computed(() => {
   <section class="page-section">
     <div v-if="currentTag">
       <p class="eyebrow">
-        Tag review
+        {{ $t('tagConfirm.eyebrow') }}
       </p>
-      <h1>Pending tag</h1>
+      <h1>{{ $t('tagConfirm.title') }}</h1>
       <p class="tag-status">
-        Status:
+        {{ $t('tagConfirm.status') }}
         <span
           class="status"
           :class="{
@@ -93,11 +93,11 @@ const isResolved = computed(() => {
       </p>
 
       <div class="tag-card">
-        <p><strong>Hunter:</strong> {{ currentTag.hunterId }}</p>
-        <p><strong>Target:</strong> {{ currentTag.targetId }}</p>
-        <p><strong>Submitted:</strong> {{ new Date(currentTag.submittedAt).toLocaleString() }}</p>
+        <p><strong>{{ $t('tagConfirm.hunter') }}</strong> {{ currentTag.hunterId }}</p>
+        <p><strong>{{ $t('tagConfirm.target') }}</strong> {{ currentTag.targetId }}</p>
+        <p><strong>{{ $t('tagConfirm.submitted') }}</strong> {{ new Date(currentTag.submittedAt).toLocaleString() }}</p>
         <p v-if="currentTag.resolvedAt">
-          <strong>Resolved:</strong> {{ new Date(currentTag.resolvedAt).toLocaleString() }}
+          <strong>{{ $t('tagConfirm.resolved') }}</strong> {{ new Date(currentTag.resolvedAt).toLocaleString() }}
         </p>
       </div>
 
@@ -110,13 +110,13 @@ const isResolved = computed(() => {
           full-width
           @click="onDeny"
         >
-          Deny
+          {{ $t('tagConfirm.deny') }}
         </Button>
         <Button
           full-width
           @click="onConfirm"
         >
-          Confirm
+          {{ $t('tagConfirm.confirm') }}
         </Button>
       </div>
       <div
@@ -131,7 +131,7 @@ const isResolved = computed(() => {
           full-width
           @click="onVoid"
         >
-          Void tag
+          {{ $t('tagConfirm.voidTag') }}
         </Button>
       </div>
 
@@ -140,7 +140,7 @@ const isResolved = computed(() => {
         full-width
         @click="router.push(`/games/${gameId}/leaderboard`)"
       >
-        Back to leaderboard
+        {{ $t('tagConfirm.backToLeaderboard') }}
       </Button>
 
       <p
@@ -156,15 +156,15 @@ const isResolved = computed(() => {
       v-else-if="tagStore.isLoading"
       class="loading"
     >
-      Loading tag...
+      {{ $t('tagConfirm.loading') }}
     </div>
     <div
       v-else
       class="empty"
     >
-      <p>Tag not found or already resolved.</p>
+      <p>{{ $t('tagConfirm.notFound') }}</p>
       <Button @click="router.push(`/games/${gameId}/leaderboard`)">
-        Back to leaderboard
+        {{ $t('tagConfirm.backToLeaderboard') }}
       </Button>
     </div>
   </section>
