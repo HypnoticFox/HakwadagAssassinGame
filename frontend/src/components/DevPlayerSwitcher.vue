@@ -4,12 +4,13 @@ import { useRouter } from 'vue-router'
 
 import { api } from '@/api/client'
 import { useAuthStore } from '@/stores'
-import { tagStatusLabel } from '@/types'
+import { gameRoleLabel, tagStatusLabel } from '@/types'
 import type { DevAssignment, DevPlayer, DevTag, PlayerDto } from '@/types'
 
 interface SeededPlayer {
   player: PlayerDto
   token: string
+  role: number
 }
 
 const authStore = useAuthStore()
@@ -45,6 +46,16 @@ const quickActionGameId = ref(
   })(),
 )
 
+const seededGameName = ref(
+  (() => {
+    try {
+      return sessionStorage.getItem('hakwadag_dev_seeded_game_name') || ''
+    } catch {
+      return ''
+    }
+  })(),
+)
+
 const activeModal = ref<'submit' | 'confirm' | 'deny' | null>(null)
 const actionLoading = ref(false)
 const actionError = ref<string | null>(null)
@@ -72,6 +83,10 @@ function saveQuickGameId() {
   sessionStorage.setItem('hakwadag_dev_quick_game_id', quickActionGameId.value)
 }
 
+function saveSeededGameName() {
+  sessionStorage.setItem('hakwadag_dev_seeded_game_name', seededGameName.value)
+}
+
 async function handleDevLogin() {
   isLoading.value = true
   error.value = null
@@ -94,6 +109,8 @@ async function handleSeedGame() {
     saveSeededPlayers()
     quickActionGameId.value = result.game.id
     saveQuickGameId()
+    seededGameName.value = result.game.name
+    saveSeededGameName()
   } catch (err) {
     error.value = err instanceof Error ? err.message : 'Seed game failed'
   } finally {
@@ -109,7 +126,9 @@ function switchPlayer(token: string, player: PlayerDto) {
 
 function clearSeededPlayers() {
   seededPlayers.value = []
+  seededGameName.value = ''
   sessionStorage.removeItem('hakwadag_dev_seeded_players')
+  sessionStorage.removeItem('hakwadag_dev_seeded_game_name')
 }
 
 function openDashboard() {
@@ -384,14 +403,23 @@ watch(quickActionGameId, () => {
             Clear
           </button>
         </div>
+        <p
+          v-if="seededGameName"
+          class="dev-switcher__game-name"
+        >
+          {{ seededGameName }}
+        </p>
         <ul class="dev-switcher__list">
           <li
-            v-for="{ player, token } in seededPlayers"
+            v-for="{ player, token, role } in seededPlayers"
             :key="player.id"
             class="dev-switcher__player"
           >
             <span class="dev-switcher__player-info">
-              <span class="dev-switcher__player-name">{{ player.displayName }}</span>
+              <span class="dev-switcher__player-name">
+                {{ player.displayName }}
+                <span class="dev-switcher__player-role">{{ gameRoleLabel(role) }}</span>
+              </span>
               <span class="dev-switcher__player-email">{{ player.email }}</span>
             </span>
             <button
@@ -879,6 +907,16 @@ watch(quickActionGameId, () => {
   color: var(--dev-text);
 }
 
+.dev-switcher__game-name {
+  color: var(--dev-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dev-switcher__list {
   display: grid;
   gap: 0.5rem;
@@ -909,6 +947,18 @@ watch(quickActionGameId, () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.dev-switcher__player-role {
+  background: rgba(245, 158, 11, 0.2);
+  border-radius: 0.25rem;
+  color: var(--dev-accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  margin-left: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  text-transform: uppercase;
+  vertical-align: middle;
 }
 
 .dev-switcher__player-email {

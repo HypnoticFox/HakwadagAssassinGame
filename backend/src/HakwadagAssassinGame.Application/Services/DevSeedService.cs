@@ -1,6 +1,7 @@
 using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Interfaces;
 using HakwadagAssassinGame.Core.Entities;
+using HakwadagAssassinGame.Core.Enums;
 using HakwadagAssassinGame.Core.Interfaces;
 
 namespace HakwadagAssassinGame.Application.Services;
@@ -27,16 +28,19 @@ public sealed class DevSeedService : IDevSeedService
     private readonly IPlayerRepository playerRepository;
     private readonly ITokenStore tokenStore;
     private readonly IGameService gameService;
+    private readonly IDevCounter devCounter;
 
     /// <summary>Initializes the dev seed service.</summary>
     public DevSeedService(
         IPlayerRepository playerRepository,
         ITokenStore tokenStore,
-        IGameService gameService)
+        IGameService gameService,
+        IDevCounter devCounter)
     {
         this.playerRepository = playerRepository;
         this.tokenStore = tokenStore;
         this.gameService = gameService;
+        this.devCounter = devCounter;
     }
 
     /// <inheritdoc />
@@ -77,8 +81,9 @@ public sealed class DevSeedService : IDevSeedService
         }
 
         // Player 1 creates the game (becomes Creator)
+        var number = await devCounter.IncrementAsync("seed-game", cancellationToken);
         var createRequest = new CreateGameRequest(
-            Name: "Dev Test Game",
+            Name: $"Dev Test Game #{number}",
             DurationHours: 24,
             MaxPlayers: count + 5,
             BasePointsPerTag: 100,
@@ -102,7 +107,10 @@ public sealed class DevSeedService : IDevSeedService
         gameDto = await gameService.StartGameAsync(seededPlayers[0].Player.Id, gameDto.Id, cancellationToken);
 
         var resultPlayers = seededPlayers
-            .Select(p => new SeededPlayerDto(PlayerDto.FromEntity(p.Player), p.Token))
+            .Select((p, index) => new SeededPlayerDto(
+                PlayerDto.FromEntity(p.Player),
+                p.Token,
+                index == 0 ? GameRole.Creator : GameRole.Player))
             .ToList();
 
         return new SeedGameResponse(gameDto, resultPlayers);

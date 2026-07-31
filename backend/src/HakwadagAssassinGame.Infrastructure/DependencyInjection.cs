@@ -37,6 +37,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IOtpService, RedisOtpService>();
         services.AddScoped<ITokenStore, RedisTokenStore>();
+        services.AddScoped<IDevCounter, RedisDevCounter>();
         services.AddScoped<IInviteCodeGenerator, RandomInviteCodeGenerator>();
         services.AddScoped<IPushNotificationService, WebPushNotificationService>();
         services.AddScoped<INotificationHub, SignalRNotificationHub>();
