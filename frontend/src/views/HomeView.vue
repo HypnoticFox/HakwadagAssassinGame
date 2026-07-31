@@ -199,6 +199,10 @@ async function onJoin() {
   margin-bottom: 1.5rem;
 }
 
+.home-header h1 {
+  color: var(--text);
+}
+
 .home-subtitle {
   color: var(--text-muted);
   margin: 0.5rem 0 0;
@@ -241,6 +245,7 @@ async function onJoin() {
 }
 
 .games-section h2 {
+  color: var(--text);
   font-size: 1.125rem;
   margin: 0 0 0.75rem;
 }

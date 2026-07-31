@@ -75,6 +75,7 @@ const emit = defineEmits<{
 }
 
 .game-card__name {
+  color: var(--text);
   font-size: 1.125rem;
   font-weight: 700;
   margin: 0;
