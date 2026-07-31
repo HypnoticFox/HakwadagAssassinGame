@@ -343,3 +343,11 @@ public sealed class InMemoryTokenStore : ITokenStore
         return Task.CompletedTask;
     }
 }
+
+public sealed class InMemoryDevCounter : IDevCounter
+{
+    private readonly ConcurrentDictionary<string, long> _counters = new(StringComparer.Ordinal);
+
+    public Task<long> IncrementAsync(string name, CancellationToken ct = default)
+        => Task.FromResult(_counters.AddOrUpdate(name, 1, (_, v) => v + 1));
+}

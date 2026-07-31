@@ -75,6 +75,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
                 typeof(IEmailSender),
                 typeof(IPushNotificationService),
                 typeof(IInviteCodeGenerator),
+                typeof(IDevCounter),
             };
 
             foreach (var serviceType in typesToReplace)
@@ -100,6 +101,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddSingleton<IEmailSender>(MockEmailSender);
             services.AddSingleton<IPushNotificationService>(MockPushService);
             services.AddSingleton<IInviteCodeGenerator>(MockInviteCodeGenerator);
+            services.AddSingleton<IDevCounter>(new InMemoryDevCounter());
         });
     }
 }

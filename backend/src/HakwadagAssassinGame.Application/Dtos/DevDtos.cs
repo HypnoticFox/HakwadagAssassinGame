@@ -1,3 +1,5 @@
+using HakwadagAssassinGame.Core.Enums;
+
 namespace HakwadagAssassinGame.Application.Dtos;
 
 /// <summary>Request for the development-only auth bypass endpoint.</summary>
@@ -11,7 +13,8 @@ public record SeedGameRequest(int? PlayerCount);
 /// <summary>A seeded player with their authentication token.</summary>
 /// <param name="Player">The player details.</param>
 /// <param name="Token">The authentication token.</param>
-public record SeededPlayerDto(PlayerDto Player, string Token);
+/// <param name="Role">The player's role in the seeded game.</param>
+public record SeededPlayerDto(PlayerDto Player, string Token, GameRole Role);
 
 /// <summary>Response returned after seeding a game for testing.</summary>
 /// <param name="Game">The created game.</param>
