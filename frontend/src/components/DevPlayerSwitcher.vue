@@ -273,6 +273,18 @@ watch(quickActionGameId, () => {
       role="dialog"
       aria-label="Dev player switcher"
     >
+      <div class="dev-switcher__panel-header">
+        <span class="dev-switcher__panel-title">Dev Tools</span>
+        <button
+          type="button"
+          class="dev-switcher__panel-close"
+          aria-label="Close dev panel"
+          @click="isExpanded = false"
+        >
+          ×
+        </button>
+      </div>
+
       <div class="dev-switcher__section">
         <p class="dev-switcher__label">
           Current player
@@ -679,6 +691,13 @@ watch(quickActionGameId, () => {
   z-index: 100;
 }
 
+[data-theme="dark"] .dev-switcher {
+  --dev-bg: rgba(30, 41, 59, 0.95);
+  --dev-border: rgba(245, 158, 11, 0.3);
+  --dev-text: #f1f5f9;
+  --dev-muted: #cbd5e1;
+}
+
 .dev-switcher__toggle {
   align-items: center;
   background: var(--dev-bg);
@@ -726,6 +745,44 @@ watch(quickActionGameId, () => {
   overflow-y: auto;
   padding: 1rem;
   width: calc(100vw - 2rem);
+}
+
+.dev-switcher__panel-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--dev-border);
+}
+
+.dev-switcher__panel-title {
+  color: var(--dev-accent);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.dev-switcher__panel-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 0.5rem;
+  color: var(--dev-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: 1.5rem;
+  height: 2rem;
+  justify-content: center;
+  padding: 0;
+  width: 2rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dev-switcher__panel-close:hover {
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--dev-text);
 }
 
 .dev-switcher__section + .dev-switcher__section {
