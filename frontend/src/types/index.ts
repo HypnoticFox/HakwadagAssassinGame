@@ -34,6 +34,14 @@ export interface PlayerDto {
   avatarUrl?: string
 }
 
+export interface GamePlayerDto {
+  playerId: string
+  displayName: string
+  email: string
+  avatarUrl?: string
+  role: GameRole
+}
+
 export interface AuthResponse {
   token: string
   player: PlayerDto

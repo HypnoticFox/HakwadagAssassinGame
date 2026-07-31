@@ -49,6 +49,11 @@ public static class EndpointExtensions
             var game = await service.GetGameAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
             return Results.Ok(game);
         });
+        games.MapGet("/{gameId:guid}/players", async (HttpContext context, Guid gameId, IGameService service, CancellationToken cancellationToken) =>
+        {
+            var players = await service.GetPlayersAsync(gameId, cancellationToken);
+            return Results.Ok(players);
+        });
         games.MapPost("/join/{inviteCode}", async (HttpContext context, string inviteCode, JoinGameRequest request, IGameService service, CancellationToken cancellationToken) =>
         {
             var game = await service.JoinGameAsync(context.GetRequiredPlayerId(), inviteCode, request, cancellationToken);

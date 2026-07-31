@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { api } from '@/api/client'
-import { GameStatus, type GameDto } from '@/types'
+import { GameStatus, type GameDto, type GamePlayerDto } from '@/types'
 
 export interface RecentGame {
   id: string
@@ -31,6 +31,7 @@ function writeRecentGames(games: RecentGame[]) {
 export const useGameStore = defineStore('game', () => {
   const currentGame = ref<GameDto | null>(null)
   const recentGames = ref<RecentGame[]>(readRecentGames())
+  const gamePlayers = ref<GamePlayerDto[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -242,6 +243,10 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  async function loadGamePlayers(gameId: string) {
+    gamePlayers.value = await api.getGamePlayers(gameId)
+  }
+
   async function addAdmin(gameId: string, playerId: string) {
     await api.addAdmin(gameId, playerId)
   }
@@ -273,6 +278,7 @@ export const useGameStore = defineStore('game', () => {
   return {
     currentGame,
     recentGames,
+    gamePlayers,
     isLoading,
     error,
     isActive,
@@ -287,6 +293,7 @@ export const useGameStore = defineStore('game', () => {
     leaveGame,
     rejoinGame,
     setParticipation,
+    loadGamePlayers,
     addAdmin,
     removeAdmin,
     addSafeTime,

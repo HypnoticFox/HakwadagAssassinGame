@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useGameStore, type RecentGame } from '@/stores/game'
 import { api } from '@/api/client'
-import { GameStatus, type GameDto, type GameRole } from '@/types'
+import { GameRole, GameStatus, type GameDto } from '@/types'
+import type { GamePlayerDto } from '@/types'
 
 vi.mock('@/api/client', () => ({
   api: {
@@ -14,6 +15,7 @@ vi.mock('@/api/client', () => ({
     endGame: vi.fn(),
     leaveGame: vi.fn(),
     rejoinGame: vi.fn(),
+    getGamePlayers: vi.fn(),
     addAdmin: vi.fn(),
     removeAdmin: vi.fn(),
     addSafeTime: vi.fn(),
@@ -51,6 +53,7 @@ describe('game store', () => {
       const store = useGameStore()
       expect(store.currentGame).toBeNull()
       expect(store.recentGames).toEqual([])
+      expect(store.gamePlayers).toEqual([])
       expect(store.isLoading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -293,6 +296,27 @@ describe('game store', () => {
 
       await expect(store.rejoinGame('g1')).rejects.toThrow('Rejoin failed')
       expect(store.error).toBe('Rejoin failed')
+    })
+  })
+
+  describe('loadGamePlayers', () => {
+    it('calls api.getGamePlayers and updates gamePlayers', async () => {
+      const players: GamePlayerDto[] = [
+        {
+          playerId: 'p1',
+          displayName: 'Alice',
+          email: 'alice@example.com',
+          role: GameRole.Creator,
+        },
+        { playerId: 'p2', displayName: 'Bob', email: 'bob@example.com', role: GameRole.Player },
+      ]
+      vi.mocked(api.getGamePlayers).mockResolvedValue(players)
+      const store = useGameStore()
+
+      await store.loadGamePlayers('g1')
+
+      expect(api.getGamePlayers).toHaveBeenCalledWith('g1')
+      expect(store.gamePlayers).toStrictEqual(players)
     })
   })
 

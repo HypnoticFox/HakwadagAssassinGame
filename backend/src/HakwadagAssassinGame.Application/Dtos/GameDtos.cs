@@ -33,6 +33,9 @@ public record GameDto(
     GameRole MyRole,
     List<SafeTimeBlockDto> SafeTimeBlocks);
 
+/// <summary>Represents a player in a game with their role.</summary>
+public record GamePlayerDto(Guid PlayerId, string DisplayName, string Email, string? AvatarUrl, GameRole Role);
+
 /// <summary>Supplies the display name used when joining a game.</summary>
 public record JoinGameRequest(string DisplayName);
 

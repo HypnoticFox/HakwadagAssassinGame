@@ -723,6 +723,75 @@ public sealed class GameServiceTests
             sut.GetGameAsync(PlayerId, GameId));
     }
 
+    // ── GetPlayersAsync ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPlayersAsync_Valid_ReturnsPlayersOrderedByRoleAndName()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+
+        var creator = Player.Create("creator@test.com", "Zeta", id: PlayerId);
+        var coAdmin = Player.Create("coadmin@test.com", "Alpha", id: CoAdminId);
+        var otherPlayer = Player.Create("other@test.com", "Beta", id: OtherPlayerId);
+        var thirdPlayer = Player.Create("third@test.com", "Mike", id: ThirdPlayerId);
+
+        playerRepository.GetByIdAsync(PlayerId, Arg.Any<CancellationToken>()).Returns(creator);
+        playerRepository.GetByIdAsync(CoAdminId, Arg.Any<CancellationToken>()).Returns(coAdmin);
+        playerRepository.GetByIdAsync(OtherPlayerId, Arg.Any<CancellationToken>()).Returns(otherPlayer);
+        playerRepository.GetByIdAsync(ThirdPlayerId, Arg.Any<CancellationToken>()).Returns(thirdPlayer);
+        gameRepository.GetByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+        gamePlayerRepository.GetByGameIdAsync(game.Id, Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer>
+            {
+                GamePlayer.Create(game.Id, ThirdPlayerId, GameRole.Player),
+                GamePlayer.Create(game.Id, OtherPlayerId, GameRole.Player),
+                GamePlayer.Create(game.Id, PlayerId, GameRole.Creator),
+                GamePlayer.Create(game.Id, CoAdminId, GameRole.CoAdmin),
+            });
+
+        var result = await sut.GetPlayersAsync(game.Id);
+
+        Assert.Equal(4, result.Count);
+        // Creator first, then CoAdmin, then Players alphabetically by display name
+        Assert.Equal(new[] { PlayerId, CoAdminId, OtherPlayerId, ThirdPlayerId },
+            result.Select(player => player.PlayerId).ToArray());
+        Assert.Equal(GameRole.Creator, result[0].Role);
+        Assert.Equal(GameRole.CoAdmin, result[1].Role);
+        Assert.Equal(GameRole.Player, result[2].Role);
+        Assert.Equal(GameRole.Player, result[3].Role);
+        Assert.Equal("Beta", result[2].DisplayName);
+        Assert.Equal("Mike", result[3].DisplayName);
+        Assert.Equal("creator@test.com", result[0].Email);
+    }
+
+    [Fact]
+    public async Task GetPlayersAsync_GameNotFound_ThrowsGameNotFoundException()
+    {
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns((Game?)null);
+
+        await Assert.ThrowsAsync<GameNotFoundException>(() => sut.GetPlayersAsync(GameId));
+    }
+
+    [Fact]
+    public async Task GetPlayersAsync_MissingPlayerRecord_ThrowsPlayerNotFoundException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+
+        gameRepository.GetByIdAsync(game.Id, Arg.Any<CancellationToken>()).Returns(game);
+        gamePlayerRepository.GetByGameIdAsync(game.Id, Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer>
+            {
+                GamePlayer.Create(game.Id, PlayerId, GameRole.Player)
+            });
+        playerRepository.GetByIdAsync(PlayerId, Arg.Any<CancellationToken>()).Returns((Player?)null);
+
+        await Assert.ThrowsAsync<PlayerNotFoundException>(() => sut.GetPlayersAsync(game.Id));
+    }
+
     // ── GetMyGamesAsync ────────────────────────────────────────────────────
 
     [Fact]

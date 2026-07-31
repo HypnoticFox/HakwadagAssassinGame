@@ -8,6 +8,7 @@ import type {
   DevPlayer,
   DevTag,
   GameDto,
+  GamePlayerDto,
   LeaderboardEntryDto,
   PlayerDto,
   SafeTimeBlockDto,
@@ -124,7 +125,7 @@ class ApiClient {
 
   async seedGame(playerCount?: number): Promise<{
     game: GameDto
-    players: Array<{ player: PlayerDto; token: string }>
+    players: Array<{ player: PlayerDto; token: string; role: number }>
   }> {
     return this.request('/api/dev/seed-game', {
       method: 'POST',
@@ -270,6 +271,10 @@ class ApiClient {
 
   async getLeaderboard(gameId: string): Promise<LeaderboardEntryDto[]> {
     return this.request<LeaderboardEntryDto[]>(`/api/games/${gameId}/leaderboard`)
+  }
+
+  async getGamePlayers(gameId: string): Promise<GamePlayerDto[]> {
+    return this.request<GamePlayerDto[]>(`/api/games/${gameId}/players`)
   }
 
   async addAdmin(gameId: string, playerId: string): Promise<void> {

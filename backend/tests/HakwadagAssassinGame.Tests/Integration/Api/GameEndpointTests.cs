@@ -120,6 +120,46 @@ public sealed class GameEndpointTests : ApiTestBase
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    // ── Get Players ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPlayers_AsMember_ReturnsPlayersWithRoles()
+    {
+        var (creator, token) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+        var second = await SeedPlayerAsync("p2@test.com", "Player2");
+        await GamePlayerRepo.AddAsync(GamePlayer.Create(game.Id, second.Id));
+
+        var response = await AuthenticatedGetAsync($"/api/games/{game.Id}/players", token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var players = await response.Content.ReadFromJsonAsync<List<GamePlayerDto>>();
+        Assert.NotNull(players);
+        Assert.Equal(2, players.Count);
+        Assert.Equal(GameRole.Creator, players[0].Role);
+        Assert.Equal(creator.DisplayName, players[0].DisplayName);
+        Assert.Equal(GameRole.Player, players[1].Role);
+        Assert.Equal(second.DisplayName, players[1].DisplayName);
+    }
+
+    [Fact]
+    public async Task GetPlayers_GameNotFound_Returns404()
+    {
+        var (player, token) = await CreateAuthenticatedPlayerAsync();
+
+        var response = await AuthenticatedGetAsync($"/api/games/{Guid.NewGuid()}/players", token);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPlayers_NoAuth_Returns401()
+    {
+        var response = await Client.GetAsync($"/api/games/{Guid.NewGuid()}/players");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     // ── Join Game ─────────────────────────────────────────────────────────
 
     [Fact]

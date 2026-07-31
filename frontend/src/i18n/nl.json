@@ -97,7 +97,12 @@
       "safeTimeBlock": "Veilig tijdvak",
       "startTime": "Starttijd",
       "endTime": "Eindtijd",
-      "addSafeTime": "Veilige tijd toevoegen"
+      "addSafeTime": "Veilige tijd toevoegen",
+      "moderators": "Moderators",
+      "promoteToModer": "Promoten",
+      "removeModerator": "Verwijderen",
+      "confirmRemoveModerator": "Weet je zeker dat je deze moderator wilt verwijderen?",
+      "noPlayers": "Nog geen spelers."
     }
   },
   "assignment": {

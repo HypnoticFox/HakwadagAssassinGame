@@ -27,6 +27,9 @@ public interface IGameService
     /// <summary>Gets a game from the perspective of a player.</summary>
     Task<GameDto> GetGameAsync(Guid playerId, Guid gameId, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets all players in a game with their roles.</summary>
+    Task<IReadOnlyList<GamePlayerDto>> GetPlayersAsync(Guid gameId, CancellationToken cancellationToken = default);
+
     /// <summary>Gets all games the player belongs to.</summary>
     Task<IReadOnlyList<GameDto>> GetMyGamesAsync(Guid playerId, CancellationToken cancellationToken = default);
 
@@ -268,6 +271,34 @@ public sealed class GameService : IGameService
         var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
         await ServiceHelpers.RequireMembershipAsync(gamePlayerRepository, gameId, playerId, cancellationToken);
         return await ToDtoAsync(game, playerId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<GamePlayerDto>> GetPlayersAsync(Guid gameId, CancellationToken cancellationToken = default)
+    {
+        await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        var memberships = await gamePlayerRepository.GetByGameIdAsync(gameId, cancellationToken);
+        var players = new List<GamePlayerDto>(memberships.Count);
+        foreach (var membership in memberships)
+        {
+            var player = await ServiceHelpers.RequirePlayerAsync(playerRepository, membership.PlayerId, cancellationToken);
+            players.Add(new GamePlayerDto(
+                player.Id,
+                player.DisplayName,
+                player.Email,
+                player.AvatarUrl,
+                membership.Role));
+        }
+
+        return players
+            .OrderBy(player => player.Role switch
+            {
+                GameRole.Creator => 0,
+                GameRole.CoAdmin => 1,
+                _ => 2
+            })
+            .ThenBy(player => player.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     /// <inheritdoc />

@@ -97,7 +97,12 @@
       "safeTimeBlock": "Safe time block",
       "startTime": "Start time",
       "endTime": "End time",
-      "addSafeTime": "Add safe time"
+      "addSafeTime": "Add safe time",
+      "moderators": "Moderators",
+      "promoteToModer": "Promote",
+      "removeModerator": "Remove",
+      "confirmRemoveModerator": "Are you sure you want to remove this moderator?",
+      "noPlayers": "No players yet."
     }
   },
   "assignment": {

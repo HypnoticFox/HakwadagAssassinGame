@@ -8,8 +8,7 @@ function mockFetch(status: number, body?: unknown, headers?: Record<string, stri
     status,
     headers: responseHeaders,
     ok: status >= 200 && status < 300,
-    text: () =>
-      body !== undefined ? Promise.resolve(JSON.stringify(body)) : Promise.resolve(''),
+    text: () => (body !== undefined ? Promise.resolve(JSON.stringify(body)) : Promise.resolve('')),
     json: () => Promise.resolve(body),
   } as Response)
 }
@@ -90,9 +89,7 @@ describe('request method & body', () => {
 
     const call = vi.mocked(fetch).mock.calls[0]
     expect(call[1]!.method).toBe('POST')
-    expect(call[1]!.body).toBe(
-      JSON.stringify({ email: 'user@example.com', code: '123456' }),
-    )
+    expect(call[1]!.body).toBe(JSON.stringify({ email: 'user@example.com', code: '123456' }))
   })
 
   it('sends GET without body for getMyGames', async () => {
@@ -285,9 +282,7 @@ describe('endpoint URL construction', () => {
       safeTimeBlocks: [],
     })
     await api.joinGame('INV-CODE', 'Player1')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/join/INV-CODE`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/join/INV-CODE`)
   })
 
   it('startGame calls /api/games/:id/start', async () => {
@@ -355,9 +350,7 @@ describe('endpoint URL construction', () => {
   it('getMyAssignment calls /api/games/:id/assignments/me', async () => {
     mockFetch(200, null)
     await api.getMyAssignment('g1')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/assignments/me`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/assignments/me`)
   })
 
   it('submitTag calls /api/games/:id/tag', async () => {
@@ -377,9 +370,7 @@ describe('endpoint URL construction', () => {
   it('getPendingTag calls /api/games/:id/tag/pending', async () => {
     mockFetch(200, null)
     await api.getPendingTag('g1')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/tag/pending`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/pending`)
   })
 
   it('confirmTag calls /api/games/:id/tag/:tagId/confirm', async () => {
@@ -393,9 +384,7 @@ describe('endpoint URL construction', () => {
       submittedAt: '',
     })
     await api.confirmTag('g1', 'tag-123')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/tag/tag-123/confirm`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/tag-123/confirm`)
   })
 
   it('denyTag calls /api/games/:id/tag/:tagId/deny', async () => {
@@ -409,9 +398,7 @@ describe('endpoint URL construction', () => {
       submittedAt: '',
     })
     await api.denyTag('g1', 'tag-123')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/tag/tag-123/deny`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/tag-123/deny`)
   })
 
   it('voidTag calls /api/games/:id/tag/:tagId/void', async () => {
@@ -425,17 +412,24 @@ describe('endpoint URL construction', () => {
       submittedAt: '',
     })
     await api.voidTag('g1', 'tag-123')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/tag/tag-123/void`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/tag-123/void`)
   })
 
   it('getLeaderboard calls /api/games/:id/leaderboard', async () => {
     mockFetch(200, [])
     await api.getLeaderboard('g1')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/leaderboard`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/leaderboard`)
+  })
+
+  it('getGamePlayers calls /api/games/:id/players and returns players', async () => {
+    const players = [
+      { playerId: 'p1', displayName: 'Alice', email: 'alice@example.com', role: 1 },
+      { playerId: 'p2', displayName: 'Bob', email: 'bob@example.com', role: 0 },
+    ]
+    mockFetch(200, players)
+    const result = await api.getGamePlayers('g1')
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/players`)
+    expect(result).toEqual(players)
   })
 
   it('addAdmin calls /api/games/:id/admins with POST', async () => {
@@ -447,42 +441,32 @@ describe('endpoint URL construction', () => {
   it('removeAdmin calls /api/games/:id/admins/:playerId with DELETE', async () => {
     mockFetch(204)
     await api.removeAdmin('g1', 'p1')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/admins/p1`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/admins/p1`)
   })
 
   it('addSafeTime calls /api/games/:id/safe-times with POST', async () => {
     mockFetch(200, { blockId: 'b1' })
     await api.addSafeTime('g1', { startTime: '08:00', endTime: '17:00' })
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/safe-times`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/safe-times`)
   })
 
   it('removeSafeTime calls /api/games/:id/safe-times/:blockId with DELETE', async () => {
     mockFetch(204)
     await api.removeSafeTime('g1', 'b1')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/safe-times/b1`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/safe-times/b1`)
   })
 
   it('addCondition calls /api/games/:id/conditions with POST', async () => {
     mockFetch(200, { id: 'c1', type: 4, description: 'Custom condition' })
     await api.addCondition('g1', 'Jump on one foot')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/games/g1/conditions`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/conditions`)
   })
 
   it('getVapidPublicKey calls /api/push/vapid-public-key', async () => {
     mockFetch(200, { publicKey: 'key123' })
     const key = await api.getVapidPublicKey()
     expect(key).toBe('key123')
-    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
-      `${BASE}/api/push/vapid-public-key`,
-    )
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/push/vapid-public-key`)
   })
 
   it('subscribePush calls /api/push/subscribe with subscription data', async () => {
