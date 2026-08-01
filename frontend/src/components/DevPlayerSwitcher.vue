@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { api } from '@/api/client'
@@ -28,7 +28,7 @@ const playerCount = ref(5)
 const seededPlayers = ref<SeededPlayer[]>(
   (() => {
     try {
-      const saved = sessionStorage.getItem('hakwadag_dev_seeded_players')
+      const saved = localStorage.getItem('hakwadag_dev_seeded_players')
       return saved ? (JSON.parse(saved) as SeededPlayer[]) : []
     } catch {
       return []
@@ -39,7 +39,7 @@ const seededPlayers = ref<SeededPlayer[]>(
 const quickActionGameId = ref(
   (() => {
     try {
-      return sessionStorage.getItem('hakwadag_dev_quick_game_id') || ''
+      return localStorage.getItem('hakwadag_dev_quick_game_id') || ''
     } catch {
       return ''
     }
@@ -49,7 +49,7 @@ const quickActionGameId = ref(
 const seededGameName = ref(
   (() => {
     try {
-      return sessionStorage.getItem('hakwadag_dev_seeded_game_name') || ''
+      return localStorage.getItem('hakwadag_dev_seeded_game_name') || ''
     } catch {
       return ''
     }
@@ -76,16 +76,41 @@ const hasGameId = computed(() => quickActionGameId.value.trim().length > 0)
 const pendingTags = computed(() => modalTags.value.filter((t) => t.status === 0))
 
 function saveSeededPlayers() {
-  sessionStorage.setItem('hakwadag_dev_seeded_players', JSON.stringify(seededPlayers.value))
+  localStorage.setItem('hakwadag_dev_seeded_players', JSON.stringify(seededPlayers.value))
 }
 
 function saveQuickGameId() {
-  sessionStorage.setItem('hakwadag_dev_quick_game_id', quickActionGameId.value)
+  localStorage.setItem('hakwadag_dev_quick_game_id', quickActionGameId.value)
 }
 
 function saveSeededGameName() {
-  sessionStorage.setItem('hakwadag_dev_seeded_game_name', seededGameName.value)
+  localStorage.setItem('hakwadag_dev_seeded_game_name', seededGameName.value)
 }
+
+async function refreshSeededPlayerRoles() {
+  if (!quickActionGameId.value.trim() || seededPlayers.value.length === 0) return
+  try {
+    const players = await api.devGetGamePlayers(quickActionGameId.value)
+    const roleMap = new Map(players.map((p) => [p.playerId, p.role]))
+    let changed = false
+    for (const seeded of seededPlayers.value) {
+      const currentRole = roleMap.get(seeded.player.id)
+      if (currentRole !== undefined && currentRole !== seeded.role) {
+        seeded.role = currentRole
+        changed = true
+      }
+    }
+    if (changed) {
+      saveSeededPlayers()
+    }
+  } catch {
+    // ignore — roles stay at their last known value
+  }
+}
+
+onMounted(() => {
+  void refreshSeededPlayerRoles()
+})
 
 async function handleDevLogin() {
   isLoading.value = true
@@ -124,11 +149,16 @@ function switchPlayer(token: string, player: PlayerDto) {
   location.reload()
 }
 
+function logout() {
+  authStore.logout()
+  location.reload()
+}
+
 function clearSeededPlayers() {
   seededPlayers.value = []
   seededGameName.value = ''
-  sessionStorage.removeItem('hakwadag_dev_seeded_players')
-  sessionStorage.removeItem('hakwadag_dev_seeded_game_name')
+  localStorage.removeItem('hakwadag_dev_seeded_players')
+  localStorage.removeItem('hakwadag_dev_seeded_game_name')
 }
 
 function openDashboard() {
@@ -265,6 +295,12 @@ watch(activeModal, (modal) => {
 watch(quickActionGameId, () => {
   saveQuickGameId()
 })
+
+watch(isExpanded, (expanded) => {
+  if (expanded) {
+    void refreshSeededPlayerRoles()
+  }
+})
 </script>
 
 <template>
@@ -308,13 +344,22 @@ watch(quickActionGameId, () => {
         <p class="dev-switcher__label">
           Current player
         </p>
-        <div v-if="currentPlayer">
-          <p class="dev-switcher__name">
-            {{ currentPlayer.displayName }}
-          </p>
-          <p class="dev-switcher__email">
-            {{ currentPlayer.email }}
-          </p>
+        <div v-if="currentPlayer" class="dev-switcher__current-player">
+          <div class="dev-switcher__current-player-info">
+            <p class="dev-switcher__name">
+              {{ currentPlayer.displayName }}
+            </p>
+            <p class="dev-switcher__email">
+              {{ currentPlayer.email }}
+            </p>
+          </div>
+          <button
+            type="button"
+            class="dev-switcher__button dev-switcher__button--logout"
+            @click="logout"
+          >
+            Logout
+          </button>
         </div>
         <p
           v-else
@@ -1007,6 +1052,29 @@ watch(quickActionGameId, () => {
 
 .dev-switcher__button--secondary:hover:not(:disabled) {
   background: rgba(51, 65, 85, 0.9);
+}
+
+.dev-switcher__button--logout {
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: var(--dev-danger);
+  flex-shrink: 0;
+  width: auto;
+}
+
+.dev-switcher__button--logout:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.25);
+}
+
+.dev-switcher__current-player {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.dev-switcher__current-player-info {
+  min-width: 0;
 }
 
 .dev-switcher__label--small {

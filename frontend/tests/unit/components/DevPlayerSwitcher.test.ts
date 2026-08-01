@@ -43,7 +43,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockAuthStore.player = null
   vi.stubEnv('DEV', true)
-  sessionStorage.clear()
+  localStorage.clear()
 })
 
 function mockPlayer() {

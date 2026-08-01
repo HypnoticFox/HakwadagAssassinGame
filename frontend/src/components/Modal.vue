@@ -86,15 +86,20 @@ function onBackdropClick(event: MouseEvent) {
 
 <style scoped>
 .modal-backdrop {
-  align-items: center;
   background: var(--backdrop);
   backdrop-filter: blur(2px);
   display: flex;
   inset: 0;
-  justify-content: center;
+  overflow-y: auto;
   padding: 1rem;
   position: fixed;
   z-index: 100;
+}
+
+.modal-backdrop::before {
+  content: '';
+  display: block;
+  min-height: 100%;
 }
 
 .modal {
@@ -102,7 +107,12 @@ function onBackdropClick(event: MouseEvent) {
   background: var(--surface);
   border-radius: 1rem;
   box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  margin: auto;
+  max-height: calc(100vh - 2rem);
   max-width: 28rem;
+  overflow: hidden;
   width: 100%;
 }
 
@@ -110,6 +120,7 @@ function onBackdropClick(event: MouseEvent) {
   align-items: center;
   border-bottom: 1px solid var(--border);
   display: flex;
+  flex-shrink: 0;
   justify-content: space-between;
   padding: 1rem 1.25rem;
 }
@@ -145,12 +156,16 @@ function onBackdropClick(event: MouseEvent) {
 }
 
 .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 1.25rem;
 }
 
 .modal-footer {
   border-top: 1px solid var(--border);
   display: flex;
+  flex-shrink: 0;
   gap: 0.75rem;
   justify-content: flex-end;
   padding: 1rem 1.25rem;

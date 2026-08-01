@@ -204,6 +204,7 @@ onUnmounted(() => {
           </div>
           <div class="dev-dashboard__game-meta">
             <span>{{ game.playerCount }} players</span>
+            <span class="dev-dashboard__game-invite">{{ game.inviteCode }}</span>
             <span class="dev-dashboard__game-date">{{ formatShortDate(game.createdAt) }}</span>
             <span class="dev-dashboard__chevron">{{ expandedGameId === game.id ? '▾' : '▸' }}</span>
           </div>
@@ -508,6 +509,16 @@ onUnmounted(() => {
   flex-shrink: 0;
   font-size: 0.875rem;
   gap: 0.75rem;
+}
+
+.dev-dashboard__game-invite {
+  background: var(--surface-muted);
+  border-radius: 0.375rem;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
 }
 
 .dev-dashboard__game-date {

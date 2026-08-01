@@ -6,6 +6,7 @@ namespace HakwadagAssassinGame.Application.Dtos;
 public record DevGameSummaryDto(
     Guid Id,
     string Name,
+    string InviteCode,
     GameStatus Status,
     int PlayerCount,
     DateTimeOffset CreatedAt,

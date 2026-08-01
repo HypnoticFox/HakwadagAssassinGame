@@ -187,6 +187,7 @@ public static class EndpointExtensions
                     result.Add(new DevGameSummaryDto(
                         game.Id,
                         game.Name,
+                        game.InviteCode,
                         game.Status,
                         memberships.Count(m => m.IsActive),
                         game.CreatedAt,

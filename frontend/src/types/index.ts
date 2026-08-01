@@ -135,6 +135,7 @@ export interface SubmitTagRequest {
 export interface DevGame {
   id: string
   name: string
+  inviteCode: string
   status: GameStatus
   playerCount: number
   createdAt: string
