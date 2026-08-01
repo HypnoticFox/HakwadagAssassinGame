@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Moon, Sun } from '@lucide/vue'
 import { useTheme } from '@/composables/useTheme'
 
 const { theme, toggleTheme } = useTheme()
@@ -11,9 +12,16 @@ const { theme, toggleTheme } = useTheme()
     :aria-label="theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
     @click="toggleTheme"
   >
-    <span class="theme-toggle__icon" aria-hidden="true">
-      {{ theme === 'light' ? '🌙' : '☀️' }}
-    </span>
+    <Moon
+      v-if="theme === 'light'"
+      :size="20"
+      aria-hidden="true"
+    />
+    <Sun
+      v-else
+      :size="20"
+      aria-hidden="true"
+    />
   </button>
 </template>
 
@@ -39,10 +47,5 @@ const { theme, toggleTheme } = useTheme()
 .theme-toggle:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
-}
-
-.theme-toggle__icon {
-  font-size: 1.125rem;
-  line-height: 1;
 }
 </style>

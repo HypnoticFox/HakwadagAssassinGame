@@ -82,6 +82,30 @@ The frontend uses a **CSS custom properties (variables) system** for all colors,
 **Changing the color scheme:**
 Edit the token values in `src/assets/main.css` under `:root` and `[data-theme="dark"]`. All components will update automatically.
 
+### Frontend icons
+
+The frontend uses **Lucide icons** via the `@lucide/vue` package.
+
+**Icon rules:**
+- **Always use Lucide icons** for UI elements (navigation, actions, status indicators)
+- **Never use emojis** as icons (they render inconsistently across platforms)
+- Import icons directly: `import { Menu, Swords } from '@lucide/vue'`
+- Use the `:size` prop to control icon dimensions
+- Icons inherit color from their parent via `currentColor` by default
+
+**Example:**
+```vue
+<script setup lang="ts">
+import { Menu } from '@lucide/vue'
+</script>
+
+<template>
+  <button>
+    <Menu :size="24" />
+  </button>
+</template>
+```
+
 ## Backend
 
 The backend uses **clean architecture** with four layers:

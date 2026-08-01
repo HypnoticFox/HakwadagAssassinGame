@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Gamepad2 } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -315,7 +316,10 @@ watch(isExpanded, (expanded) => {
       :aria-label="isExpanded ? 'Close dev player switcher' : 'Open dev player switcher'"
       @click="isExpanded = !isExpanded"
     >
-      <span class="dev-switcher__icon">🎮</span>
+      <Gamepad2
+        class="dev-switcher__icon"
+        :size="20"
+      />
       <span
         v-if="isExpanded"
         class="dev-switcher__title"
@@ -801,8 +805,8 @@ watch(isExpanded, (expanded) => {
 }
 
 .dev-switcher__icon {
-  font-size: 1.125rem;
-  line-height: 1;
+  color: currentColor;
+  flex-shrink: 0;
 }
 
 .dev-switcher__panel {

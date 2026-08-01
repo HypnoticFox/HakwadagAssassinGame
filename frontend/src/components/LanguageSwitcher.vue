@@ -1,66 +1,133 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
+import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
 import { setLocale, SUPPORTED_LOCALES, type SupportedLocale } from '@/i18n'
 
-const { t, locale } = useI18n()
-
-function onLocaleChange(event: Event) {
-  const newLocale = (event.target as HTMLSelectElement).value as SupportedLocale
-  setLocale(newLocale)
+const localeConfig: Record<SupportedLocale, { name: string }> = {
+  nl: { name: 'Nederlands' },
+  en: { name: 'English' },
 }
+
+const currentLocale = ref<SupportedLocale>(
+  (document.documentElement.lang as SupportedLocale) || 'nl',
+)
+const isOpen = ref(false)
+const dropdownRef = useTemplateRef<HTMLElement>('dropdown')
+
+function toggle() {
+  isOpen.value = !isOpen.value
+}
+
+function selectLocale(loc: SupportedLocale) {
+  currentLocale.value = loc
+  setLocale(loc)
+  isOpen.value = false
+}
+
+function onClickOutside(event: MouseEvent) {
+  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
+    isOpen.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onClickOutside)
+})
 </script>
 
 <template>
-  <label class="language-switcher">
-    <span class="language-switcher__label">{{ t('language.label') }}</span>
-    <select
-      :value="locale"
-      class="language-switcher__select"
-      @change="onLocaleChange"
+  <div
+    ref="dropdown"
+    class="language-switcher"
+  >
+    <button
+      type="button"
+      class="language-switcher__trigger"
+      :aria-expanded="isOpen"
+      aria-haspopup="listbox"
+      @click="toggle"
     >
-      <option
+      {{ currentLocale.toUpperCase() }}
+    </button>
+    <ul
+      v-if="isOpen"
+      class="language-switcher__menu"
+      role="listbox"
+    >
+      <li
         v-for="loc in SUPPORTED_LOCALES"
         :key="loc"
-        :value="loc"
+        role="option"
+        :aria-selected="loc === currentLocale"
+        class="language-switcher__option"
+        :class="{ 'language-switcher__option--selected': loc === currentLocale }"
+        @click="selectLocale(loc)"
       >
-        {{ loc === 'nl' ? t('language.dutch') : t('language.english') }}
-      </option>
-    </select>
-  </label>
+        {{ localeConfig[loc].name }}
+      </li>
+    </ul>
+  </div>
 </template>
 
 <style scoped>
 .language-switcher {
+  display: inline-block;
+  position: relative;
+}
+
+.language-switcher__trigger {
   align-items: center;
-  display: inline-flex;
-  gap: 0.375rem;
-}
-
-.language-switcher__label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.language-switcher__select {
-  appearance: none;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: inherit;
+  color: var(--text);
   cursor: pointer;
-  font: inherit;
+  display: inline-flex;
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.25rem 1.5rem 0.25rem 0.5rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.25rem center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
 }
 
-.language-switcher__select:focus-visible {
+.language-switcher__trigger:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+.language-switcher__menu {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  list-style: none;
+  margin: 0.25rem 0 0;
+  min-width: 10rem;
+  padding: 0.25rem;
+  position: absolute;
+  right: 0;
+  z-index: 100;
+}
+
+.language-switcher__option {
+  border-radius: 0.375rem;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+}
+
+.language-switcher__option:hover {
+  background: var(--surface-muted);
+}
+
+.language-switcher__option--selected {
+  background: var(--surface-muted);
 }
 </style>

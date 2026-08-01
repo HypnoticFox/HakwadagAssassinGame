@@ -5,7 +5,10 @@
       "home": "Home",
       "login": "Login",
       "logout": "Log out",
-      "mainNavigation": "Main navigation"
+      "mainNavigation": "Main navigation",
+      "mobileNavigation": "Mobile navigation",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     }
   },
   "common": {

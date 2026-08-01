@@ -64,7 +64,7 @@ describe('DevPlayerSwitcher.vue', () => {
   it('renders the toggle button in dev mode', () => {
     const wrapper = mount(DevPlayerSwitcher)
     expect(wrapper.find('.dev-switcher__toggle').exists()).toBe(true)
-    expect(wrapper.text()).toContain('🎮')
+    expect(wrapper.find('.dev-switcher__icon').exists()).toBe(true)
   })
 
   it('expands when the toggle is clicked', async () => {
