@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
 import Modal from '@/components/Modal.vue'
+import { Copy, Link } from '@lucide/vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useGameStore } from '@/stores'
 import {
@@ -25,7 +26,8 @@ const { t } = useI18n()
 const gameStore = useGameStore()
 
 const gameId = computed(() => route.params.id as string)
-const copied = ref(false)
+const copiedCode = ref(false)
+const copiedLink = ref(false)
 const adminPanelOpen = ref(false)
 const newCondition = ref('')
 const safeTimeStart = ref('')
@@ -46,8 +48,20 @@ async function copyInviteCode() {
   if (!gameStore.currentGame) return
   try {
     await navigator.clipboard.writeText(gameStore.currentGame.inviteCode)
-    copied.value = true
-    setTimeout(() => (copied.value = false), 2000)
+    copiedCode.value = true
+    setTimeout(() => (copiedCode.value = false), 2000)
+  } catch {
+    // ignore
+  }
+}
+
+async function copyInviteLink() {
+  if (!gameStore.currentGame) return
+  const inviteLink = `${window.location.origin}/invite/${gameStore.currentGame.inviteCode}`
+  try {
+    await navigator.clipboard.writeText(inviteLink)
+    copiedLink.value = true
+    setTimeout(() => (copiedLink.value = false), 2000)
   } catch {
     // ignore
   }
@@ -278,9 +292,24 @@ const formattedCreatedAt = computed(() => {
             {{ gameStore.currentGame.inviteCode }}
           </p>
         </div>
-        <Button variant="secondary" @click="copyInviteCode">
-          {{ copied ? $t('common.copied') : $t('common.copy') }}
-        </Button>
+        <div class="invite-actions">
+          <Button
+            variant="secondary"
+            :title="$t('gameDetail.copyInviteCode')"
+            @click="copyInviteCode"
+          >
+            <Copy :size="18" />
+            {{ copiedCode ? $t('common.copied') : '' }}
+          </Button>
+          <Button
+            variant="secondary"
+            :title="$t('gameDetail.copyInviteLink')"
+            @click="copyInviteLink"
+          >
+            <Link :size="18" />
+            {{ copiedLink ? $t('common.copied') : '' }}
+          </Button>
+        </div>
       </div>
 
       <div class="detail-grid">
@@ -525,6 +554,12 @@ const formattedCreatedAt = computed(() => {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0.25rem 0 0;
+}
+
+.invite-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .detail-grid {

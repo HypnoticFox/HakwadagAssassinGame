@@ -72,6 +72,8 @@
     "startGame": "Start game",
     "endGame": "End game",
     "inviteCode": "Invite code",
+    "copyInviteCode": "Copy invite code",
+    "copyInviteLink": "Copy invite link",
     "maxPlayers": "Max players",
     "pointsPerTag": "Points per tag",
     "timeout": "Timeout",
@@ -107,6 +109,11 @@
       "confirmRemoveModerator": "Are you sure you want to remove this moderator?",
       "noPlayers": "No players yet."
     }
+  },
+  "invite": {
+    "joining": "Joining game...",
+    "error": "Failed to join game",
+    "gameNotFound": "Game not found"
   },
   "assignment": {
     "eyebrow": "Your target",

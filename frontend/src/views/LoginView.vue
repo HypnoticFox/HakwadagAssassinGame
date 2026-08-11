@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
@@ -8,6 +8,7 @@ import Input from '@/components/Input.vue'
 import { useAuthStore } from '@/stores'
 
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 const authStore = useAuthStore()
 
@@ -61,7 +62,8 @@ async function onVerifyOtp() {
     sessionStorage.removeItem('login_step')
     sessionStorage.removeItem('login_email')
     sessionStorage.removeItem('login_otp_sent_at')
-    await router.push('/')
+    const redirect = (route.query.redirect as string) || '/'
+    await router.push(redirect)
   } catch (err) {
     if (err instanceof Error) {
       localError.value = err.message

@@ -24,6 +24,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/invite/:inviteCode',
+      name: 'invite',
+      component: () => import('@/views/InviteView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/games/:id',
       name: 'game-detail',
       component: () => import('@/views/GameDetailView.vue'),

@@ -205,6 +205,12 @@ class ApiClient {
     })
   }
 
+  async lookupGame(inviteCode: string): Promise<{ id: string; name: string; status: number }> {
+    return this.request<{ id: string; name: string; status: number }>(
+      `/api/games/lookup/${encodeURIComponent(inviteCode)}`,
+    )
+  }
+
   async startGame(gameId: string): Promise<GameDto> {
     return this.request<GameDto>(`/api/games/${gameId}/start`, {
       method: 'POST',

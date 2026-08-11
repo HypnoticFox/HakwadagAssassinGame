@@ -72,6 +72,8 @@
     "startGame": "Spel starten",
     "endGame": "Spel beëindigen",
     "inviteCode": "Uitnodigingscode",
+    "copyInviteCode": "Uitnodigingscode kopiëren",
+    "copyInviteLink": "Uitnodigingslink kopiëren",
     "maxPlayers": "Max. spelers",
     "pointsPerTag": "Punten per tag",
     "timeout": "Time-out",
@@ -107,6 +109,11 @@
       "confirmRemoveModerator": "Weet je zeker dat je deze moderator wilt verwijderen?",
       "noPlayers": "Nog geen spelers."
     }
+  },
+  "invite": {
+    "joining": "Spel deelnemen...",
+    "error": "Kon niet deelnemen aan het spel",
+    "gameNotFound": "Spel niet gevonden"
   },
   "assignment": {
     "eyebrow": "Jouw doelwit",

@@ -44,6 +44,15 @@ public static class EndpointExtensions
             var games = await service.GetMyGamesAsync(context.GetRequiredPlayerId(), cancellationToken);
             return Results.Ok(games);
         });
+        games.MapGet("/lookup/{inviteCode}", async (string inviteCode, IGameRepository gameRepo, CancellationToken cancellationToken) =>
+        {
+            var game = await gameRepo.GetByInviteCodeAsync(inviteCode.Trim(), cancellationToken);
+            if (game is null)
+            {
+                return Results.NotFound(new { error = "Game not found." });
+            }
+            return Results.Ok(new { id = game.Id, name = game.Name, status = game.Status });
+        });
         games.MapGet("/{gameId:guid}", async (HttpContext context, Guid gameId, IGameService service, CancellationToken cancellationToken) =>
         {
             var game = await service.GetGameAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
