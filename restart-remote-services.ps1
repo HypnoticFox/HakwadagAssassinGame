@@ -42,9 +42,7 @@ function Write-Ok($msg) { Write-Host "[restart] $msg" -ForegroundColor Green }
 # --- Stop backend ---
 if (-not $FrontendOnly) {
     Write-Status "Stopping backend..."
-    Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Where-Object {
-        $_.CommandLine -match "HakwadagAssassinGame" -or $_.CommandLine -match "watch"
-    } | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     # Also kill any process on the backend port
     $backendProc = Get-NetTCPConnection -LocalPort $BackendPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
@@ -57,9 +55,7 @@ if (-not $FrontendOnly) {
 # --- Stop frontend ---
 if (-not $BackendOnly) {
     Write-Status "Stopping frontend..."
-    Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
-        $_.CommandLine -match "vite" -or $_.CommandLine -match "npm"
-    } | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
     # Also kill any process on the frontend port
     $frontendProc = Get-NetTCPConnection -LocalPort $FrontendPort -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique
