@@ -11,8 +11,10 @@ public sealed class Game
         Guid id,
         string name,
         string inviteCode,
+        GameStatus status,
         DateTimeOffset createdAt,
         DateTimeOffset scheduledEndAt,
+        DateTimeOffset? endedAt,
         int maxPlayers,
         int basePointsPerTag,
         Dictionary<ConditionType, int> conditionBonuses,
@@ -28,9 +30,10 @@ public sealed class Game
         Id = id;
         Name = name;
         InviteCode = inviteCode;
-        Status = GameStatus.NotStarted;
+        Status = status;
         CreatedAt = createdAt;
         ScheduledEndAt = scheduledEndAt;
+        EndedAt = endedAt;
         MaxPlayers = maxPlayers;
         BasePointsPerTag = basePointsPerTag;
         ConditionBonuses = conditionBonuses is null
@@ -60,8 +63,10 @@ public sealed class Game
             id ?? Guid.NewGuid(),
             name,
             inviteCode,
+            GameStatus.NotStarted,
             createdAt ?? DateTimeOffset.UtcNow,
             scheduledEndAt,
+            null,
             maxPlayers,
             basePointsPerTag,
             conditionBonuses is null ? new Dictionary<ConditionType, int>() : new Dictionary<ConditionType, int>(conditionBonuses),
