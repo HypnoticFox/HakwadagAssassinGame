@@ -7,7 +7,13 @@ namespace HakwadagAssassinGame.Core.Entities;
 public sealed class GamePlayer
 {
     [JsonConstructor]
-    public GamePlayer(Guid gameId, Guid playerId, GameRole role)
+    public GamePlayer(
+        Guid gameId,
+        Guid playerId,
+        GameRole role,
+        int score = 0,
+        bool isActive = true,
+        bool isParticipating = true)
     {
         if (gameId == Guid.Empty)
         {
@@ -22,9 +28,9 @@ public sealed class GamePlayer
         GameId = gameId;
         PlayerId = playerId;
         Role = role;
-        Score = 0;
-        IsActive = true;
-        IsParticipating = true;
+        Score = score;
+        IsActive = isActive;
+        IsParticipating = isParticipating;
     }
 
     /// <summary>Creates a game membership.</summary>

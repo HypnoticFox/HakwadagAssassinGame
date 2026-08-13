@@ -14,6 +14,7 @@
         </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
         <PackageReference Include="NSubstitute" Version="6.0.0" />
+        <PackageReference Include="Testcontainers.Redis" Version="4.13.0" />
         <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -22,10 +23,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Exclude pre-existing Integration tests that require missing packages -->
-        <Compile Remove="Integration\**\*.cs" />
-        <EmbeddedResource Remove="Integration\**\*" />
-        <None Remove="Integration\**\*" />
+        <!-- Exclude Integration tests that require missing packages; Redis tests are included -->
+        <Compile Remove="Integration\Api\**\*.cs" />
+        <Compile Remove="Integration\Middleware\**\*.cs" />
+        <EmbeddedResource Remove="Integration\Api\**\*" />
+        <EmbeddedResource Remove="Integration\Middleware\**\*" />
+        <None Remove="Integration\Api\**\*" />
+        <None Remove="Integration\Middleware\**\*" />
     </ItemGroup>
 
     <ItemGroup>

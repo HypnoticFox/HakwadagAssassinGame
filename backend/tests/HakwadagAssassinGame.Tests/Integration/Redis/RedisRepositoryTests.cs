@@ -12,7 +12,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_AddAndGetById()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
         var game = Game.Create("Test Game", "ABC123", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
 
@@ -28,7 +27,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_GetById_NonExistent_ReturnsNull()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
 
         var result = await repo.GetByIdAsync(Guid.NewGuid());
@@ -39,7 +37,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_GetByInviteCode()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
         var game = Game.Create("Test", "INVITE1", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
         await repo.AddAsync(game);
@@ -53,7 +50,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_GetByInviteCode_NonExistent_ReturnsNull()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
 
         var result = await repo.GetByInviteCodeAsync("NONEXIST");
@@ -64,7 +60,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_Update_ChangesData()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
         var game = Game.Create("Original", "CODE1", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
         await repo.AddAsync(game);
@@ -84,7 +79,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_Update_ChangedInviteCode_RemovesOldIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
         var game = Game.Create("Test", "OLDCODE", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
         await repo.AddAsync(game);
@@ -106,7 +100,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_Delete_RemovesGameAndIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
         var game = Game.Create("Test", "DELETE", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
         await repo.AddAsync(game);
@@ -122,7 +115,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GameRepository_GetAll_ReturnsAllGames()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGameRepository(Multiplexer);
         var game1 = Game.Create("Game1", "CODE1", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
         var game2 = Game.Create("Game2", "CODE2", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
@@ -141,7 +133,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task PlayerRepository_AddAndGetById()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisPlayerRepository(Multiplexer);
         var player = Player.Create("test@example.com", "TestPlayer");
 
@@ -157,7 +148,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task PlayerRepository_GetByEmail()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisPlayerRepository(Multiplexer);
         var player = Player.Create("findme@example.com", "Finder");
         await repo.AddAsync(player);
@@ -171,7 +161,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task PlayerRepository_GetByEmail_NonExistent_ReturnsNull()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisPlayerRepository(Multiplexer);
 
         var result = await repo.GetByEmailAsync("nobody@example.com");
@@ -182,7 +171,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task PlayerRepository_Update_ChangedEmail_RemovesOldIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisPlayerRepository(Multiplexer);
         var player = Player.Create("old@example.com", "Test");
         await repo.AddAsync(player);
@@ -201,7 +189,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task PlayerRepository_Delete_RemovesPlayerAndEmailIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisPlayerRepository(Multiplexer);
         var player = Player.Create("delete@example.com", "DeleteMe");
         await repo.AddAsync(player);
@@ -219,7 +206,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GamePlayerRepository_AddAndGet()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGamePlayerRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
@@ -238,7 +224,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GamePlayerRepository_GetByGameId()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGamePlayerRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var p1 = Guid.NewGuid();
@@ -254,7 +239,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GamePlayerRepository_GetByPlayerId()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGamePlayerRepository(Multiplexer);
         var playerId = Guid.NewGuid();
         var g1 = Guid.NewGuid();
@@ -270,7 +254,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GamePlayerRepository_Update()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGamePlayerRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
@@ -288,7 +271,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task GamePlayerRepository_Remove()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisGamePlayerRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var playerId = Guid.NewGuid();
@@ -310,7 +292,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task AssignmentRepository_AddAndGetById()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisAssignmentRepository(Multiplexer);
         var conditions = new List<Condition> { AloneCondition.Create() };
         var assignment = Assignment.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), conditions);
@@ -326,7 +307,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task AssignmentRepository_GetActiveByHunterId()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisAssignmentRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var hunterId = Guid.NewGuid();
@@ -344,7 +324,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task AssignmentRepository_GetActiveByHunterId_NotActive_ReturnsNull()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisAssignmentRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var hunterId = Guid.NewGuid();
@@ -363,7 +342,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task AssignmentRepository_GetByGameId()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisAssignmentRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var a1 = Assignment.Create(gameId, Guid.NewGuid(), Guid.NewGuid(), [AloneCondition.Create()]);
@@ -379,7 +357,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task AssignmentRepository_Update_CompletedAssignment_RemovesActiveIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisAssignmentRepository(Multiplexer);
         var gameId = Guid.NewGuid();
         var hunterId = Guid.NewGuid();
@@ -396,7 +373,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task AssignmentRepository_Update_ChangedGameId_MovesGameIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisAssignmentRepository(Multiplexer);
         var gameId1 = Guid.NewGuid();
         var gameId2 = Guid.NewGuid();
@@ -421,7 +397,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task TagSubmissionRepository_AddAndGetById()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisTagSubmissionRepository(Multiplexer);
         var submission = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
 
@@ -436,7 +411,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task TagSubmissionRepository_GetPendingByTargetId()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisTagSubmissionRepository(Multiplexer);
         var targetId = Guid.NewGuid();
         var submission = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), targetId, Guid.NewGuid());
@@ -451,7 +425,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task TagSubmissionRepository_GetPendingByTargetId_ConfirmedNotIncluded()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisTagSubmissionRepository(Multiplexer);
         var targetId = Guid.NewGuid();
         var submission = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), targetId, Guid.NewGuid());
@@ -467,7 +440,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task TagSubmissionRepository_Update_ResolvedSubmission_RemovesPendingIndex()
     {
-        SkipIfRedisUnavailable();
         var repo = new RedisTagSubmissionRepository(Multiplexer);
         var targetId = Guid.NewGuid();
         var submission = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), targetId, Guid.NewGuid());
@@ -485,7 +457,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task ConditionLibrary_Get_ReturnsDefaultConditionsWhenEmpty()
     {
-        SkipIfRedisUnavailable();
         var library = new RedisConditionLibrary(Multiplexer);
         var gameId = Guid.NewGuid();
 
@@ -502,7 +473,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task ConditionLibrary_Get_ReturnsPersistedConditions()
     {
-        SkipIfRedisUnavailable();
         var library = new RedisConditionLibrary(Multiplexer);
         var gameId = Guid.NewGuid();
 
@@ -518,7 +488,6 @@ public sealed class RedisRepositoryTests : RedisTestBase
     [Fact]
     public async Task ConditionLibrary_Add_AddsConditionToExisting()
     {
-        SkipIfRedisUnavailable();
         var library = new RedisConditionLibrary(Multiplexer);
         var gameId = Guid.NewGuid();
 

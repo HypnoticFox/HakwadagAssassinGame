@@ -9,7 +9,6 @@ public sealed class RedisTokenStoreTests : RedisTestBase
     [Fact]
     public async Task StoreAndGetPlayerId()
     {
-        SkipIfRedisUnavailable();
         var store = CreateStore();
         var token = "test-token-123";
         var playerId = Guid.NewGuid();
@@ -24,7 +23,6 @@ public sealed class RedisTokenStoreTests : RedisTestBase
     [Fact]
     public async Task GetPlayerId_NonExistentToken_ReturnsNull()
     {
-        SkipIfRedisUnavailable();
         var store = CreateStore();
 
         var retrieved = await store.GetPlayerIdAsync("nonexistent");
@@ -35,7 +33,6 @@ public sealed class RedisTokenStoreTests : RedisTestBase
     [Fact]
     public async Task Remove_RemovesToken()
     {
-        SkipIfRedisUnavailable();
         var store = CreateStore();
         var token = "test-token-456";
         var playerId = Guid.NewGuid();
@@ -50,7 +47,6 @@ public sealed class RedisTokenStoreTests : RedisTestBase
     [Fact]
     public async Task Remove_NonExistentToken_DoesNotThrow()
     {
-        SkipIfRedisUnavailable();
         var store = CreateStore();
 
         var exception = await Record.ExceptionAsync(() => store.RemoveAsync("nonexistent"));
@@ -61,7 +57,6 @@ public sealed class RedisTokenStoreTests : RedisTestBase
     [Fact]
     public async Task Store_TokenHasExpiry()
     {
-        SkipIfRedisUnavailable();
         var store = CreateStore();
         var token = "expiry-test";
         await store.StoreAsync(token, Guid.NewGuid());
@@ -76,7 +71,6 @@ public sealed class RedisTokenStoreTests : RedisTestBase
     [Fact]
     public async Task MultipleTokens_DifferentPlayers()
     {
-        SkipIfRedisUnavailable();
         var store = CreateStore();
         var p1 = Guid.NewGuid();
         var p2 = Guid.NewGuid();
