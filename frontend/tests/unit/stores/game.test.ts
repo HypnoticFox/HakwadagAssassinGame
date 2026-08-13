@@ -60,7 +60,7 @@ describe('game store', () => {
 
     it('reads recent games from localStorage', () => {
       const recent: RecentGame[] = [
-        { id: 'g1', name: 'Old Game', status: GameStatus.Ended, myRole: 0, joinedAt: '' },
+        { id: 'g1', name: 'Old Game', status: GameStatus.Ended, myRole: 0, joinedAt: '', playerCount: 0, maxPlayers: 0, basePointsPerTag: 0 },
       ]
       localStorage.setItem('hakwadag_recent_games', JSON.stringify(recent))
       const store = useGameStore()
@@ -176,6 +176,18 @@ describe('game store', () => {
       expect(stored).toHaveLength(1)
       expect(stored[0].id).toBe('g1')
     })
+
+    it('preserves playerCount, maxPlayers, and basePointsPerTag', async () => {
+      const games = [makeGame({ id: 'g1', playerCount: 5, maxPlayers: 20, basePointsPerTag: 150 })]
+      vi.mocked(api.getMyGames).mockResolvedValue(games)
+      const store = useGameStore()
+
+      await store.loadMyGames()
+
+      expect(store.recentGames[0].playerCount).toBe(5)
+      expect(store.recentGames[0].maxPlayers).toBe(20)
+      expect(store.recentGames[0].basePointsPerTag).toBe(150)
+    })
   })
 
   describe('joinGame', () => {
@@ -247,7 +259,7 @@ describe('game store', () => {
       vi.mocked(api.leaveGame).mockResolvedValue(undefined)
       const store = useGameStore()
       store.currentGame = makeGame({ status: GameStatus.NotStarted })
-      store.recentGames = [{ id: 'g1', name: 'G', status: 0, myRole: 0, joinedAt: '' }]
+      store.recentGames = [{ id: 'g1', name: 'G', status: 0, myRole: 0, joinedAt: '', playerCount: 0, maxPlayers: 0, basePointsPerTag: 0 }]
 
       await store.leaveGame('g1')
 
@@ -263,7 +275,7 @@ describe('game store', () => {
       vi.mocked(api.getGame).mockResolvedValue(leftGame)
       const store = useGameStore()
       store.currentGame = activeGame
-      store.recentGames = [{ id: 'g1', name: 'G', status: 1, myRole: 0, joinedAt: '' }]
+      store.recentGames = [{ id: 'g1', name: 'G', status: 1, myRole: 0, joinedAt: '', playerCount: 0, maxPlayers: 0, basePointsPerTag: 0 }]
 
       await store.leaveGame('g1')
 

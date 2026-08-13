@@ -10,6 +10,9 @@ export interface RecentGame {
   status: GameStatus
   myRole: number
   joinedAt: string
+  playerCount: number
+  maxPlayers: number
+  basePointsPerTag: number
 }
 
 const RECENT_GAMES_KEY = 'hakwadag_recent_games'
@@ -49,6 +52,9 @@ export const useGameStore = defineStore('game', () => {
       status: game.status,
       myRole: game.myRole,
       joinedAt: new Date().toISOString(),
+      playerCount: game.playerCount,
+      maxPlayers: game.maxPlayers,
+      basePointsPerTag: game.basePointsPerTag,
     }
     const existing = recentGames.value.filter((g) => g.id !== game.id)
     recentGames.value = [entry, ...existing]
@@ -100,6 +106,9 @@ export const useGameStore = defineStore('game', () => {
         status: game.status,
         myRole: game.myRole,
         joinedAt: game.createdAt,
+        playerCount: game.playerCount,
+        maxPlayers: game.maxPlayers,
+        basePointsPerTag: game.basePointsPerTag,
       }))
       writeRecentGames(recentGames.value)
       return games
