@@ -25,6 +25,7 @@ const error = ref<string | null>(null)
 
 const devEmail = ref('test@example.com')
 const playerCount = ref(5)
+const autoStart = ref(true)
 
 const seededPlayers = ref<SeededPlayer[]>(
   (() => {
@@ -130,7 +131,7 @@ async function handleSeedGame() {
   isLoading.value = true
   error.value = null
   try {
-    const result = await api.seedGame(Number(playerCount.value))
+    const result = await api.seedGame(Number(playerCount.value), autoStart.value)
     seededPlayers.value = result.players
     saveSeededPlayers()
     quickActionGameId.value = result.game.id
@@ -425,6 +426,14 @@ watch(isExpanded, (expanded) => {
           class="dev-switcher__input"
           @keydown.enter="handleSeedGame"
         >
+        <label class="dev-switcher__checkbox-label">
+          <input
+            v-model="autoStart"
+            type="checkbox"
+            class="dev-switcher__checkbox"
+          >
+          Auto-start
+        </label>
         <button
           id="dev-seed-game-button"
           type="button"
@@ -916,6 +925,23 @@ watch(isExpanded, (expanded) => {
   border-color: var(--dev-accent);
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25);
   outline: none;
+}
+
+.dev-switcher__checkbox-label {
+  align-items: center;
+  color: var(--dev-text);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.875rem;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.dev-switcher__checkbox {
+  accent-color: var(--dev-accent);
+  cursor: pointer;
+  height: 1rem;
+  width: 1rem;
 }
 
 .dev-switcher__button {

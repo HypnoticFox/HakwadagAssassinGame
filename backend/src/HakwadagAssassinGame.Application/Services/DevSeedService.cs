@@ -103,8 +103,11 @@ public sealed class DevSeedService : IDevSeedService
                 cancellationToken);
         }
 
-        // Start the game so assignments are created
-        gameDto = await gameService.StartGameAsync(seededPlayers[0].Player.Id, gameDto.Id, cancellationToken);
+        // Start the game so assignments are created (unless opted out)
+        if (request.AutoStart ?? true)
+        {
+            gameDto = await gameService.StartGameAsync(seededPlayers[0].Player.Id, gameDto.Id, cancellationToken);
+        }
 
         var resultPlayers = seededPlayers
             .Select((p, index) => new SeededPlayerDto(

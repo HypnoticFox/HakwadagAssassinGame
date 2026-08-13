@@ -8,7 +8,8 @@ public record DevLoginRequest(string? Email);
 
 /// <summary>Request for the development-only seed-game endpoint.</summary>
 /// <param name="PlayerCount">Number of players to seed (default 5, min 3, max 20).</param>
-public record SeedGameRequest(int? PlayerCount);
+/// <param name="AutoStart">Whether to automatically start the game after seeding (default true).</param>
+public record SeedGameRequest(int? PlayerCount, bool? AutoStart);
 
 /// <summary>A seeded player with their authentication token.</summary>
 /// <param name="Player">The player details.</param>

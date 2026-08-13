@@ -123,13 +123,16 @@ class ApiClient {
     })
   }
 
-  async seedGame(playerCount?: number): Promise<{
+  async seedGame(playerCount?: number, autoStart?: boolean): Promise<{
     game: GameDto
     players: Array<{ player: PlayerDto; token: string; role: number }>
   }> {
+    const body: Record<string, unknown> = {}
+    if (playerCount !== undefined) body.playerCount = playerCount
+    if (autoStart !== undefined) body.autoStart = autoStart
     return this.request('/api/dev/seed-game', {
       method: 'POST',
-      body: JSON.stringify(playerCount ? { playerCount } : {}),
+      body: JSON.stringify(body),
     })
   }
 
