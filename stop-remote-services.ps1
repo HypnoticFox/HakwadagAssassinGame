@@ -67,19 +67,32 @@ if ($DeleteReservedNames) {
     Write-Status "Reserved names kept. Use -DeleteReservedNames to remove them."
 }
 
+# --- Configuration ---
+$RepoRoot = $PSScriptRoot
+$BackendDir = Join-Path $RepoRoot "backend"
+$FrontendDir = Join-Path $RepoRoot "frontend"
+
 # --- Stop backend (dotnet) ---
 Write-Status "Stopping backend..."
-Get-Process -Name "dotnet" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name='dotnet.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match "HakwadagAssassinGame" } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Write-Ok "Backend stopped."
 
 # --- Stop frontend (node) ---
 Write-Status "Stopping frontend..."
-Get-Process -Name "node" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match [regex]::Escape($FrontendDir) } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Write-Ok "Frontend stopped."
 
-# --- Stop zrok2 processes ---
+# --- Stop zrok2 processes for this project ---
 Write-Status "Stopping zrok2 processes..."
-Get-Process -Name "zrok2" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+$ApiShareName = if ($env:ZROK_API_NAME) { $env:ZROK_API_NAME } else { "hakwadag-api" }
+$AppShareName = if ($env:ZROK_APP_NAME) { $env:ZROK_APP_NAME } else { "hakwadag-app" }
+Get-CimInstance Win32_Process -Filter "Name='zrok2.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match $ApiShareName -or $_.CommandLine -match $AppShareName } |
+    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Write-Ok "zrok2 processes stopped."
 
 # --- Stop dependencies (default) ---
