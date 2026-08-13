@@ -43,7 +43,7 @@ function Write-Ok($msg) { Write-Host "[restart] $msg" -ForegroundColor Green }
 if (-not $FrontendOnly) {
     Write-Status "Stopping backend..."
     Get-CimInstance Win32_Process -Filter "Name='dotnet.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -match "HakwadagAssassinGame" } |
+        Where-Object { $_.CommandLine -match [regex]::Escape($BackendDir) } |
         ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
     # Also kill any process on the backend port

@@ -74,7 +74,7 @@ function Stop-AllJobs {
 
     # Stop backend and frontend processes (only those related to this project)
     Get-CimInstance Win32_Process -Filter "Name='dotnet.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -match "HakwadagAssassinGame" } |
+        Where-Object { $_.CommandLine -match [regex]::Escape($BackendDir) } |
         ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
     Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
         Where-Object { $_.CommandLine -match [regex]::Escape($FrontendDir) } |
