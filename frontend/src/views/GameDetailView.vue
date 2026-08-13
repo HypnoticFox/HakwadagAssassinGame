@@ -34,6 +34,7 @@ const safeTimeStart = ref('')
 const safeTimeEnd = ref('')
 const localError = ref<string | null>(null)
 const playersLoading = ref(false)
+const newDurationHours = ref('24')
 
 useGameSignalR(gameId.value)
 
@@ -82,6 +83,29 @@ async function onEnd() {
   localError.value = null
   try {
     await gameStore.endGame(gameId.value)
+  } catch (err) {
+    if (err instanceof Error) {
+      localError.value = err.message
+    }
+  }
+}
+
+async function onUpdateDuration() {
+  if (!newDurationHours.value) return
+  localError.value = null
+  try {
+    await gameStore.updateDuration(gameId.value, Number(newDurationHours.value))
+  } catch (err) {
+    if (err instanceof Error) {
+      localError.value = err.message
+    }
+  }
+}
+
+async function onExtend(minutes: number) {
+  localError.value = null
+  try {
+    await gameStore.extendDuration(gameId.value, minutes)
   } catch (err) {
     if (err instanceof Error) {
       localError.value = err.message
@@ -210,6 +234,11 @@ const formattedCreatedAt = computed(() => {
   if (!gameStore.currentGame) return ''
   return new Date(gameStore.currentGame.createdAt).toLocaleString()
 })
+
+const formattedScheduledEndAt = computed(() => {
+  if (!gameStore.currentGame?.scheduledEndAt) return t('gameDetail.noScheduledEnd')
+  return new Date(gameStore.currentGame.scheduledEndAt).toLocaleString()
+})
 </script>
 
 <template>
@@ -283,6 +312,49 @@ const formattedCreatedAt = computed(() => {
         <p class="min-participants-note">{{ $t('gameDetail.minParticipants') }}</p>
       </div>
 
+      <div
+        v-if="
+          isGameAdmin(gameStore.currentGame.myRole) &&
+          gameStore.currentGame.status === GameStatus.NotStarted
+        "
+        class="duration-card"
+      >
+        <p class="duration-label">{{ $t('gameDetail.duration') }}</p>
+        <div class="duration-edit">
+          <Input
+            v-model="newDurationHours"
+            :label="$t('gameDetail.durationHours')"
+            type="number"
+            inputmode="numeric"
+            min="1"
+          />
+          <Button variant="secondary" :loading="gameStore.isLoading" @click="onUpdateDuration">
+            {{ $t('gameDetail.updateDuration') }}
+          </Button>
+        </div>
+      </div>
+
+      <div
+        v-if="
+          isGameAdmin(gameStore.currentGame.myRole) &&
+          gameStore.currentGame.status === GameStatus.Active
+        "
+        class="extend-card"
+      >
+        <p class="extend-label">{{ $t('gameDetail.extendGame') }}</p>
+        <div class="extend-buttons">
+          <Button variant="secondary" :loading="gameStore.isLoading" @click="onExtend(5)">
+            {{ $t('gameDetail.extend5min') }}
+          </Button>
+          <Button variant="secondary" :loading="gameStore.isLoading" @click="onExtend(60)">
+            {{ $t('gameDetail.extend1hour') }}
+          </Button>
+          <Button variant="secondary" :loading="gameStore.isLoading" @click="onExtend(1440)">
+            {{ $t('gameDetail.extend1day') }}
+          </Button>
+        </div>
+      </div>
+
       <div class="invite-card">
         <div>
           <p class="invite-label">
@@ -343,6 +415,14 @@ const formattedCreatedAt = computed(() => {
           </p>
           <p class="detail-value">
             {{ formattedCreatedAt }}
+          </p>
+        </div>
+        <div class="detail-card">
+          <p class="detail-label">
+            {{ $t('gameDetail.scheduledEnd') }}
+          </p>
+          <p class="detail-value">
+            {{ formattedScheduledEndAt }}
           </p>
         </div>
       </div>
@@ -802,6 +882,36 @@ const formattedCreatedAt = computed(() => {
   color: var(--text-faint);
   font-size: 0.8125rem;
   margin: 0.5rem 0 0;
+}
+
+.duration-card,
+.extend-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.duration-label,
+.extend-label {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+}
+
+.duration-edit {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.extend-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .form-error {

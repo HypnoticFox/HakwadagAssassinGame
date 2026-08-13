@@ -68,7 +68,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function createGame(request: {
     name: string
-    durationHours: number
+    durationHours?: number
     maxPlayers?: number
     basePointsPerTag: number
     confirmationTimeoutMinutes: number
@@ -192,6 +192,38 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  async function updateDuration(gameId: string, durationHours: number) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.updateDuration(gameId, durationHours)
+      await loadGame(gameId)
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function extendDuration(gameId: string, minutes: number) {
+    isLoading.value = true
+    error.value = null
+    try {
+      await api.extendDuration(gameId, minutes)
+      await loadGame(gameId)
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function setParticipation(gameId: string, isParticipating: boolean) {
     isLoading.value = true
     error.value = null
@@ -299,6 +331,8 @@ export const useGameStore = defineStore('game', () => {
     loadGame,
     startGame,
     endGame,
+    updateDuration,
+    extendDuration,
     leaveGame,
     rejoinGame,
     setParticipation,

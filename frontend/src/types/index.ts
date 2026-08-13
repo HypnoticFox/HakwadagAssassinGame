@@ -119,7 +119,7 @@ export interface LeaderboardEntryDto {
 
 export interface CreateGameRequest {
   name: string
-  durationHours: number
+  durationHours?: number
   maxPlayers?: number
   basePointsPerTag: number
   confirmationTimeoutMinutes: number

@@ -184,6 +184,18 @@ public static class EndpointExtensions
             return Results.Created($"/api/games/{gameId}/conditions", null);
         });
 
+        var duration = games.MapGroup("/{gameId:guid}/duration");
+        duration.MapPut("", async (HttpContext context, Guid gameId, UpdateDurationRequest request, IAdminService service, CancellationToken cancellationToken) =>
+        {
+            await service.UpdateDurationAsync(context.GetRequiredPlayerId(), gameId, request, cancellationToken);
+            return Results.Ok();
+        });
+        duration.MapPost("/extend", async (HttpContext context, Guid gameId, ExtendDurationRequest request, IAdminService service, CancellationToken cancellationToken) =>
+        {
+            await service.ExtendDurationAsync(context.GetRequiredPlayerId(), gameId, request, cancellationToken);
+            return Results.Ok();
+        });
+
         // Dev-only testing endpoints — not available in production.
         if (app.Environment.IsDevelopment())
         {

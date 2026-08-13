@@ -200,4 +200,117 @@ public sealed class AdminEndpointTests : ApiTestBase
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    // ── Update Duration ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateDuration_AsCreator_Returns200()
+    {
+        var (creator, token) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+
+        var response = await AuthenticatedPutAsync(
+            $"/api/games/{game.Id}/duration",
+            new UpdateDurationRequest(48),
+            token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Verify the scheduled end was updated
+        var updated = await GameRepo.GetByIdAsync(game.Id);
+        Assert.NotNull(updated);
+        Assert.NotNull(updated!.ScheduledEndAt);
+        Assert.InRange(
+            updated.ScheduledEndAt!.Value,
+            DateTimeOffset.UtcNow.AddHours(47),
+            DateTimeOffset.UtcNow.AddHours(49));
+    }
+
+    [Fact]
+    public async Task UpdateDuration_NotCreator_Returns401()
+    {
+        var (creator, _) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+        var (player, token) = await CreateAuthenticatedPlayerAsync("player@test.com", "Player");
+        await GamePlayerRepo.AddAsync(GamePlayer.Create(game.Id, player.Id));
+
+        var response = await AuthenticatedPutAsync(
+            $"/api/games/{game.Id}/duration",
+            new UpdateDurationRequest(48),
+            token);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateDuration_ActiveGame_Returns400()
+    {
+        var (creator, token) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+        game.Start();
+        await GameRepo.UpdateAsync(game);
+
+        var response = await AuthenticatedPutAsync(
+            $"/api/games/{game.Id}/duration",
+            new UpdateDurationRequest(48),
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // ── Extend Duration ───────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ExtendDuration_AsCreator_Returns200()
+    {
+        var (creator, token) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+        game.Start();
+        await GameRepo.UpdateAsync(game);
+        var originalEnd = game.ScheduledEndAt!.Value;
+
+        var response = await AuthenticatedPostAsync(
+            $"/api/games/{game.Id}/duration/extend",
+            new ExtendDurationRequest(60),
+            token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        // Verify the scheduled end was extended by one hour
+        var updated = await GameRepo.GetByIdAsync(game.Id);
+        Assert.NotNull(updated);
+        Assert.Equal(originalEnd.AddHours(1), updated!.ScheduledEndAt);
+    }
+
+    [Fact]
+    public async Task ExtendDuration_NotCreator_Returns401()
+    {
+        var (creator, _) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+        game.Start();
+        await GameRepo.UpdateAsync(game);
+        var (player, token) = await CreateAuthenticatedPlayerAsync("player@test.com", "Player");
+        await GamePlayerRepo.AddAsync(GamePlayer.Create(game.Id, player.Id));
+
+        var response = await AuthenticatedPostAsync(
+            $"/api/games/{game.Id}/duration/extend",
+            new ExtendDurationRequest(60),
+            token);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ExtendDuration_NotStartedGame_Returns400()
+    {
+        var (creator, token) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
+        var game = await SeedGameAsync(creator: creator);
+
+        var response = await AuthenticatedPostAsync(
+            $"/api/games/{game.Id}/duration/extend",
+            new ExtendDurationRequest(60),
+            token);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

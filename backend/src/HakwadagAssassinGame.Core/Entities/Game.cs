@@ -13,7 +13,7 @@ public sealed class Game
         string inviteCode,
         GameStatus status,
         DateTimeOffset createdAt,
-        DateTimeOffset scheduledEndAt,
+        DateTimeOffset? scheduledEndAt,
         DateTimeOffset? endedAt,
         int maxPlayers,
         int basePointsPerTag,
@@ -52,7 +52,7 @@ public sealed class Game
     public static Game Create(
         string name,
         string inviteCode,
-        DateTimeOffset scheduledEndAt,
+        DateTimeOffset? scheduledEndAt,
         int maxPlayers,
         int basePointsPerTag,
         IDictionary<ConditionType, int>? conditionBonuses = null,
@@ -88,8 +88,8 @@ public sealed class Game
     /// <summary>Gets the time at which the game was created.</summary>
     public DateTimeOffset CreatedAt { get; private set; }
 
-    /// <summary>Gets the scheduled end time.</summary>
-    public DateTimeOffset ScheduledEndAt { get; private set; }
+    /// <summary>Gets the scheduled end time, or null when the game has no fixed end time.</summary>
+    public DateTimeOffset? ScheduledEndAt { get; private set; }
 
     /// <summary>Gets the actual end time, or null while the game is running.</summary>
     public DateTimeOffset? EndedAt { get; private set; }
@@ -118,6 +118,30 @@ public sealed class Game
         }
 
         Status = GameStatus.Active;
+    }
+
+    /// <summary>Sets the scheduled end time. Only valid before the game starts.</summary>
+    public void SetScheduledEnd(DateTimeOffset? scheduledEndAt)
+    {
+        if (Status != GameStatus.NotStarted)
+        {
+            throw new InvalidOperationException("The scheduled end time can only be changed before the game starts.");
+        }
+        ScheduledEndAt = scheduledEndAt;
+    }
+
+    /// <summary>Extends the scheduled end time by the given duration. Only valid while the game is active.</summary>
+    public void ExtendTime(TimeSpan extension)
+    {
+        if (Status != GameStatus.Active)
+        {
+            throw new InvalidOperationException("Time can only be extended while the game is active.");
+        }
+        if (extension <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(extension), "Extension must be positive.");
+        }
+        ScheduledEndAt = (ScheduledEndAt ?? DateTimeOffset.UtcNow) + extension;
     }
 
     /// <summary>Ends the game at the supplied time.</summary>

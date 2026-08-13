@@ -13,6 +13,8 @@ vi.mock('@/api/client', () => ({
     getGame: vi.fn(),
     startGame: vi.fn(),
     endGame: vi.fn(),
+    updateDuration: vi.fn(),
+    extendDuration: vi.fn(),
     leaveGame: vi.fn(),
     rejoinGame: vi.fn(),
     getGamePlayers: vi.fn(),
@@ -251,6 +253,55 @@ describe('game store', () => {
 
       expect(result).toBe(ended)
       expect(store.currentGame?.status).toBe(GameStatus.Ended)
+    })
+  })
+
+  describe('updateDuration', () => {
+    it('calls api.updateDuration and reloads the game', async () => {
+      const updated = makeGame({ scheduledEndAt: '2024-01-02T00:00:00Z' })
+      vi.mocked(api.updateDuration).mockResolvedValue(undefined)
+      vi.mocked(api.getGame).mockResolvedValue(updated)
+      const store = useGameStore()
+
+      await store.updateDuration('g1', 48)
+
+      expect(api.updateDuration).toHaveBeenCalledWith('g1', 48)
+      expect(api.getGame).toHaveBeenCalledWith('g1')
+      expect(store.currentGame).toStrictEqual(updated)
+    })
+
+    it('sets error and rethrows on failure', async () => {
+      vi.mocked(api.updateDuration).mockRejectedValue(new Error('Update failed'))
+      const store = useGameStore()
+
+      await expect(store.updateDuration('g1', 1)).rejects.toThrow('Update failed')
+      expect(store.error).toBe('Update failed')
+    })
+  })
+
+  describe('extendDuration', () => {
+    it('calls api.extendDuration and reloads the game', async () => {
+      const extended = makeGame({
+        status: GameStatus.Active,
+        scheduledEndAt: '2024-01-02T01:00:00Z',
+      })
+      vi.mocked(api.extendDuration).mockResolvedValue(undefined)
+      vi.mocked(api.getGame).mockResolvedValue(extended)
+      const store = useGameStore()
+
+      await store.extendDuration('g1', 60)
+
+      expect(api.extendDuration).toHaveBeenCalledWith('g1', 60)
+      expect(api.getGame).toHaveBeenCalledWith('g1')
+      expect(store.currentGame).toStrictEqual(extended)
+    })
+
+    it('sets error and rethrows on failure', async () => {
+      vi.mocked(api.extendDuration).mockRejectedValue(new Error('Extend failed'))
+      const store = useGameStore()
+
+      await expect(store.extendDuration('g1', 60)).rejects.toThrow('Extend failed')
+      expect(store.error).toBe('Extend failed')
     })
   })
 

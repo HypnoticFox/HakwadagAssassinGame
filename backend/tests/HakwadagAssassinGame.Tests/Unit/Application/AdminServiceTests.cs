@@ -364,4 +364,129 @@ public sealed class AdminServiceTests
         await Assert.ThrowsAsync<InvalidGameStateException>(() =>
             sut.SetParticipationAsync(CreatorId, GameId, false));
     }
+
+    // ── UpdateDurationAsync ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateDurationAsync_CreatorWhenNotStarted_UpdatesScheduledEnd()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var before = DateTimeOffset.UtcNow;
+        await sut.UpdateDurationAsync(CreatorId, GameId, new UpdateDurationRequest(48));
+        var after = DateTimeOffset.UtcNow;
+
+        Assert.NotNull(game.ScheduledEndAt);
+        Assert.InRange(game.ScheduledEndAt!.Value, before.AddHours(48), after.AddHours(48));
+        await gameRepository.Received(1).UpdateAsync(game, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateDurationAsync_NotCreator_ThrowsUnauthorizedException()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            sut.UpdateDurationAsync(PlayerId, GameId, new UpdateDurationRequest(48)));
+    }
+
+    [Fact]
+    public async Task UpdateDurationAsync_GameActive_ThrowsInvalidGameStateException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        game.Start();
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await Assert.ThrowsAsync<InvalidGameStateException>(() =>
+            sut.UpdateDurationAsync(CreatorId, GameId, new UpdateDurationRequest(48)));
+    }
+
+    [Fact]
+    public async Task UpdateDurationAsync_NonPositiveDuration_ThrowsInvalidGameStateException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await Assert.ThrowsAsync<InvalidGameStateException>(() =>
+            sut.UpdateDurationAsync(CreatorId, GameId, new UpdateDurationRequest(0)));
+    }
+
+    // ── ExtendDurationAsync ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task ExtendDurationAsync_CreatorWhenActive_ExtendsScheduledEnd()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        game.Start();
+        var original = game.ScheduledEndAt!.Value;
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await sut.ExtendDurationAsync(CreatorId, GameId, new ExtendDurationRequest(60));
+
+        Assert.Equal(original.AddHours(1), game.ScheduledEndAt);
+        await gameRepository.Received(1).UpdateAsync(game, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExtendDurationAsync_NotCreator_ThrowsUnauthorizedException()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            sut.ExtendDurationAsync(PlayerId, GameId, new ExtendDurationRequest(60)));
+    }
+
+    [Fact]
+    public async Task ExtendDurationAsync_GameNotStarted_ThrowsInvalidGameStateException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await Assert.ThrowsAsync<InvalidGameStateException>(() =>
+            sut.ExtendDurationAsync(CreatorId, GameId, new ExtendDurationRequest(60)));
+    }
+
+    [Fact]
+    public async Task ExtendDurationAsync_NonPositiveMinutes_ThrowsInvalidGameStateException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        game.Start();
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await Assert.ThrowsAsync<InvalidGameStateException>(() =>
+            sut.ExtendDurationAsync(CreatorId, GameId, new ExtendDurationRequest(0)));
+    }
 }

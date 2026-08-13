@@ -233,6 +233,20 @@ class ApiClient {
     })
   }
 
+  async updateDuration(gameId: string, durationHours: number): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/duration`, {
+      method: 'PUT',
+      body: JSON.stringify({ durationHours }),
+    })
+  }
+
+  async extendDuration(gameId: string, minutes: number): Promise<void> {
+    await this.request<void>(`/api/games/${gameId}/duration/extend`, {
+      method: 'POST',
+      body: JSON.stringify({ minutes }),
+    })
+  }
+
   async setParticipation(gameId: string, isParticipating: boolean): Promise<void> {
     await this.request<void>(`/api/games/${gameId}/participation`, {
       method: 'PUT',

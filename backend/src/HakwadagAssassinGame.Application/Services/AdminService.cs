@@ -27,6 +27,12 @@ public interface IAdminService
 
     /// <summary>Sets whether an admin participates in the game.</summary>
     Task SetParticipationAsync(Guid playerId, Guid gameId, bool isParticipating, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates the scheduled duration before the game starts.</summary>
+    Task UpdateDurationAsync(Guid playerId, Guid gameId, UpdateDurationRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Extends the remaining time of an active game.</summary>
+    Task ExtendDurationAsync(Guid playerId, Guid gameId, ExtendDurationRequest request, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Default game administration service.</summary>
@@ -120,6 +126,48 @@ public sealed class AdminService : IAdminService
 
         membership.SetParticipating(isParticipating);
         await gamePlayerRepository.UpdateAsync(membership, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateDurationAsync(Guid playerId, Guid gameId, UpdateDurationRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        await RequireCreatorAsync(playerId, gameId, cancellationToken);
+        var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        if (request.DurationHours <= 0)
+        {
+            throw new InvalidGameStateException("Duration must be positive.");
+        }
+        try
+        {
+            game.SetScheduledEnd(DateTimeOffset.UtcNow.AddHours(request.DurationHours));
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new InvalidGameStateException(exception.Message);
+        }
+        await gameRepository.UpdateAsync(game, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task ExtendDurationAsync(Guid playerId, Guid gameId, ExtendDurationRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        await RequireCreatorAsync(playerId, gameId, cancellationToken);
+        var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        if (request.Minutes <= 0)
+        {
+            throw new InvalidGameStateException("Extension must be positive.");
+        }
+        try
+        {
+            game.ExtendTime(TimeSpan.FromMinutes(request.Minutes));
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new InvalidGameStateException(exception.Message);
+        }
+        await gameRepository.UpdateAsync(game, cancellationToken);
     }
 
     private async Task<GamePlayer> RequireAdminAsync(Guid playerId, Guid gameId, CancellationToken cancellationToken)

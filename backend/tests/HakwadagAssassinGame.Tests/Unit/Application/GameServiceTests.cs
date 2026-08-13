@@ -128,6 +128,31 @@ public sealed class GameServiceTests
         await Assert.ThrowsAsync<InvalidGameStateException>(() => sut.CreateGameAsync(PlayerId, request));
     }
 
+    [Fact]
+    public async Task CreateGameAsync_NullDuration_CreatesGameWithoutScheduledEnd()
+    {
+        var player = Player.Create("creator@test.com", "Creator", id: PlayerId);
+        playerRepository.GetByIdAsync(PlayerId, Arg.Any<CancellationToken>()).Returns(player);
+
+        var request = new CreateGameRequest(
+            "Test Game", null, 10, 100, 15, null, null);
+        var createdGame = default(Game);
+        gameRepository.When(x => x.AddAsync(Arg.Any<Game>(), Arg.Any<CancellationToken>()))
+            .Do(call => createdGame = call.Arg<Game>());
+        gamePlayerRepository.GetByGameIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer>
+            {
+                GamePlayer.Create(GameId, PlayerId, GameRole.Creator)
+            });
+
+        var result = await sut.CreateGameAsync(PlayerId, request);
+
+        Assert.NotNull(createdGame);
+        Assert.Null(createdGame!.ScheduledEndAt);
+        Assert.NotNull(result);
+        await gameRepository.Received(1).AddAsync(Arg.Any<Game>(), Arg.Any<CancellationToken>());
+    }
+
     // ── JoinGameAsync ──────────────────────────────────────────────────────
 
     [Fact]

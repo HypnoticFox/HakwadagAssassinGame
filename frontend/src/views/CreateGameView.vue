@@ -10,7 +10,7 @@ const router = useRouter()
 const gameStore = useGameStore()
 
 const name = ref('')
-const durationHours = ref('24')
+const durationHours = ref('')
 const maxPlayers = ref('20')
 const basePointsPerTag = ref('100')
 const confirmationTimeoutMinutes = ref('5')
@@ -21,7 +21,7 @@ async function onSubmit() {
   try {
     const game = await gameStore.createGame({
       name: name.value,
-      durationHours: Number(durationHours.value),
+      durationHours: durationHours.value ? Number(durationHours.value) : undefined,
       maxPlayers: maxPlayers.value ? Number(maxPlayers.value) : undefined,
       basePointsPerTag: Number(basePointsPerTag.value),
       confirmationTimeoutMinutes: Number(confirmationTimeoutMinutes.value),
@@ -59,7 +59,6 @@ async function onSubmit() {
         type="number"
         inputmode="numeric"
         min="1"
-        required
       />
       <Input
         v-model="maxPlayers"

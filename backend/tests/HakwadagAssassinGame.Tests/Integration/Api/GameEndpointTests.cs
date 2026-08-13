@@ -32,6 +32,21 @@ public sealed class GameEndpointTests : ApiTestBase
     }
 
     [Fact]
+    public async Task CreateGame_NoDuration_Returns201WithNullScheduledEnd()
+    {
+        var (player, token) = await CreateAuthenticatedPlayerAsync();
+        var request = new CreateGameRequest(
+            "Open Ended Game", null, 10, 20, 5, null, null);
+
+        var response = await AuthenticatedPostAsync("/api/games", request, token);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var game = await response.Content.ReadFromJsonAsync<GameDto>();
+        Assert.NotNull(game);
+        Assert.Null(game!.ScheduledEndAt);
+    }
+
+    [Fact]
     public async Task CreateGame_DurationZero_Returns400()
     {
         var (player, token) = await CreateAuthenticatedPlayerAsync();

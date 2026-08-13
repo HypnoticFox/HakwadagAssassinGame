@@ -2,10 +2,10 @@ using HakwadagAssassinGame.Core.Enums;
 
 namespace HakwadagAssassinGame.Application.Dtos;
 
-/// <summary>Creates a new game.</summary>
+/// <summary>Creates a new game. Duration is optional; null means the game has no fixed end time.</summary>
 public record CreateGameRequest(
     string Name,
-    int DurationHours,
+    int? DurationHours,
     int? MaxPlayers,
     int BasePointsPerTag,
     int ConfirmationTimeoutMinutes,

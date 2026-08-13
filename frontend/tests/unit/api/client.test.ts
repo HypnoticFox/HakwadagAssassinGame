@@ -334,6 +334,24 @@ describe('endpoint URL construction', () => {
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/end`)
   })
 
+  it('updateDuration calls /api/games/:id/duration with PUT', async () => {
+    mockFetch(204)
+    await api.updateDuration('g1', 48)
+    const call = vi.mocked(fetch).mock.calls[0]
+    expect(call[0]).toBe(`${BASE}/api/games/g1/duration`)
+    expect(call[1]!.method).toBe('PUT')
+    expect(call[1]!.body).toBe(JSON.stringify({ durationHours: 48 }))
+  })
+
+  it('extendDuration calls /api/games/:id/duration/extend with POST', async () => {
+    mockFetch(204)
+    await api.extendDuration('g1', 60)
+    const call = vi.mocked(fetch).mock.calls[0]
+    expect(call[0]).toBe(`${BASE}/api/games/g1/duration/extend`)
+    expect(call[1]!.method).toBe('POST')
+    expect(call[1]!.body).toBe(JSON.stringify({ minutes: 60 }))
+  })
+
   it('leaveGame calls /api/games/:id/leave', async () => {
     mockFetch(204)
     await api.leaveGame('g1')

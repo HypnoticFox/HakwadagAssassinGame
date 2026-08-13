@@ -75,16 +75,23 @@ public sealed class GameService : IGameService
     {
         await ServiceHelpers.RequirePlayerAsync(playerRepository, playerId, cancellationToken);
         ArgumentNullException.ThrowIfNull(request);
-        if (request.DurationHours <= 0 || request.ConfirmationTimeoutMinutes <= 0)
+        if (request.DurationHours is not null && request.DurationHours <= 0)
         {
-            throw new InvalidGameStateException("Duration and confirmation timeout must be positive.");
+            throw new InvalidGameStateException("Duration must be positive.");
+        }
+        if (request.ConfirmationTimeoutMinutes <= 0)
+        {
+            throw new InvalidGameStateException("Confirmation timeout must be positive.");
         }
 
         var safeTimeBlocks = request.SafeTimeBlocks?.Select(block => SafeTimeBlock.Create(block.StartTime, block.EndTime, block.Day));
+        var scheduledEndAt = request.DurationHours.HasValue
+            ? DateTimeOffset.UtcNow.AddHours(request.DurationHours.Value)
+            : (DateTimeOffset?)null;
         var game = Game.Create(
             request.Name,
             inviteCodeGenerator.GenerateCode(),
-            DateTimeOffset.UtcNow.AddHours(request.DurationHours),
+            scheduledEndAt,
             request.MaxPlayers ?? 50,
             request.BasePointsPerTag,
             request.ConditionBonuses,

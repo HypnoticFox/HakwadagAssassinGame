@@ -253,6 +253,100 @@ public sealed class GameTests
         Assert.InRange(game.EndedAt!.Value, before, after);
     }
 
+    // ── SetScheduledEnd ───────────────────────────────────────────────────
+
+    [Fact]
+    public void SetScheduledEnd_NotStarted_ChangesScheduledEndAt()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        var newEnd = DateTimeOffset.UtcNow.AddDays(10);
+
+        game.SetScheduledEnd(newEnd);
+
+        Assert.Equal(newEnd, game.ScheduledEndAt);
+    }
+
+    [Fact]
+    public void SetScheduledEnd_NotStarted_NullClearsScheduledEndAt()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+
+        game.SetScheduledEnd(null);
+
+        Assert.Null(game.ScheduledEndAt);
+    }
+
+    [Fact]
+    public void SetScheduledEnd_Active_ThrowsInvalidOperationException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            game.SetScheduledEnd(DateTimeOffset.UtcNow.AddDays(1)));
+        Assert.Contains("before the game starts", ex.Message);
+    }
+
+    // ── ExtendTime ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ExtendTime_Active_AddsToScheduledEndAt()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+        var original = game.ScheduledEndAt!.Value;
+
+        game.ExtendTime(TimeSpan.FromHours(1));
+
+        Assert.Equal(original.AddHours(1), game.ScheduledEndAt);
+    }
+
+    [Fact]
+    public void ExtendTime_NotStarted_ThrowsInvalidOperationException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            game.ExtendTime(TimeSpan.FromHours(1)));
+        Assert.Contains("active", ex.Message);
+    }
+
+    [Fact]
+    public void ExtendTime_ZeroExtension_ThrowsArgumentOutOfRangeException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            game.ExtendTime(TimeSpan.Zero));
+        Assert.Contains("extension", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ExtendTime_NegativeExtension_ThrowsArgumentOutOfRangeException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            game.ExtendTime(TimeSpan.FromMinutes(-5)));
+        Assert.Contains("extension", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ExtendTime_NullScheduledEndAt_UsesUtcNowAsBase()
+    {
+        var game = Game.Create("Test", "CODE", (DateTimeOffset?)null, 4, 10);
+        game.Start();
+        var before = DateTimeOffset.UtcNow;
+
+        game.ExtendTime(TimeSpan.FromHours(1));
+
+        var after = DateTimeOffset.UtcNow;
+        Assert.NotNull(game.ScheduledEndAt);
+        Assert.InRange(game.ScheduledEndAt!.Value, before.AddHours(1), after.AddHours(1));
+    }
+
     // ── SafeTimeBlocks defensive copy ──────────────────────────────────────
 
     [Fact]
@@ -316,8 +410,8 @@ public sealed class GameTests
     public void Constructor_WithJsonConstructor_SetsStatusToNotStarted()
     {
         var game = new Game(
-            Guid.NewGuid(), "Test", "CODE", DateTimeOffset.UtcNow,
-            DefaultEndAt, 4, 10, null, TimeSpan.FromMinutes(5), null);
+            Guid.NewGuid(), "Test", "CODE", GameStatus.NotStarted, DateTimeOffset.UtcNow,
+            DefaultEndAt, null, 4, 10, null, TimeSpan.FromMinutes(5), null);
         Assert.Equal(GameStatus.NotStarted, game.Status);
     }
 }

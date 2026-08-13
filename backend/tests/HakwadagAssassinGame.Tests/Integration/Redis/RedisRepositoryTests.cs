@@ -66,8 +66,8 @@ public sealed class RedisRepositoryTests : RedisTestBase
 
         var updatedName = "Updated Name";
         var updatedGame = new Game(
-            game.Id, updatedName, game.InviteCode, game.CreatedAt,
-            game.ScheduledEndAt, game.MaxPlayers, game.BasePointsPerTag,
+            game.Id, updatedName, game.InviteCode, game.Status, game.CreatedAt,
+            game.ScheduledEndAt, game.EndedAt, game.MaxPlayers, game.BasePointsPerTag,
             game.ConditionBonuses, game.ConfirmationTimeout, game.SafeTimeBlocks);
         await repo.UpdateAsync(updatedGame);
 
@@ -84,8 +84,8 @@ public sealed class RedisRepositoryTests : RedisTestBase
         await repo.AddAsync(game);
 
         var updatedGame = new Game(
-            game.Id, game.Name, "NEWCODE", game.CreatedAt,
-            game.ScheduledEndAt, game.MaxPlayers, game.BasePointsPerTag,
+            game.Id, game.Name, "NEWCODE", game.Status, game.CreatedAt,
+            game.ScheduledEndAt, game.EndedAt, game.MaxPlayers, game.BasePointsPerTag,
             game.ConditionBonuses, game.ConfirmationTimeout, game.SafeTimeBlocks);
         await repo.UpdateAsync(updatedGame);
 
