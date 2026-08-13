@@ -18,6 +18,7 @@
     "cancel": "Cancel",
     "close": "Close",
     "confirm": "Confirm",
+    "save": "Save",
     "copy": "Copy",
     "copied": "Copied!",
     "remove": "Remove",
@@ -33,6 +34,9 @@
     "enableNotifications": "Enable notifications",
     "yourGames": "Your games",
     "noGames": "No games yet. Create one or join a friend's game.",
+    "editDisplayName": {
+      "label": "Edit display name"
+    },
     "joinModal": {
       "title": "Join a game",
       "inviteCode": "Invite code",

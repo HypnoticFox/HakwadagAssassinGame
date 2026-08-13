@@ -220,6 +220,19 @@ describe('endpoint URL construction', () => {
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/auth/me`)
   })
 
+  it('updatePlayer calls /api/auth/me with PUT and returns updated player', async () => {
+    const updated = { id: 'p1', email: 'a@b.c', displayName: 'New Name' }
+    mockFetch(200, updated)
+
+    const result = await api.updatePlayer('New Name')
+
+    const call = vi.mocked(fetch).mock.calls[0]
+    expect(call[0]).toBe(`${BASE}/api/auth/me`)
+    expect(call[1]!.method).toBe('PUT')
+    expect(call[1]!.body).toBe(JSON.stringify({ displayName: 'New Name' }))
+    expect(result).toEqual(updated)
+  })
+
   it('createGame calls /api/games with POST', async () => {
     mockFetch(200, {
       id: 'g1',

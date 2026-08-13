@@ -140,6 +140,26 @@ public abstract class ApiTestBase : IClassFixture<CustomWebApplicationFactory>, 
     }
 
     /// <summary>
+    /// Creates an authenticated PUT request with a JSON body.
+    /// </summary>
+    protected async Task<HttpResponseMessage> AuthenticatedPutAsync(
+        string url, object body, string? token = null)
+    {
+        if (token is null)
+        {
+            var (_, t) = await CreateAuthenticatedPlayerAsync();
+            token = t;
+        }
+
+        var request = new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = JsonContent.Create(body)
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return await Client.SendAsync(request);
+    }
+
+    /// <summary>
     /// Seeds a game with an optional creator.
     /// </summary>
     protected async Task<Game> SeedGameAsync(

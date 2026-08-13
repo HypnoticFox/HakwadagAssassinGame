@@ -32,6 +32,24 @@ public static class EndpointExtensions
         });
         auth.MapGet("/me", (HttpContext context) =>
             Results.Ok(context.GetAuthenticatedPlayer())).RequirePlayer();
+        auth.MapPut("/me", async (HttpContext context, UpdatePlayerRequest request, IPlayerRepository playerRepository, CancellationToken cancellationToken) =>
+        {
+            var displayName = request.DisplayName?.Trim();
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                return Results.BadRequest(new { error = "Display name cannot be empty." });
+            }
+
+            var player = await playerRepository.GetByIdAsync(context.GetAuthenticatedPlayer().Id, cancellationToken);
+            if (player is null)
+            {
+                return Results.NotFound(new { error = "Player not found." });
+            }
+
+            player.ChangeDisplayName(displayName);
+            await playerRepository.UpdateAsync(player, cancellationToken);
+            return Results.Ok(PlayerDto.FromEntity(player));
+        }).RequirePlayer();
 
         var games = app.MapGroup("/api/games").RequirePlayer();
         games.MapPost("", async (HttpContext context, CreateGameRequest request, IGameService service, CancellationToken cancellationToken) =>

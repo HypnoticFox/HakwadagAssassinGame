@@ -17,12 +17,13 @@ const emit = defineEmits<{
 }>()
 
 const displayText = computed(() => {
+  if (props.condition.type === ConditionType.WithSpecificPerson) {
+    return t('condition.withSpecificPerson', { name: props.condition.targetPersonName || t('condition.withSpecificPersonDefault') })
+  }
   if (props.condition.description) {
     return props.condition.description
   }
   switch (props.condition.type) {
-    case ConditionType.WithSpecificPerson:
-      return t('condition.withSpecificPerson', { name: props.condition.targetPersonName || t('condition.withSpecificPersonDefault') })
     case ConditionType.Alone:
       return t('condition.alone')
     case ConditionType.WithXPeople:

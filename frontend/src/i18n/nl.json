@@ -18,6 +18,7 @@
     "cancel": "Annuleren",
     "close": "Sluiten",
     "confirm": "Bevestigen",
+    "save": "Opslaan",
     "copy": "Kopiëren",
     "copied": "Gekopieerd!",
     "remove": "Verwijderen",
@@ -33,6 +34,9 @@
     "enableNotifications": "Meldingen inschakelen",
     "yourGames": "Jouw spellen",
     "noGames": "Nog geen spellen. Maak er een aan of doe mee met een spel van een vriend.",
+    "editDisplayName": {
+      "label": "Weergavenaam bewerken"
+    },
     "joinModal": {
       "title": "Deelnemen aan spel",
       "inviteCode": "Uitnodigingscode",

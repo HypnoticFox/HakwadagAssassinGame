@@ -183,6 +183,13 @@ class ApiClient {
     return this.request<PlayerDto>('/api/auth/me')
   }
 
+  async updatePlayer(displayName: string): Promise<PlayerDto> {
+    return this.request<PlayerDto>('/api/auth/me', {
+      method: 'PUT',
+      body: JSON.stringify({ displayName }),
+    })
+  }
+
   async createGame(request: CreateGameRequest): Promise<GameDto> {
     return this.request<GameDto>('/api/games', {
       method: 'POST',

@@ -35,6 +35,22 @@ describe('ConditionCard.vue', () => {
       expect(wrapper.text()).toContain('With Bob')
     })
 
+    it('shows resolved player name instead of description with GUID', () => {
+      const wrapper = mount(ConditionCard, {
+        props: {
+          condition: {
+            id: 'c1',
+            type: ConditionType.WithSpecificPerson,
+            description: 'With specific person (b7a3c9f0-4d1e-4a5b-9c2d-8e6f1a0b3c4d)',
+            targetPersonName: 'Bob',
+          },
+        },
+        ...withI18n(),
+      })
+      expect(wrapper.text()).toContain('With Bob')
+      expect(wrapper.text()).not.toContain('b7a3c9f0')
+    })
+
     it('shows fallback for WithSpecificPerson without name', () => {
       const wrapper = mount(ConditionCard, {
         props: {

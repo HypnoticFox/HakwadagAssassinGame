@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { Check, Pencil, X } from '@lucide/vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
+import { api } from '@/api/client'
 import Button from '@/components/Button.vue'
 import GameCard from '@/components/GameCard.vue'
 import Input from '@/components/Input.vue'
@@ -22,6 +24,12 @@ const inviteCode = ref('')
 const displayName = ref(authStore.player?.displayName || '')
 const localError = ref<string | null>(null)
 const pushEnabled = ref(false)
+
+const isEditingName = ref(false)
+const editName = ref(authStore.player?.displayName || '')
+const isSavingName = ref(false)
+const nameError = ref<string | null>(null)
+const nameInputRef = ref<HTMLInputElement | null>(null)
 
 onMounted(async () => {
   try {
@@ -68,6 +76,37 @@ async function onJoin() {
     }
   }
 }
+
+async function startEditingName() {
+  editName.value = authStore.player?.displayName || ''
+  nameError.value = null
+  isEditingName.value = true
+  await nextTick()
+  nameInputRef.value?.focus()
+}
+
+function cancelEditingName() {
+  isEditingName.value = false
+  nameError.value = null
+}
+
+async function saveName() {
+  const trimmed = editName.value.trim()
+  if (!trimmed) return
+  isSavingName.value = true
+  nameError.value = null
+  try {
+    const updated = await api.updatePlayer(trimmed)
+    authStore.setPlayer(updated)
+    isEditingName.value = false
+  } catch (err) {
+    if (err instanceof Error) {
+      nameError.value = err.message
+    }
+  } finally {
+    isSavingName.value = false
+  }
+}
 </script>
 
 <template>
@@ -84,12 +123,66 @@ async function onJoin() {
       </div>
       <div
         v-if="authStore.player"
-        class="player-chip"
+        class="player-chip-wrapper"
       >
-        <div class="player-chip-avatar">
-          {{ authStore.player.displayName.charAt(0).toUpperCase() }}
+        <div
+          class="player-chip"
+          :class="{ 'player-chip--editing': isEditingName }"
+        >
+          <div class="player-chip-avatar">
+            {{ authStore.player.displayName.charAt(0).toUpperCase() }}
+          </div>
+
+          <template v-if="!isEditingName">
+            <span class="player-chip-name">{{ authStore.player.displayName }}</span>
+            <button
+              type="button"
+              class="player-chip-action"
+              :aria-label="$t('home.editDisplayName.label')"
+              @click="startEditingName"
+            >
+              <Pencil :size="16" />
+            </button>
+          </template>
+
+          <template v-else>
+            <input
+              ref="nameInputRef"
+              v-model="editName"
+              type="text"
+              class="player-chip-input"
+              :placeholder="$t('home.joinModal.displayNamePlaceholder')"
+              :disabled="isSavingName"
+              @keyup.enter="saveName"
+              @keyup.escape="cancelEditingName"
+            >
+            <button
+              type="button"
+              class="player-chip-action player-chip-action--save"
+              :aria-label="$t('common.save')"
+              :disabled="isSavingName || !editName.trim()"
+              @click="saveName"
+            >
+              <Check :size="18" />
+            </button>
+            <button
+              type="button"
+              class="player-chip-action player-chip-action--cancel"
+              :aria-label="$t('common.cancel')"
+              :disabled="isSavingName"
+              @click="cancelEditingName"
+            >
+              <X :size="18" />
+            </button>
+          </template>
         </div>
-        <span class="player-chip-name">{{ authStore.player.displayName }}</span>
+        <p
+          v-if="nameError"
+          class="name-error"
+          role="alert"
+        >
+          {{ nameError }}
+        </p>
       </div>
     </div>
 
@@ -208,16 +301,26 @@ async function onJoin() {
   margin: 0.5rem 0 0;
 }
 
+.player-chip-wrapper {
+  display: grid;
+  gap: 0.5rem;
+}
+
 .player-chip {
   align-items: center;
   align-self: start;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   display: flex;
-  gap: 0.625rem;
-  padding: 0.375rem 0.875rem 0.375rem 0.375rem;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem 0.375rem 0.375rem;
   width: fit-content;
+}
+
+.player-chip--editing {
+  border-radius: var(--radius);
+  padding-right: 0.375rem;
 }
 
 .player-chip-avatar {
@@ -226,6 +329,7 @@ async function onJoin() {
   border-radius: 50%;
   color: var(--text-inverse);
   display: flex;
+  flex-shrink: 0;
   font-size: 0.75rem;
   font-weight: 700;
   height: 1.75rem;
@@ -236,6 +340,91 @@ async function onJoin() {
 .player-chip-name {
   font-size: 0.875rem;
   font-weight: 600;
+}
+
+.player-chip-action {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
+  height: 2rem;
+  justify-content: center;
+  padding: 0;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+  width: 2rem;
+}
+
+.player-chip-action:hover:not(:disabled) {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.player-chip-action:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.player-chip-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.player-chip-action--save {
+  color: var(--success);
+}
+
+.player-chip-action--save:hover:not(:disabled) {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.player-chip-action--cancel {
+  color: var(--danger);
+}
+
+.player-chip-action--cancel:hover:not(:disabled) {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.player-chip-input {
+  appearance: none;
+  background: var(--surface);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  min-height: 2rem;
+  min-width: 6rem;
+  padding: 0.375rem 0.5rem;
+  width: 100%;
+}
+
+.player-chip-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-ring);
+  outline: none;
+}
+
+.player-chip-input:disabled {
+  opacity: 0.6;
+}
+
+.name-error {
+  background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+  color: var(--danger-text);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 0.75rem;
 }
 
 .home-actions {

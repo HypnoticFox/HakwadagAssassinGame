@@ -8,6 +8,9 @@ public record SendOtpRequest(string Email);
 /// <summary>Requests verification of an OTP.</summary>
 public record VerifyOtpRequest(string Email, string Code);
 
+/// <summary>Requests an update to the authenticated player's display name.</summary>
+public record UpdatePlayerRequest(string DisplayName);
+
 /// <summary>Contains an authentication token and the authenticated player.</summary>
 public record AuthResponse(string Token, PlayerDto Player);
 
