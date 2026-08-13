@@ -566,6 +566,14 @@ watch(isExpanded, (expanded) => {
     </div>
 
     <Teleport to="body">
+      <div
+        v-if="isExpanded"
+        class="dev-switcher__backdrop"
+        @click="isExpanded = false"
+      />
+    </Teleport>
+
+    <Teleport to="body">
       <Transition name="dev-modal">
         <div
           v-if="activeModal"
@@ -1149,6 +1157,12 @@ watch(isExpanded, (expanded) => {
 
 .dev-switcher__quick-button--danger:hover:not(:disabled) {
   background: rgba(248, 113, 113, 0.15);
+}
+
+.dev-switcher__backdrop {
+  inset: 0;
+  position: fixed;
+  z-index: 99;
 }
 
 .dev-switcher__modal-backdrop {
