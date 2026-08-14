@@ -13,6 +13,7 @@
   },
   "common": {
     "loading": "Loading...",
+    "back": "Back",
     "backHome": "Back home",
     "backToGame": "Back to game",
     "cancel": "Cancel",

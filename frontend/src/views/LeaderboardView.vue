@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
+import BackButton from '@/components/BackButton.vue'
 import LeaderboardTable from '@/components/LeaderboardTable.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useGameStore, useLeaderboardStore } from '@/stores'
@@ -24,6 +25,10 @@ onMounted(async () => {
 
 <template>
   <section class="page-section">
+    <BackButton
+      :label="$t('common.back')"
+      @click="router.push(`/games/${gameId}`)"
+    />
     <p class="eyebrow">
       {{ $t('leaderboard.eyebrow') }}
     </p>

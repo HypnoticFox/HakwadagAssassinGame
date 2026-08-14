@@ -13,6 +13,7 @@
   },
   "common": {
     "loading": "Laden...",
+    "back": "Terug",
     "backHome": "Terug naar home",
     "backToGame": "Terug naar spel",
     "cancel": "Annuleren",

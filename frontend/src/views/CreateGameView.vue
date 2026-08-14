@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
+import BackButton from '@/components/BackButton.vue'
 import Input from '@/components/Input.vue'
 import { useToast } from '@/composables/useToast'
 import { useGameStore } from '@/stores'
@@ -41,6 +42,10 @@ async function onSubmit() {
 
 <template>
   <section class="page-section">
+    <BackButton
+      :label="$t('common.back')"
+      @click="router.push('/')"
+    />
     <p class="eyebrow">
       {{ $t('createGame.eyebrow') }}
     </p>

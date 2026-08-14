@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
+import BackButton from '@/components/BackButton.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
 import { useGameStore, useTagStore } from '@/stores'
@@ -72,6 +73,10 @@ const isResolved = computed(() => {
 
 <template>
   <section class="page-section">
+    <BackButton
+      :label="$t('common.back')"
+      @click="router.push(`/games/${gameId}/leaderboard`)"
+    />
     <div v-if="currentTag">
       <p class="eyebrow">
         {{ $t('tagConfirm.eyebrow') }}

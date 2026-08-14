@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
+import BackButton from '@/components/BackButton.vue'
 import AssignmentCooldownTimer from '@/components/AssignmentCooldownTimer.vue'
 import ConditionCard from '@/components/ConditionCard.vue'
 import Modal from '@/components/Modal.vue'
@@ -148,6 +149,10 @@ async function onSubmitTag() {
 
 <template>
   <section class="page-section">
+    <BackButton
+      :label="$t('common.back')"
+      @click="router.push(`/games/${gameId}`)"
+    />
     <div v-if="!isReady" class="loading">
       {{ $t('assignment.loading') }}
     </div>
