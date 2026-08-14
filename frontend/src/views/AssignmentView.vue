@@ -22,6 +22,7 @@ const gameId = computed(() => route.params.id as string)
 const selectedConditionId = ref<string | null>(null)
 const submitModalOpen = ref(false)
 const localError = ref<string | null>(null)
+const isReady = ref(false)
 
 const cooldownAvailableAt = computed(() => {
   const availableAt = assignmentStore.nextAvailability?.availableAt
@@ -74,14 +75,15 @@ watch(
 )
 
 onMounted(async () => {
-  await gameStore.loadGame(gameId.value)
-  await refreshAssignment()
-  try {
-    await tagStore.loadPendingOutgoingTag(gameId.value)
-  } catch {
-    // The assignment view remains usable; the pending tag will be picked up
-    // again on the next refresh or SignalR event.
-  }
+  // Load all data in parallel so the template renders the correct state
+  // directly instead of flashing through intermediate states.
+  const [, , pendingTagResult] = await Promise.all([
+    gameStore.loadGame(gameId.value),
+    refreshAssignment(),
+    tagStore.loadPendingOutgoingTag(gameId.value).catch(() => undefined),
+  ])
+  void pendingTagResult
+  isReady.value = true
 })
 
 async function refreshAssignment() {
@@ -146,7 +148,11 @@ async function onSubmitTag() {
 
 <template>
   <section class="page-section">
-    <div v-if="pendingAvailableAt" class="empty">
+    <div v-if="!isReady" class="loading">
+      {{ $t('assignment.loading') }}
+    </div>
+
+    <div v-else-if="pendingAvailableAt" class="empty">
       <PendingTagCountdown :available-at="pendingAvailableAt" @expired="onPendingTagExpired" />
     </div>
 
