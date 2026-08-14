@@ -220,7 +220,7 @@ public sealed class ServiceHelpersTests
 
         var player = Player.Create("player@test.com", "Player", id: Guid.NewGuid());
         var result = await ServiceHelpers.CreateConditions(
-            Guid.NewGuid(), Guid.NewGuid(),
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             new[] { player }, library, CancellationToken.None);
 
         Assert.NotNull(result);
@@ -243,7 +243,7 @@ public sealed class ServiceHelpersTests
 
         var player = Player.Create("player@test.com", "Player", id: Guid.NewGuid());
         var result = await ServiceHelpers.CreateConditions(
-            Guid.NewGuid(), Guid.NewGuid(),
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             new[] { player }, library, CancellationToken.None);
 
         Assert.NotNull(result);
@@ -263,12 +263,41 @@ public sealed class ServiceHelpersTests
 
         var player = Player.Create("player@test.com", "Player", id: Guid.NewGuid());
         var result = await ServiceHelpers.CreateConditions(
-            Guid.NewGuid(), Guid.NewGuid(),
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
             new[] { player }, library, CancellationToken.None);
 
         Assert.NotNull(result);
         Assert.Single(result);
         Assert.IsType<AloneCondition>(result[0]);
+    }
+
+    [Fact]
+    public async Task CreateConditions_WithSpecificPerson_ExcludesHunterAndTarget()
+    {
+        var gameId = Guid.NewGuid();
+        var hunterId = Guid.NewGuid();
+        var targetId = Guid.NewGuid();
+        var bystander1 = Player.Create("b1@test.com", "Bystander1", id: Guid.NewGuid());
+        var bystander2 = Player.Create("b2@test.com", "Bystander2", id: Guid.NewGuid());
+        var hunter = Player.Create("hunter@test.com", "Hunter", id: hunterId);
+        var target = Player.Create("target@test.com", "Target", id: targetId);
+        var players = new[] { hunter, target, bystander1, bystander2 };
+
+        var library = Substitute.For<IConditionLibrary>();
+        var templates = new List<Condition> { WithSpecificPersonCondition.Create(null) };
+        library.GetAsync(gameId, Arg.Any<CancellationToken>()).Returns(templates);
+
+        // Run many times to be confident — random selection should never pick hunter or target.
+        for (var i = 0; i < 50; i++)
+        {
+            var result = await ServiceHelpers.CreateConditions(
+                gameId, hunterId, targetId, players, library, CancellationToken.None);
+
+            var specific = Assert.IsType<WithSpecificPersonCondition>(Assert.Single(result));
+            Assert.NotNull(specific.TargetPersonId);
+            Assert.NotEqual(hunterId, specific.TargetPersonId.Value);
+            Assert.NotEqual(targetId, specific.TargetPersonId.Value);
+        }
     }
 
     // ── RequirePlayerAsync ─────────────────────────────────────────────────

@@ -42,6 +42,7 @@ internal static class ServiceHelpers
     public static async Task<List<Condition>> CreateConditions(
         Guid gameId,
         Guid hunterId,
+        Guid targetId,
         IReadOnlyList<Player> players,
         IConditionLibrary library,
         CancellationToken cancellationToken)
@@ -54,7 +55,7 @@ internal static class ServiceHelpers
 
         var count = Math.Min(templates.Count, Random.Shared.Next(2, 4));
         var selected = templates.OrderBy(_ => Random.Shared.Next()).Take(count);
-        var otherPlayers = players.Where(player => player.Id != hunterId).ToArray();
+        var otherPlayers = players.Where(player => player.Id != hunterId && player.Id != targetId).ToArray();
         return selected.Select(condition => CloneCondition(condition, otherPlayers)).ToList();
     }
 

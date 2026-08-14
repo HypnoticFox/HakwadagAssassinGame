@@ -427,6 +427,7 @@ public sealed class TagService : ITagService
         var conditions = await ServiceHelpers.CreateConditions(
             game.Id,
             hunterId,
+            targets[index],
             players,
             conditionLibrary,
             cancellationToken);

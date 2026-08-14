@@ -182,7 +182,7 @@ public sealed class GameService : IGameService
                     if (rejoinIndex >= 0)
                     {
                         var conditions = await ServiceHelpers.CreateConditions(
-                            game.Id, playerId, players, conditionLibrary, cancellationToken);
+                            game.Id, playerId, targets[rejoinIndex], players, conditionLibrary, cancellationToken);
                         var assignment = Assignment.Create(
                             game.Id, playerId, targets[rejoinIndex], conditions);
                         await assignmentRepository.AddAsync(assignment, cancellationToken);
@@ -200,7 +200,7 @@ public sealed class GameService : IGameService
                         }
 
                         var replacementConditions = await ServiceHelpers.CreateConditions(
-                            game.Id, affected.HunterId, players, conditionLibrary, cancellationToken);
+                            game.Id, affected.HunterId, targets[hunterIndex], players, conditionLibrary, cancellationToken);
                         var replacement = Assignment.Create(
                             game.Id, affected.HunterId, targets[hunterIndex], replacementConditions);
                         await assignmentRepository.AddAsync(replacement, cancellationToken);
@@ -251,6 +251,7 @@ public sealed class GameService : IGameService
             var conditions = await ServiceHelpers.CreateConditions(
                 gameId,
                 participants[index].PlayerId,
+                targets[index],
                 players,
                 conditionLibrary,
                 cancellationToken);
@@ -404,6 +405,7 @@ public sealed class GameService : IGameService
                 var conditions = await ServiceHelpers.CreateConditions(
                     gameId,
                     affected.HunterId,
+                    targets[hunterIndex],
                     players,
                     conditionLibrary,
                     cancellationToken);
@@ -461,7 +463,7 @@ public sealed class GameService : IGameService
             if (rejoinIndex >= 0)
             {
                 var conditions = await ServiceHelpers.CreateConditions(
-                    game.Id, playerId, players, conditionLibrary, cancellationToken);
+                    game.Id, playerId, targets[rejoinIndex], players, conditionLibrary, cancellationToken);
                 var assignment = Assignment.Create(
                     game.Id, playerId, targets[rejoinIndex], conditions);
                 await assignmentRepository.AddAsync(assignment, cancellationToken);
@@ -479,7 +481,7 @@ public sealed class GameService : IGameService
                 }
 
                 var replacementConditions = await ServiceHelpers.CreateConditions(
-                    game.Id, affected.HunterId, players, conditionLibrary, cancellationToken);
+                    game.Id, affected.HunterId, targets[hunterIndex], players, conditionLibrary, cancellationToken);
                 var replacement = Assignment.Create(
                     game.Id, affected.HunterId, targets[hunterIndex], replacementConditions);
                 await assignmentRepository.AddAsync(replacement, cancellationToken);
