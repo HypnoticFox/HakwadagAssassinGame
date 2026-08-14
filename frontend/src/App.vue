@@ -1,17 +1,27 @@
 <script setup lang="ts">
 import { Menu, Swords } from '@lucide/vue'
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import DevPlayerSwitcher from '@/components/DevPlayerSwitcher.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useGameStore } from '@/stores'
+import { GameStatus } from '@/types'
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const gameStore = useGameStore()
 const router = useRouter()
+
+const headerLink = computed(() => {
+  if (!authStore.isAuthenticated) return '/'
+  const unfinished = gameStore.recentGames.filter(
+    (g) => g.status !== GameStatus.Ended,
+  )
+  return unfinished.length === 1 ? `/games/${unfinished[0].id}` : '/'
+})
 
 const isDev = import.meta.env.DEV
 const isMobileMenuOpen = ref(false)
@@ -40,6 +50,9 @@ function onEscape(event: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onEscape)
+  if (authStore.isAuthenticated) {
+    void gameStore.loadMyGames()
+  }
 })
 
 onUnmounted(() => {
@@ -105,7 +118,10 @@ async function logout() {
           </button>
         </div>
       </div>
-      <RouterLink class="app-title" to="/">
+      <RouterLink
+        class="app-title"
+        :to="headerLink"
+      >
         <Swords
           class="app-title__icon"
           :size="20"
