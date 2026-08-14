@@ -7,6 +7,7 @@ import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
 import { Copy, Link } from '@lucide/vue'
 import { useGameSignalR } from '@/composables/useSignalR'
+import { useToast } from '@/composables/useToast'
 import { useGameStore } from '@/stores'
 import {
   GameStatus,
@@ -26,7 +27,7 @@ const gameStore = useGameStore()
 const gameId = computed(() => route.params.id as string)
 const copiedCode = ref(false)
 const copiedLink = ref(false)
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 const newDurationHours = ref('24')
 
 useGameSignalR(gameId.value)
@@ -59,46 +60,42 @@ async function copyInviteLink() {
 }
 
 async function onStart() {
-  localError.value = null
   try {
     await gameStore.startGame(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onEnd() {
-  localError.value = null
   try {
     await gameStore.endGame(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onUpdateDuration() {
   if (!newDurationHours.value) return
-  localError.value = null
   try {
     await gameStore.updateDuration(gameId.value, Number(newDurationHours.value))
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onExtend(minutes: number) {
-  localError.value = null
   try {
     await gameStore.extendDuration(gameId.value, minutes)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -109,7 +106,6 @@ async function onLeave() {
       ? 'gameDetail.leaveConfirmActive'
       : 'gameDetail.leaveConfirm'
   if (!confirm(t(confirmKey))) return
-  localError.value = null
   try {
     await gameStore.leaveGame(gameId.value)
     if (gameStore.currentGame?.status !== GameStatus.Active) {
@@ -117,18 +113,17 @@ async function onLeave() {
     }
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onRejoin() {
-  localError.value = null
   try {
     await gameStore.rejoinGame(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -392,9 +387,6 @@ const formattedScheduledEndAt = computed(() => {
         {{ $t('gameDetail.leaveGame') }}
       </Button>
 
-      <p v-if="localError" class="form-error" role="alert">
-        {{ localError }}
-      </p>
     </div>
 
     <div v-else-if="gameStore.isLoading" class="loading">
@@ -654,15 +646,6 @@ const formattedScheduledEndAt = computed(() => {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0;
-  padding: 0.75rem;
 }
 
 .loading,

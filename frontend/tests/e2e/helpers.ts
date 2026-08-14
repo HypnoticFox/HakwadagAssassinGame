@@ -44,6 +44,8 @@ export function createGameDto(overrides?: Partial<GameDto>): GameDto {
     confirmationTimeout: '00:05:00',
     assignmentCooldownMinutes: 30,
     playerCount: 1,
+    participantCount: 1,
+    isParticipating: true,
     myRole: 1, // Creator
     safeTimeBlocks: [],
     ...overrides,
@@ -574,13 +576,13 @@ export async function loginViaUi(page: Page, email = TEST_EMAIL, code = TEST_OTP
   // Step 1: enter email
   const emailInput = page.locator('input[type="email"]')
   await emailInput.fill(email)
-  await page.getByRole('button', { name: 'Send code' }).click()
+  await page.getByRole('button', { name: 'Code versturen' }).click()
 
   // Step 2: enter OTP code
   await page.waitForSelector('input[inputmode="numeric"]')
   const codeInput = page.locator('input[inputmode="numeric"]')
   await codeInput.fill(code)
-  await page.getByRole('button', { name: 'Verify' }).click()
+  await page.getByRole('button', { name: 'Verifiëren' }).click()
 
   // Should land on home
   await expect(page).toHaveURL('/')
@@ -618,7 +620,7 @@ export async function createGameViaUi(page: Page) {
   await inputs.nth(2).fill('10')
   await inputs.nth(3).fill('100')
   await inputs.nth(4).fill('5')
-  await page.getByRole('button', { name: 'Create game' }).click()
+  await page.getByRole('button', { name: 'Spel aanmaken' }).click()
 
   await page.waitForURL(/\/games\//)
   return page.url()
@@ -628,14 +630,22 @@ export async function joinGameViaUi(page: Page, inviteCode = INVITE_CODE) {
   await page.goto('/')
   await page.waitForSelector('h1')
 
-  await page.getByRole('button', { name: 'Join a game' }).click()
+  await page.getByRole('button', { name: 'Deelnemen aan spel' }).click()
   await page.waitForSelector('h2')
 
   const inputs = page.locator('.modal-body input')
   await inputs.nth(0).fill(inviteCode)
   await inputs.nth(1).fill('Joining Player')
-  await page.getByRole('button', { name: 'Join', exact: true }).click()
+  await page.getByRole('button', { name: 'Deelnemen', exact: true }).click()
 
   await page.waitForURL(/\/games\//)
   return page.url()
+}
+
+/**
+ * Clicks the "Start game" button and accepts the confirmation dialog.
+ */
+export async function startGameViaUi(page: Page) {
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Spel starten' }).click()
 }

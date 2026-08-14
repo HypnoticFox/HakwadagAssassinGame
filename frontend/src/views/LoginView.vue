@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
+import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores'
 
 const router = useRouter()
@@ -17,7 +18,7 @@ const code = ref('')
 const step = ref<'email' | 'code'>(
   (sessionStorage.getItem('login_step') as 'email' | 'code') ?? 'email',
 )
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 
 watch(step, (v) => sessionStorage.setItem('login_step', v))
 watch(email, (v) => sessionStorage.setItem('login_email', v))
@@ -34,7 +35,7 @@ onMounted(() => {
         sessionStorage.removeItem('login_step')
         sessionStorage.removeItem('login_email')
         sessionStorage.removeItem('login_otp_sent_at')
-        localError.value = t('login.codeExpired')
+        toast(t('login.codeExpired'), 'error')
       }
     }
   }
@@ -42,21 +43,19 @@ onMounted(() => {
 
 async function onSendOtp() {
   if (!email.value) return
-  localError.value = null
   try {
     await authStore.sendOtp(email.value)
     sessionStorage.setItem('login_otp_sent_at', Date.now().toString())
     step.value = 'code'
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onVerifyOtp() {
   if (!email.value || !code.value) return
-  localError.value = null
   try {
     await authStore.verifyOtp(email.value, code.value)
     sessionStorage.removeItem('login_step')
@@ -66,7 +65,7 @@ async function onVerifyOtp() {
     await router.push(redirect)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -74,7 +73,6 @@ async function onVerifyOtp() {
 function onBack() {
   step.value = 'email'
   code.value = ''
-  localError.value = null
   sessionStorage.removeItem('login_step')
   sessionStorage.removeItem('login_email')
   sessionStorage.removeItem('login_otp_sent_at')
@@ -107,13 +105,6 @@ function onBack() {
           autocomplete="email"
           required
         />
-        <p
-          v-if="localError || authStore.error"
-          class="form-error"
-          role="alert"
-        >
-          {{ localError || authStore.error }}
-        </p>
         <Button
           type="submit"
           size="large"
@@ -139,13 +130,6 @@ function onBack() {
           required
           :error="null"
         />
-        <p
-          v-if="localError || authStore.error"
-          class="form-error"
-          role="alert"
-        >
-          {{ localError || authStore.error }}
-        </p>
         <Button
           type="submit"
           size="large"
@@ -199,15 +183,6 @@ function onBack() {
 .login-form {
   display: grid;
   gap: 1rem;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0;
-  padding: 0.75rem;
 }
 
 .eyebrow {

@@ -75,7 +75,10 @@
   },
   "gameDetail": {
     "startGame": "Spel starten",
+    "startGameConfirm": "Weet je zeker dat je dit spel wilt starten? Zodra het spel is gestart, kunnen er geen spelers meer worden toegevoegd.",
+    "startRequirements": "Nog {count} van de 3 deelnemende spelers. Het spel heeft minimaal 3 deelnemende spelers nodig om te kunnen starten.",
     "endGame": "Spel beëindigen",
+    "endGameConfirm": "Weet je zeker dat je dit spel wilt beëindigen? Dit kan niet ongedaan worden gemaakt.",
     "inviteCode": "Uitnodigingscode",
     "copyInviteCode": "Uitnodigingscode kopiëren",
     "copyInviteLink": "Uitnodigingslink kopiëren",

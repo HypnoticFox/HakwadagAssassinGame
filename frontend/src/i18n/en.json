@@ -75,7 +75,10 @@
   },
   "gameDetail": {
     "startGame": "Start game",
+    "startGameConfirm": "Are you sure you want to start this game? Once started, no more players can be added.",
+    "startRequirements": "{count} of 3 participating players. The game needs at least 3 participating players to start.",
     "endGame": "End game",
+    "endGameConfirm": "Are you sure you want to end this game? This cannot be undone.",
     "inviteCode": "Invite code",
     "copyInviteCode": "Copy invite code",
     "copyInviteLink": "Copy invite link",

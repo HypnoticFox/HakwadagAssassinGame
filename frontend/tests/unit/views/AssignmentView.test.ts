@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
+import { clearToasts } from '@/composables/useToast'
 import AssignmentView from '@/views/AssignmentView.vue'
 import { useAssignmentStore, useTagStore } from '@/stores'
 import {
@@ -80,6 +81,7 @@ function futureAvailability() {
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
+  clearToasts()
 
   vi.mocked(api.getGame).mockResolvedValue(makeGame())
   vi.mocked(api.getPendingOutgoingTag).mockResolvedValue(null)

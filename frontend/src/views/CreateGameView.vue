@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
+import { useToast } from '@/composables/useToast'
 import { useGameStore } from '@/stores'
 
 const router = useRouter()
@@ -15,10 +16,9 @@ const maxPlayers = ref('20')
 const basePointsPerTag = ref('100')
 const confirmationTimeoutMinutes = ref('5')
 const assignmentCooldownMinutes = ref('30')
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 
 async function onSubmit() {
-  localError.value = null
   try {
     const game = await gameStore.createGame({
       name: name.value,
@@ -33,7 +33,7 @@ async function onSubmit() {
     await router.push(`/games/${game.id}`)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -95,14 +95,6 @@ async function onSubmit() {
         min="0"
       />
 
-      <p
-        v-if="localError || gameStore.error"
-        class="form-error"
-        role="alert"
-      >
-        {{ localError || gameStore.error }}
-      </p>
-
       <Button
         type="submit"
         size="large"
@@ -120,14 +112,5 @@ async function onSubmit() {
   display: grid;
   gap: 1rem;
   margin-top: 1.5rem;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0;
-  padding: 0.75rem;
 }
 </style>

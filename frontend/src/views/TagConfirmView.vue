@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
+import { useToast } from '@/composables/useToast'
 import { useGameStore, useTagStore } from '@/stores'
 import { TagStatus, tagStatusLabel } from '@/types'
 
@@ -14,7 +15,7 @@ const tagStore = useTagStore()
 
 const gameId = computed(() => route.params.id as string)
 const tagId = computed(() => route.params.tagId as string)
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 
 useGameSignalR(gameId.value)
 
@@ -31,37 +32,34 @@ const currentTag = computed(() => {
 })
 
 async function onConfirm() {
-  localError.value = null
   try {
     await tagStore.confirmTag(gameId.value, tagId.value)
     await router.push(`/games/${gameId.value}/leaderboard`)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onDeny() {
-  localError.value = null
   try {
     await tagStore.denyTag(gameId.value, tagId.value)
     await router.push(`/games/${gameId.value}/leaderboard`)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onVoid() {
-  localError.value = null
   try {
     await tagStore.voidTag(gameId.value, tagId.value)
     await router.push(`/games/${gameId.value}/leaderboard`)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -143,13 +141,6 @@ const isResolved = computed(() => {
         {{ $t('tagConfirm.backToLeaderboard') }}
       </Button>
 
-      <p
-        v-if="localError"
-        class="form-error"
-        role="alert"
-      >
-        {{ localError }}
-      </p>
     </div>
 
     <div
@@ -223,15 +214,6 @@ const isResolved = computed(() => {
   display: grid;
   gap: 0.75rem;
   margin-bottom: 1rem;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin-top: 1rem;
-  padding: 0.75rem;
 }
 
 .loading,

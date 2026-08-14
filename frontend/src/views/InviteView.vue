@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { api } from '@/api/client'
 import Button from '@/components/Button.vue'
+import { useToast } from '@/composables/useToast'
 import { useAuthStore, useGameStore } from '@/stores'
 
 const route = useRoute()
@@ -15,13 +16,13 @@ const gameStore = useGameStore()
 
 const inviteCode = route.params.inviteCode as string
 const joining = ref(true)
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 
 onMounted(async () => {
   try {
     const game = await api.lookupGame(inviteCode)
     if (!game) {
-      localError.value = t('invite.gameNotFound')
+      toast(t('invite.gameNotFound'), 'error')
       joining.value = false
       return
     }
@@ -36,7 +37,7 @@ onMounted(async () => {
     }
     await router.push(`/games/${game.id}`)
   } catch (err) {
-    localError.value = err instanceof Error ? err.message || t('invite.error') : t('invite.error')
+    toast(err instanceof Error ? err.message || t('invite.error') : t('invite.error'), 'error')
     joining.value = false
   }
 })
@@ -52,12 +53,6 @@ onMounted(async () => {
         {{ $t('invite.joining') }}
       </p>
       <template v-else>
-        <p
-          class="form-error"
-          role="alert"
-        >
-          {{ localError }}
-        </p>
         <Button @click="router.push('/')">
           {{ $t('common.backHome') }}
         </Button>
@@ -81,14 +76,5 @@ onMounted(async () => {
 .invite-loading {
   color: var(--text-muted);
   margin: 0;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0;
-  padding: 0.75rem;
 }
 </style>

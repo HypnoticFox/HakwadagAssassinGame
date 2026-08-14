@@ -7,6 +7,7 @@ import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
 import { ArrowLeft, Clock, ListChecks, Settings, Shield } from '@lucide/vue'
 import { useGameSignalR } from '@/composables/useSignalR'
+import { useToast } from '@/composables/useToast'
 import { useGameStore } from '@/stores'
 import { GameRole, gameRoleLabel, isGameAdmin } from '@/types'
 import type { GamePlayerDto } from '@/types'
@@ -18,7 +19,7 @@ const { t } = useI18n()
 const gameStore = useGameStore()
 
 const gameId = computed(() => route.params.id as string)
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 const newCondition = ref('')
 const safeTimeStart = ref('')
 const safeTimeEnd = ref('')
@@ -43,44 +44,40 @@ onMounted(async () => {
 
 async function onUpdateTimeout() {
   if (!timeoutMinutes.value) return
-  localError.value = null
   try {
     await gameStore.updateConfirmationTimeout(gameId.value, Number(timeoutMinutes.value))
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onUpdateCooldown() {
   if (cooldownMinutes.value === '') return
-  localError.value = null
   try {
     await gameStore.updateAssignmentCooldown(gameId.value, Number(cooldownMinutes.value))
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onAddCondition() {
   if (!newCondition.value) return
-  localError.value = null
   try {
     await gameStore.addCondition(gameId.value, newCondition.value)
     newCondition.value = ''
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onAddSafeTime() {
   if (!safeTimeStart.value || !safeTimeEnd.value) return
-  localError.value = null
   try {
     await gameStore.addSafeTime(gameId.value, {
       startTime: safeTimeStart.value,
@@ -91,19 +88,18 @@ async function onAddSafeTime() {
     await gameStore.loadGame(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onRemoveSafeTime(blockId: string) {
-  localError.value = null
   try {
     await gameStore.removeSafeTime(gameId.value, blockId)
     await gameStore.loadGame(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -115,7 +111,7 @@ async function loadPlayers() {
     await gameStore.loadGamePlayers(gameId.value)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   } finally {
     playersLoading.value = false
@@ -123,26 +119,24 @@ async function loadPlayers() {
 }
 
 async function onPromote(player: GamePlayerDto) {
-  localError.value = null
   try {
     await gameStore.addAdmin(gameId.value, player.playerId)
     await Promise.all([gameStore.loadGame(gameId.value), loadPlayers()])
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
 
 async function onRemove(player: GamePlayerDto) {
   if (!confirm(t('gameDetail.admin.confirmRemoveModerator'))) return
-  localError.value = null
   try {
     await gameStore.removeAdmin(gameId.value, player.playerId)
     await Promise.all([gameStore.loadGame(gameId.value), loadPlayers()])
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -302,9 +296,6 @@ async function onRemove(player: GamePlayerDto) {
           </ul>
         </section>
 
-        <p v-if="localError || gameStore.error" class="form-error" role="alert">
-          {{ localError || gameStore.error }}
-        </p>
       </template>
 
       <div v-else class="empty">
@@ -472,15 +463,6 @@ async function onRemove(player: GamePlayerDto) {
   font-size: 0.8125rem;
   min-height: 2rem;
   padding: 0.375rem 0.625rem;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0;
-  padding: 0.75rem;
 }
 
 .loading,

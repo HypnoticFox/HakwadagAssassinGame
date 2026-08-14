@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
+import { clearToasts } from '@/composables/useToast'
 import HomeView from '@/views/HomeView.vue'
 import { withI18n } from '../helpers/i18n'
 
@@ -51,6 +52,7 @@ function mockPlayer() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  clearToasts()
   mockAuthStore.player = mockPlayer()
   mockGameStore.recentGames = []
   mockGameStore.isLoading = false

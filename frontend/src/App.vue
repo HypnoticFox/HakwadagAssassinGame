@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import DevPlayerSwitcher from '@/components/DevPlayerSwitcher.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import Toast from '@/components/Toast.vue'
 import { useAuthStore, useGameStore } from '@/stores'
 import { GameStatus } from '@/types'
 
@@ -159,6 +160,7 @@ async function logout() {
     </main>
 
     <DevPlayerSwitcher v-if="isDev" />
+    <Toast />
   </div>
 </template>
 

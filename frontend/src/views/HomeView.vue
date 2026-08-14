@@ -10,6 +10,7 @@ import GameCard from '@/components/GameCard.vue'
 import Input from '@/components/Input.vue'
 import Modal from '@/components/Modal.vue'
 import { usePushNotifications } from '@/composables/usePushNotifications'
+import { useToast } from '@/composables/useToast'
 import { useAuthStore, useGameStore } from '@/stores'
 import { GameStatus } from '@/types'
 
@@ -22,7 +23,7 @@ const push = usePushNotifications()
 const joinModalOpen = ref(false)
 const inviteCode = ref('')
 const displayName = ref(authStore.player?.displayName || '')
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 const pushEnabled = ref(false)
 
 const isEditingName = ref(false)
@@ -36,7 +37,7 @@ onMounted(async () => {
     await gameStore.loadMyGames()
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 })
@@ -64,7 +65,6 @@ function navigateToGame(gameId: string) {
 
 async function onJoin() {
   if (!inviteCode.value) return
-  localError.value = null
   try {
     const game = await gameStore.joinGame(inviteCode.value, displayName.value || t('home.joinModal.defaultPlayerName'))
     joinModalOpen.value = false
@@ -72,7 +72,7 @@ async function onJoin() {
     await router.push(`/games/${game.id}`)
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -267,13 +267,6 @@ async function saveName() {
           :placeholder="$t('home.joinModal.displayNamePlaceholder')"
           required
         />
-        <p
-          v-if="localError"
-          class="form-error"
-          role="alert"
-        >
-          {{ localError }}
-        </p>
         <Button
           full-width
           :loading="gameStore.isLoading"
@@ -461,14 +454,5 @@ async function saveName() {
 .join-form {
   display: grid;
   gap: 1rem;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0;
-  padding: 0.75rem;
 }
 </style>

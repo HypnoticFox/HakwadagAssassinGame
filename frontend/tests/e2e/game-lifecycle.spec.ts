@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { setupApiMocks, loginViaStorage, createGameViaUi, joinGameViaUi, createPlayer, INVITE_CODE } from './helpers'
+import { setupApiMocks, loginViaStorage, createGameViaUi, joinGameViaUi, createPlayer, startGameViaUi, INVITE_CODE } from './helpers'
 
 test.describe('Game lifecycle', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,7 +25,7 @@ test.describe('Game lifecycle', () => {
     await page.waitForSelector('h1')
 
     // Try to submit with empty required fields
-    const submitButton = page.getByRole('button', { name: 'Create game' })
+    const submitButton = page.getByRole('button', { name: 'Spel aanmaken' })
     await submitButton.click()
 
     // Should stay on create page (browser validation prevents submission)
@@ -38,13 +38,13 @@ test.describe('Game lifecycle', () => {
     await page.goto('/')
     await page.waitForSelector('h1')
 
-    await page.getByRole('button', { name: 'Join a game' }).click()
+    await page.getByRole('button', { name: 'Deelnemen aan spel' }).click()
     await page.waitForSelector('h2')
 
     const modalInputs = page.locator('.modal-body input')
     await modalInputs.nth(0).fill(INVITE_CODE)
     await modalInputs.nth(1).fill('Joining Player')
-    await page.getByRole('button', { name: 'Join', exact: true }).click()
+    await page.getByRole('button', { name: 'Deelnemen', exact: true }).click()
 
     // Should be redirected to game detail
     await page.waitForURL(/\/games\//)
@@ -55,13 +55,13 @@ test.describe('Game lifecycle', () => {
     await page.goto('/')
     await page.waitForSelector('h1')
 
-    await page.getByRole('button', { name: 'Join a game' }).click()
+    await page.getByRole('button', { name: 'Deelnemen aan spel' }).click()
     await page.waitForSelector('h2')
 
     const modalInputs = page.locator('.modal-body input')
     await modalInputs.nth(0).fill('INVALID123')
     await modalInputs.nth(1).fill('Joining Player')
-    await page.getByRole('button', { name: 'Join', exact: true }).click()
+    await page.getByRole('button', { name: 'Deelnemen', exact: true }).click()
 
     await expect(page.locator('[role="alert"]')).toBeVisible()
   })
@@ -70,24 +70,25 @@ test.describe('Game lifecycle', () => {
     // Create a game first
     await createGameViaUi(page)
 
-    // Click start game
-    await page.getByRole('button', { name: 'Start game' }).click()
+    // Start the game with confirmation
+    await startGameViaUi(page)
 
     // Status should change
-    await expect(page.locator('.eyebrow')).toContainText('Active')
+    await expect(page.locator('.eyebrow')).toContainText('Actief')
   })
 
   test('end a game: as admin → click "End game" → game status changes to Ended', async ({ page }) => {
     // Create and start a game
     await createGameViaUi(page)
-    await page.getByRole('button', { name: 'Start game' }).click()
-    await expect(page.locator('.eyebrow')).toContainText('Active')
+    await startGameViaUi(page)
+    await expect(page.locator('.eyebrow')).toContainText('Actief')
 
-    // End the game
-    await page.getByRole('button', { name: 'End game' }).click()
+    // Accept the end confirmation dialog
+    page.once('dialog', (dialog) => dialog.accept())
+    await page.getByRole('button', { name: 'Spel beëindigen' }).click()
 
     // Status should change
-    await expect(page.locator('.eyebrow')).toContainText('Ended')
+    await expect(page.locator('.eyebrow')).toContainText('Beëindigd')
   })
 
   test('leave a game: click "Leave game" → confirm → redirected to home', async ({ page }) => {
@@ -96,7 +97,7 @@ test.describe('Game lifecycle', () => {
 
     // Click "Leave game"
     page.on('dialog', (dialog) => dialog.accept())
-    await page.getByRole('button', { name: 'Leave game' }).click()
+    await page.getByRole('button', { name: 'Spel verlaten' }).click()
 
     // Should redirect to home
     await expect(page).toHaveURL('/')
@@ -108,7 +109,7 @@ test.describe('Game lifecycle', () => {
 
     // Dismiss the confirm dialog
     page.on('dialog', (dialog) => dialog.dismiss())
-    await page.getByRole('button', { name: 'Leave game' }).click()
+    await page.getByRole('button', { name: 'Spel verlaten' }).click()
 
     // Should still be on game detail (URL matches /games/<id> pattern)
     await expect(page).toHaveURL(/\/games\//)
@@ -124,7 +125,7 @@ test.describe('Game lifecycle', () => {
     await joinGameViaUi(page)
 
     // Admin panel button should not be visible
-    await expect(page.getByRole('button', { name: 'Admin panel' })).not.toBeVisible({ timeout: 1000 }).catch(() => {
+    await expect(page.getByRole('button', { name: 'Spelinstellingen' })).not.toBeVisible({ timeout: 1000 }).catch(() => {
       // If visible, that's a test failure — but the mock may return creator role
       // This is expected to potentially pass since the mock returns myRole=0 for join
     })
@@ -137,17 +138,17 @@ test.describe('Game lifecycle', () => {
     await createGameViaUi(page)
 
     // Step 2: Game detail shows Not Started status
-    await expect(page.locator('.eyebrow')).toContainText('Not started')
+    await expect(page.locator('.eyebrow')).toContainText('Niet gestart')
 
-    // Step 3: Start the game
-    await page.getByRole('button', { name: 'Start game' }).click()
-    await expect(page.locator('.eyebrow')).toContainText('Active')
+    // Step 3: Start the game with confirmation
+    await startGameViaUi(page)
+    await expect(page.locator('.eyebrow')).toContainText('Actief')
 
     // Step 4: My assignment button should be visible
-    await expect(page.getByRole('button', { name: 'My assignment' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Mijn opdracht' })).toBeVisible()
 
     // Step 5: Navigate to assignment
-    await page.getByRole('button', { name: 'My assignment' }).click()
+    await page.getByRole('button', { name: 'Mijn opdracht' }).click()
     await page.waitForURL(/\/assignment/)
     await expect(page.locator('.target-name')).toBeVisible()
   })
@@ -157,7 +158,7 @@ test.describe('Game lifecycle', () => {
 
     // Verify game details
     await expect(page.locator('.invite-code')).toBeVisible()
-    await expect(page.locator('.detail-card')).toHaveCount(4) // max players, points, timeout, created
-    await expect(page.locator('.detail-card').first()).toContainText('Max players')
+    await expect(page.locator('.detail-card')).toHaveCount(6) // max players, points, timeout, cooldown, created, scheduled end
+    await expect(page.locator('.detail-card').first()).toContainText('Max. spelers')
   })
 })

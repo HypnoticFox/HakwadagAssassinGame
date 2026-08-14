@@ -75,14 +75,14 @@ test.describe('PWA features', () => {
     await expect(page.locator('nav a').filter({ hasText: 'Home' })).toBeVisible()
 
     // Log out to check guest nav state
-    await page.getByRole('button', { name: 'Log out' }).click()
+    await page.getByRole('button', { name: 'Uitloggen' }).click()
     await page.waitForURL('/login')
 
     // Now we should see Login but not Home or Log out
     // Actually, the nav still shows Login when not authenticated
     // Let's check for the Login link
     await page.goto('/login')
-    await expect(page.locator('nav a').filter({ hasText: 'Login' })).toBeVisible()
+    await expect(page.locator('nav a').filter({ hasText: 'Inloggen' })).toBeVisible()
   })
 
   test('app uses modern browser APIs that PWA needs', async ({ page }) => {

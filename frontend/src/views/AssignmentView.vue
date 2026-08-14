@@ -8,6 +8,7 @@ import ConditionCard from '@/components/ConditionCard.vue'
 import Modal from '@/components/Modal.vue'
 import PendingTagCountdown from '@/components/PendingTagCountdown.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
+import { useToast } from '@/composables/useToast'
 import { useAssignmentStore, useGameStore, useTagStore } from '@/stores'
 import { GameStatus } from '@/types'
 import { parseTimeSpan } from '@/utils/format'
@@ -21,7 +22,7 @@ const tagStore = useTagStore()
 const gameId = computed(() => route.params.id as string)
 const selectedConditionId = ref<string | null>(null)
 const submitModalOpen = ref(false)
-const localError = ref<string | null>(null)
+const { toast } = useToast()
 const isReady = ref(false)
 
 const cooldownAvailableAt = computed(() => {
@@ -129,7 +130,6 @@ function selectCondition(conditionId: string) {
 
 async function onSubmitTag() {
   if (!assignmentStore.currentAssignment || !selectedConditionId.value) return
-  localError.value = null
   try {
     await tagStore.submitTag(
       gameId.value,
@@ -140,7 +140,7 @@ async function onSubmitTag() {
     selectedConditionId.value = null
   } catch (err) {
     if (err instanceof Error) {
-      localError.value = err.message
+      toast(err.message, 'error')
     }
   }
 }
@@ -226,9 +226,6 @@ async function onSubmitTag() {
       @close="submitModalOpen = false"
     >
       <p>{{ $t('assignment.confirmTag.message') }}</p>
-      <p v-if="localError" class="form-error" role="alert">
-        {{ localError }}
-      </p>
       <template #footer>
         <Button variant="secondary" @click="submitModalOpen = false">
           {{ $t('common.cancel') }}
@@ -302,15 +299,6 @@ async function onSubmitTag() {
 .submit-modal p {
   color: var(--text-muted);
   margin: 0 0 1rem;
-}
-
-.form-error {
-  background: var(--danger-bg);
-  border-radius: 0.5rem;
-  color: var(--danger-text);
-  font-size: 0.875rem;
-  margin: 0 0 1rem;
-  padding: 0.75rem;
 }
 
 .loading,

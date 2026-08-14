@@ -10,7 +10,7 @@ test.describe('Authentication flow', () => {
     await loginViaUi(page)
 
     // Should be on home page
-    await expect(page.locator('h1')).toContainText('Welcome')
+    await expect(page.locator('h1')).toContainText('Welkom bij Hakwadag')
     // Token should be persisted
     const storedToken = await page.evaluate(() => localStorage.getItem('hakwadag_token'))
     expect(storedToken).toBe(TEST_TOKEN)
@@ -42,7 +42,7 @@ test.describe('Authentication flow', () => {
 
     const emailInput = page.locator('input[type="email"]')
     await emailInput.fill('wrong@test.com')
-    await page.getByRole('button', { name: 'Send code' }).click()
+    await page.getByRole('button', { name: 'Code versturen' }).click()
 
     await expect(page.locator('[role="alert"]')).toBeVisible()
     // Should still be on the email step
@@ -55,12 +55,12 @@ test.describe('Authentication flow', () => {
 
     // Step 1 - send OTP
     await page.locator('input[type="email"]').fill(TEST_EMAIL)
-    await page.getByRole('button', { name: 'Send code' }).click()
+    await page.getByRole('button', { name: 'Code versturen' }).click()
 
     // Step 2 - enter wrong code
     await page.waitForSelector('input[inputmode="numeric"]')
     await page.locator('input[inputmode="numeric"]').fill('000000')
-    await page.getByRole('button', { name: 'Verify' }).click()
+    await page.getByRole('button', { name: 'Verifiëren' }).click()
 
     await expect(page.locator('[role="alert"]')).toBeVisible()
     // Should stay on login
@@ -73,11 +73,11 @@ test.describe('Authentication flow', () => {
 
     // Send OTP first
     await page.locator('input[type="email"]').fill(TEST_EMAIL)
-    await page.getByRole('button', { name: 'Send code' }).click()
+    await page.getByRole('button', { name: 'Code versturen' }).click()
     await page.waitForSelector('input[inputmode="numeric"]')
 
     // Click "Use a different email"
-    await page.getByRole('button', { name: 'Use a different email' }).click()
+    await page.getByRole('button', { name: 'Ander e-mailadres gebruiken' }).click()
     await expect(page.locator('input[type="email"]')).toBeVisible()
   })
 
@@ -90,14 +90,14 @@ test.describe('Authentication flow', () => {
 
     // Should still be on home (not redirected to login)
     await expect(page).toHaveURL('/')
-    await expect(page.locator('h1')).toContainText('Welcome')
+    await expect(page.locator('h1')).toContainText('Welkom bij Hakwadag')
   })
 
   test('logout: click logout → redirected to login, protected routes inaccessible', async ({ page }) => {
     await loginViaUi(page)
 
     // Click the logout button in the nav
-    await page.getByRole('button', { name: 'Log out' }).click()
+    await page.getByRole('button', { name: 'Uitloggen' }).click()
 
     // Should be redirected to login
     await expect(page).toHaveURL('/login')
@@ -116,7 +116,7 @@ test.describe('Authentication flow', () => {
     expect(storedToken).toBeTruthy()
 
     // Log out
-    await page.getByRole('button', { name: 'Log out' }).click()
+    await page.getByRole('button', { name: 'Uitloggen' }).click()
 
     // Token should be cleared
     storedToken = await page.evaluate(() => localStorage.getItem('hakwadag_token'))
@@ -130,9 +130,9 @@ test.describe('Authentication flow', () => {
 
     // Login
     await page.locator('input[type="email"]').fill(TEST_EMAIL)
-    await page.getByRole('button', { name: 'Send code' }).click()
+    await page.getByRole('button', { name: 'Code versturen' }).click()
     await page.locator('input[inputmode="numeric"]').fill(TEST_OTP_CODE)
-    await page.getByRole('button', { name: 'Verify' }).click()
+    await page.getByRole('button', { name: 'Verifiëren' }).click()
 
     // Should redirect to create game page (based on the redirect param in the URL)
     await expect(page).toHaveURL(/\/games\/create/)
