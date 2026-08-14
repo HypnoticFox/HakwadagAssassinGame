@@ -10,6 +10,7 @@ import type {
   GameDto,
   GamePlayerDto,
   LeaderboardEntryDto,
+  NextAssignmentAvailabilityDto,
   PlayerDto,
   SafeTimeBlockDto,
   SubmitTagRequest,
@@ -56,7 +57,6 @@ class ApiClient {
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const headers = new Headers(options.headers)
     headers.set('Accept', 'application/json')
-    headers.set('skip_zrok_interstitial', '1')
 
     if (options.body && typeof options.body === 'string') {
       headers.set('Content-Type', 'application/json')
@@ -123,7 +123,10 @@ class ApiClient {
     })
   }
 
-  async seedGame(playerCount?: number, autoStart?: boolean): Promise<{
+  async seedGame(
+    playerCount?: number,
+    autoStart?: boolean,
+  ): Promise<{
     game: GameDto
     players: Array<{ player: PlayerDto; token: string; role: number }>
   }> {
@@ -247,6 +250,20 @@ class ApiClient {
     })
   }
 
+  async updateConfirmationTimeout(gameId: string, minutes: number): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/${gameId}/admin/confirmation-timeout`, {
+      method: 'PUT',
+      body: JSON.stringify({ minutes }),
+    })
+  }
+
+  async updateAssignmentCooldown(gameId: string, minutes: number): Promise<GameDto> {
+    return this.request<GameDto>(`/api/games/${gameId}/admin/assignment-cooldown`, {
+      method: 'PUT',
+      body: JSON.stringify({ minutes }),
+    })
+  }
+
   async setParticipation(gameId: string, isParticipating: boolean): Promise<void> {
     await this.request<void>(`/api/games/${gameId}/participation`, {
       method: 'PUT',
@@ -270,6 +287,12 @@ class ApiClient {
     return this.request<AssignmentDto | null>(`/api/games/${gameId}/assignments/me`)
   }
 
+  async getNextAssignmentAvailability(gameId: string): Promise<NextAssignmentAvailabilityDto> {
+    return this.request<NextAssignmentAvailabilityDto>(
+      `/api/games/${gameId}/assignments/next-availability`,
+    )
+  }
+
   async submitTag(gameId: string, request: SubmitTagRequest): Promise<TagSubmissionDto> {
     return this.request<TagSubmissionDto>(`/api/games/${gameId}/tag`, {
       method: 'POST',
@@ -279,6 +302,10 @@ class ApiClient {
 
   async getPendingTag(gameId: string): Promise<TagSubmissionDto | null> {
     return this.request<TagSubmissionDto | null>(`/api/games/${gameId}/tag/pending`)
+  }
+
+  async getPendingOutgoingTag(gameId: string): Promise<TagSubmissionDto | null> {
+    return this.request<TagSubmissionDto | null>(`/api/games/${gameId}/tag/outgoing`)
   }
 
   async confirmTag(gameId: string, tagId: string): Promise<TagSubmissionDto> {

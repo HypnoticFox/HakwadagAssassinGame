@@ -15,6 +15,8 @@ vi.mock('@/api/client', () => ({
     endGame: vi.fn(),
     updateDuration: vi.fn(),
     extendDuration: vi.fn(),
+    updateConfirmationTimeout: vi.fn(),
+    updateAssignmentCooldown: vi.fn(),
     leaveGame: vi.fn(),
     rejoinGame: vi.fn(),
     getGamePlayers: vi.fn(),
@@ -36,6 +38,7 @@ function makeGame(overrides: Partial<GameDto> = {}): GameDto {
     maxPlayers: 10,
     basePointsPerTag: 100,
     confirmationTimeout: '01:00:00',
+    assignmentCooldownMinutes: 30,
     playerCount: 1,
     myRole: 1 as GameRole,
     safeTimeBlocks: [],
@@ -62,7 +65,16 @@ describe('game store', () => {
 
     it('reads recent games from localStorage', () => {
       const recent: RecentGame[] = [
-        { id: 'g1', name: 'Old Game', status: GameStatus.Ended, myRole: 0, joinedAt: '', playerCount: 0, maxPlayers: 0, basePointsPerTag: 0 },
+        {
+          id: 'g1',
+          name: 'Old Game',
+          status: GameStatus.Ended,
+          myRole: 0,
+          joinedAt: '',
+          playerCount: 0,
+          maxPlayers: 0,
+          basePointsPerTag: 0,
+        },
       ]
       localStorage.setItem('hakwadag_recent_games', JSON.stringify(recent))
       const store = useGameStore()
@@ -305,12 +317,67 @@ describe('game store', () => {
     })
   })
 
+  describe('updateConfirmationTimeout', () => {
+    it('calls api.updateConfirmationTimeout and updates currentGame', async () => {
+      const updated = makeGame({ confirmationTimeout: '01:00:00' })
+      vi.mocked(api.updateConfirmationTimeout).mockResolvedValue(updated)
+      const store = useGameStore()
+
+      const result = await store.updateConfirmationTimeout('g1', 60)
+
+      expect(api.updateConfirmationTimeout).toHaveBeenCalledWith('g1', 60)
+      expect(result).toStrictEqual(updated)
+      expect(store.currentGame).toStrictEqual(updated)
+    })
+
+    it('sets error and rethrows on failure', async () => {
+      vi.mocked(api.updateConfirmationTimeout).mockRejectedValue(new Error('Update failed'))
+      const store = useGameStore()
+
+      await expect(store.updateConfirmationTimeout('g1', 60)).rejects.toThrow('Update failed')
+      expect(store.error).toBe('Update failed')
+    })
+  })
+
+  describe('updateAssignmentCooldown', () => {
+    it('calls api.updateAssignmentCooldown and updates currentGame', async () => {
+      const updated = makeGame({ assignmentCooldownMinutes: 15 })
+      vi.mocked(api.updateAssignmentCooldown).mockResolvedValue(updated)
+      const store = useGameStore()
+
+      const result = await store.updateAssignmentCooldown('g1', 15)
+
+      expect(api.updateAssignmentCooldown).toHaveBeenCalledWith('g1', 15)
+      expect(result).toStrictEqual(updated)
+      expect(store.currentGame).toStrictEqual(updated)
+    })
+
+    it('sets error and rethrows on failure', async () => {
+      vi.mocked(api.updateAssignmentCooldown).mockRejectedValue(new Error('Update failed'))
+      const store = useGameStore()
+
+      await expect(store.updateAssignmentCooldown('g1', 15)).rejects.toThrow('Update failed')
+      expect(store.error).toBe('Update failed')
+    })
+  })
+
   describe('leaveGame', () => {
     it('clears currentGame when leaving a game that has not started', async () => {
       vi.mocked(api.leaveGame).mockResolvedValue(undefined)
       const store = useGameStore()
       store.currentGame = makeGame({ status: GameStatus.NotStarted })
-      store.recentGames = [{ id: 'g1', name: 'G', status: 0, myRole: 0, joinedAt: '', playerCount: 0, maxPlayers: 0, basePointsPerTag: 0 }]
+      store.recentGames = [
+        {
+          id: 'g1',
+          name: 'G',
+          status: 0,
+          myRole: 0,
+          joinedAt: '',
+          playerCount: 0,
+          maxPlayers: 0,
+          basePointsPerTag: 0,
+        },
+      ]
 
       await store.leaveGame('g1')
 
@@ -326,7 +393,18 @@ describe('game store', () => {
       vi.mocked(api.getGame).mockResolvedValue(leftGame)
       const store = useGameStore()
       store.currentGame = activeGame
-      store.recentGames = [{ id: 'g1', name: 'G', status: 1, myRole: 0, joinedAt: '', playerCount: 0, maxPlayers: 0, basePointsPerTag: 0 }]
+      store.recentGames = [
+        {
+          id: 'g1',
+          name: 'G',
+          status: 1,
+          myRole: 0,
+          joinedAt: '',
+          playerCount: 0,
+          maxPlayers: 0,
+          basePointsPerTag: 0,
+        },
+      ]
 
       await store.leaveGame('g1')
 

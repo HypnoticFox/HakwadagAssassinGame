@@ -23,6 +23,9 @@ vi.mock('@/views/CreateGameView.vue', () => ({
 vi.mock('@/views/GameDetailView.vue', () => ({
   default: { template: '<div>Game Detail</div>' },
 }))
+vi.mock('@/views/GameAdminView.vue', () => ({
+  default: { template: '<div>Game Admin</div>' },
+}))
 vi.mock('@/views/AssignmentView.vue', () => ({
   default: { template: '<div>Assignment</div>' },
 }))
@@ -139,6 +142,7 @@ describe('router', () => {
       expect(routeNames).toContain('login')
       expect(routeNames).toContain('create-game')
       expect(routeNames).toContain('game-detail')
+      expect(routeNames).toContain('game-admin')
       expect(routeNames).toContain('assignment')
       expect(routeNames).toContain('leaderboard')
       expect(routeNames).toContain('tag-confirm')
@@ -156,6 +160,11 @@ describe('router', () => {
 
     it('game-detail route requires auth', async () => {
       const route = router.getRoutes().find((r) => r.name === 'game-detail')
+      expect(route?.meta?.requiresAuth).toBe(true)
+    })
+
+    it('game-admin route requires auth', async () => {
+      const route = router.getRoutes().find((r) => r.name === 'game-admin')
       expect(route?.meta?.requiresAuth).toBe(true)
     })
 

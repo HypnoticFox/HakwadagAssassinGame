@@ -72,6 +72,7 @@ export const useGameStore = defineStore('game', () => {
     maxPlayers?: number
     basePointsPerTag: number
     confirmationTimeoutMinutes: number
+    assignmentCooldownMinutes?: number
   }) {
     isLoading.value = true
     error.value = null
@@ -82,6 +83,7 @@ export const useGameStore = defineStore('game', () => {
         maxPlayers: request.maxPlayers,
         basePointsPerTag: request.basePointsPerTag,
         confirmationTimeoutMinutes: request.confirmationTimeoutMinutes,
+        assignmentCooldownMinutes: request.assignmentCooldownMinutes,
       })
       updateCurrentGame(game)
       return game
@@ -224,6 +226,40 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
+  async function updateConfirmationTimeout(gameId: string, minutes: number) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const game = await api.updateConfirmationTimeout(gameId, minutes)
+      updateCurrentGame(game)
+      return game
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function updateAssignmentCooldown(gameId: string, minutes: number) {
+    isLoading.value = true
+    error.value = null
+    try {
+      const game = await api.updateAssignmentCooldown(gameId, minutes)
+      updateCurrentGame(game)
+      return game
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message
+      }
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   async function setParticipation(gameId: string, isParticipating: boolean) {
     isLoading.value = true
     error.value = null
@@ -333,6 +369,8 @@ export const useGameStore = defineStore('game', () => {
     endGame,
     updateDuration,
     extendDuration,
+    updateConfirmationTimeout,
+    updateAssignmentCooldown,
     leaveGame,
     rejoinGame,
     setParticipation,

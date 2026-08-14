@@ -113,6 +113,67 @@ public sealed class TagEndpointTests : ApiTestBase
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    // ── Get Pending Outgoing Tag ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPendingOutgoingTag_HunterHasPending_Returns200()
+    {
+        var (assignment, hunter, target, token) = await SetupActiveGameWithAssignmentAsync();
+        var conditionId = assignment.Conditions[0].Id;
+
+        var submission = TagSubmission.Create(assignment.Id, hunter.Id, target.Id, conditionId);
+        await TagRepo.AddAsync(submission);
+
+        var response = await AuthenticatedGetAsync(
+            $"/api/games/{assignment.GameId}/tag/outgoing", token);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var tag = await response.Content.ReadFromJsonAsync<TagSubmissionDto>();
+        Assert.NotNull(tag);
+        Assert.Equal(submission.Id, tag.Id);
+        Assert.Equal(target.Id, tag.TargetId);
+        Assert.Equal(TagStatus.Pending, tag.Status);
+    }
+
+    [Fact]
+    public async Task GetPendingOutgoingTag_NoPending_Returns404()
+    {
+        var (assignment, hunter, _, token) = await SetupActiveGameWithAssignmentAsync();
+
+        var response = await AuthenticatedGetAsync(
+            $"/api/games/{assignment.GameId}/tag/outgoing", token);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPendingOutgoingTag_ResolvedTag_Returns404()
+    {
+        var (assignment, hunter, target, token) = await SetupActiveGameWithAssignmentAsync();
+        var conditionId = assignment.Conditions[0].Id;
+
+        var submission = TagSubmission.Create(assignment.Id, hunter.Id, target.Id, conditionId);
+        submission.Confirm();
+        await TagRepo.AddAsync(submission);
+
+        var response = await AuthenticatedGetAsync(
+            $"/api/games/{assignment.GameId}/tag/outgoing", token);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetPendingOutgoingTag_NotMember_Returns401()
+    {
+        var (assignment, _, _, _) = await SetupActiveGameWithAssignmentAsync();
+        var (outsider, token) = await CreateAuthenticatedPlayerAsync("outsider@test.com", "Outsider");
+
+        var response = await AuthenticatedGetAsync(
+            $"/api/games/{assignment.GameId}/tag/outgoing", token);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     // ── Confirm Tag ───────────────────────────────────────────────────────
 
     [Fact]

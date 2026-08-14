@@ -489,4 +489,85 @@ public sealed class AdminServiceTests
         await Assert.ThrowsAsync<InvalidGameStateException>(() =>
             sut.ExtendDurationAsync(CreatorId, GameId, new ExtendDurationRequest(0)));
     }
+
+    // ── UpdateConfirmationTimeoutAsync ────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateConfirmationTimeoutAsync_AdminWhenActive_UpdatesTimeout()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        game.Start();
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await sut.UpdateConfirmationTimeoutAsync(CreatorId, GameId, new UpdateConfirmationTimeoutRequest(30));
+
+        Assert.Equal(TimeSpan.FromMinutes(30), game.ConfirmationTimeout);
+        await gameRepository.Received(1).UpdateAsync(game, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateConfirmationTimeoutAsync_NotAdmin_ThrowsUnauthorizedException()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            sut.UpdateConfirmationTimeoutAsync(PlayerId, GameId, new UpdateConfirmationTimeoutRequest(30)));
+    }
+
+    [Fact]
+    public async Task UpdateConfirmationTimeoutAsync_GameNotActive_ThrowsInvalidGameStateException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await Assert.ThrowsAsync<InvalidGameStateException>(() =>
+            sut.UpdateConfirmationTimeoutAsync(CreatorId, GameId, new UpdateConfirmationTimeoutRequest(30)));
+    }
+
+    // ── UpdateAssignmentCooldownAsync ─────────────────────────────────────
+
+    [Fact]
+    public async Task UpdateAssignmentCooldownAsync_AdminWhenActive_UpdatesCooldown()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        game.Start();
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await sut.UpdateAssignmentCooldownAsync(CreatorId, GameId, new UpdateAssignmentCooldownRequest(10));
+
+        Assert.Equal(10, game.AssignmentCooldownMinutes);
+        await gameRepository.Received(1).UpdateAsync(game, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAssignmentCooldownAsync_NegativeMinutes_ThrowsArgumentOutOfRangeException()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+        game.Start();
+        var membership = GamePlayer.Create(GameId, CreatorId, GameRole.Creator);
+
+        gamePlayerRepository.GetAsync(GameId, CreatorId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            sut.UpdateAssignmentCooldownAsync(CreatorId, GameId, new UpdateAssignmentCooldownRequest(-5)));
+    }
 }

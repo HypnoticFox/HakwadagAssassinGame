@@ -87,9 +87,10 @@ public sealed class DevSeedService : IDevSeedService
             DurationHours: 24,
             MaxPlayers: count + 5,
             BasePointsPerTag: 100,
-            ConfirmationTimeoutMinutes: 30,
+            ConfirmationTimeoutMinutes: 5,
             ConditionBonuses: null,
-            SafeTimeBlocks: null);
+            SafeTimeBlocks: null,
+            AssignmentCooldownMinutes: 0);
 
         var gameDto = await gameService.CreateGameAsync(seededPlayers[0].Player.Id, createRequest, cancellationToken);
 

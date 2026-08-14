@@ -19,6 +19,9 @@ vi.mock('@/stores', () => ({
   useLeaderboardStore: vi.fn(() => ({
     loadLeaderboard: vi.fn(),
   })),
+  useAuthStore: vi.fn(() => ({
+    player: null,
+  })),
 }))
 
 vi.mock('@/api/client', () => ({

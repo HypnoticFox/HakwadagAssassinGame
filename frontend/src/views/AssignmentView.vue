@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
+import AssignmentCooldownTimer from '@/components/AssignmentCooldownTimer.vue'
 import ConditionCard from '@/components/ConditionCard.vue'
 import Modal from '@/components/Modal.vue'
+import PendingTagCountdown from '@/components/PendingTagCountdown.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useAssignmentStore, useGameStore, useTagStore } from '@/stores'
 import { GameStatus } from '@/types'
+import { parseTimeSpan } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,12 +23,102 @@ const selectedConditionId = ref<string | null>(null)
 const submitModalOpen = ref(false)
 const localError = ref<string | null>(null)
 
+const cooldownAvailableAt = computed(() => {
+  const availableAt = assignmentStore.nextAvailability?.availableAt
+  if (!availableAt) return null
+  // Add 30 seconds buffer to account for background service delay
+  const bufferedTime = new Date(availableAt).getTime() + 5000
+  return bufferedTime > Date.now() ? new Date(bufferedTime).toISOString() : null
+})
+
+/**
+ * When the hunter has a pending outgoing tag, compute when it auto-confirms:
+ * submittedAt + confirmationTimeout + 5 seconds buffer.
+ */
+const pendingAvailableAt = computed(() => {
+  const tag = tagStore.pendingOutgoingTag
+  if (!tagStore.isTagPending(tag)) return null
+  const timeout = gameStore.currentGame?.confirmationTimeout
+  if (!timeout) return null
+  const parts = parseTimeSpan(timeout)
+  if (!parts) return null
+  const timeoutMs = (parts.days * 24 * 60 + parts.hours * 60 + parts.minutes) * 60 * 1000
+  const submittedMs = new Date(tag.submittedAt).getTime()
+  if (Number.isNaN(submittedMs)) return null
+  // Add 5 seconds buffer to account for background service delay
+  return new Date(submittedMs + timeoutMs + 5000).toISOString()
+})
+
 useGameSignalR(gameId.value)
+
+// Watch for assignment/pending tag changes from SignalR and refresh.
+// Watch stable values (assignment id, pending tag reference) instead of the
+// whole objects: refreshAssignment() re-fetches the assignment, and replacing
+// currentAssignment with a new-but-identical object would re-trigger a watch
+// on the object reference and loop forever.
+watch(
+  () => assignmentStore.currentAssignment?.id ?? null,
+  () => {
+    void refreshAssignment()
+  },
+)
+
+watch(
+  () => tagStore.pendingOutgoingTag,
+  (newTag, oldTag) => {
+    // Only refresh assignment when the tag is resolved (cleared), not when it's submitted
+    if (oldTag && !newTag) {
+      void refreshAssignment()
+    }
+  },
+)
 
 onMounted(async () => {
   await gameStore.loadGame(gameId.value)
-  await assignmentStore.loadAssignment(gameId.value)
+  await refreshAssignment()
+  try {
+    await tagStore.loadPendingOutgoingTag(gameId.value)
+  } catch {
+    // The assignment view remains usable; the pending tag will be picked up
+    // again on the next refresh or SignalR event.
+  }
 })
+
+async function refreshAssignment() {
+  try {
+    const assignment = await assignmentStore.loadAssignment(gameId.value)
+    if (!assignment) {
+      await assignmentStore.loadNextAvailability(gameId.value)
+    }
+  } catch {
+    // No active assignment — load the cooldown
+    await assignmentStore.loadNextAvailability(gameId.value).catch(() => undefined)
+  }
+}
+
+async function onCooldownExpired() {
+  // The cooldown elapsed — the backend should have created the assignment.
+  // Just reload to get the new assignment.
+  try {
+    await refreshAssignment()
+  } catch {
+    // Assignment not ready yet — reload the cooldown so the timer keeps ticking
+    await assignmentStore.loadNextAvailability(gameId.value).catch(() => undefined)
+  }
+}
+
+async function onPendingTagExpired() {
+  // The tag auto-confirmed — the backend should have processed it.
+  // Just reload to get the new assignment or cooldown.
+  tagStore.clearPendingOutgoingTag()
+
+  try {
+    await refreshAssignment()
+  } catch {
+    // Assignment not ready yet — fall back to the cooldown timer
+    await assignmentStore.loadNextAvailability(gameId.value).catch(() => undefined)
+  }
+}
 
 function selectCondition(conditionId: string) {
   selectedConditionId.value = conditionId
@@ -53,7 +146,11 @@ async function onSubmitTag() {
 
 <template>
   <section class="page-section">
-    <div v-if="assignmentStore.currentAssignment">
+    <div v-if="pendingAvailableAt" class="empty">
+      <PendingTagCountdown :available-at="pendingAvailableAt" @expired="onPendingTagExpired" />
+    </div>
+
+    <div v-else-if="assignmentStore.currentAssignment">
       <p class="eyebrow">
         {{ $t('assignment.eyebrow') }}
       </p>
@@ -63,7 +160,7 @@ async function onSubmitTag() {
             v-if="assignmentStore.currentAssignment.target.avatarUrl"
             :src="assignmentStore.currentAssignment.target.avatarUrl"
             :alt="assignmentStore.currentAssignment.target.displayName"
-          >
+          />
           <span v-else>{{
             assignmentStore.currentAssignment.target.displayName.charAt(0).toUpperCase()
           }}</span>
@@ -92,35 +189,29 @@ async function onSubmitTag() {
         </div>
       </div>
 
-      <Button
-        variant="secondary"
-        full-width
-        @click="router.push(`/games/${gameId}/leaderboard`)"
-      >
+      <Button variant="secondary" full-width @click="router.push(`/games/${gameId}/leaderboard`)">
         {{ $t('assignment.viewLeaderboard') }}
       </Button>
     </div>
 
-    <div
-      v-else-if="assignmentStore.isLoading"
-      class="loading"
-    >
+    <div v-else-if="assignmentStore.isLoading" class="loading">
       {{ $t('assignment.loading') }}
     </div>
-    <div
-      v-else
-      class="empty"
-    >
-      <p>{{ $t('assignment.noAssignment') }}</p>
-      <p
-        v-if="gameStore.currentGame?.status !== GameStatus.Active"
-        class="empty-hint"
-      >
-        {{ $t('assignment.gameNotStarted') }}
-      </p>
-      <Button @click="router.push(`/games/${gameId}`)">
-        {{ $t('common.backToGame') }}
-      </Button>
+    <div v-else class="empty">
+      <AssignmentCooldownTimer
+        v-if="cooldownAvailableAt"
+        :available-at="cooldownAvailableAt"
+        @expired="onCooldownExpired"
+      />
+      <template v-else>
+        <p>{{ $t('assignment.noAssignment') }}</p>
+        <p v-if="gameStore.currentGame?.status !== GameStatus.Active" class="empty-hint">
+          {{ $t('assignment.gameNotStarted') }}
+        </p>
+        <Button @click="router.push(`/games/${gameId}`)">
+          {{ $t('common.backToGame') }}
+        </Button>
+      </template>
     </div>
 
     <Modal
@@ -129,24 +220,14 @@ async function onSubmitTag() {
       @close="submitModalOpen = false"
     >
       <p>{{ $t('assignment.confirmTag.message') }}</p>
-      <p
-        v-if="localError"
-        class="form-error"
-        role="alert"
-      >
+      <p v-if="localError" class="form-error" role="alert">
         {{ localError }}
       </p>
       <template #footer>
-        <Button
-          variant="secondary"
-          @click="submitModalOpen = false"
-        >
+        <Button variant="secondary" @click="submitModalOpen = false">
           {{ $t('common.cancel') }}
         </Button>
-        <Button
-          :loading="tagStore.isLoading"
-          @click="onSubmitTag"
-        >
+        <Button :loading="tagStore.isLoading" @click="onSubmitTag">
           {{ $t('assignment.confirmTag.submit') }}
         </Button>
       </template>

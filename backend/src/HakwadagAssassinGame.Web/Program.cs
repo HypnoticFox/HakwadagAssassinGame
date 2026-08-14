@@ -1,5 +1,6 @@
 using HakwadagAssassinGame.Application.Services;
 using HakwadagAssassinGame.Infrastructure;
+using HakwadagAssassinGame.Infrastructure.Services;
 using HakwadagAssassinGame.Web.Middleware;
 using HakwadagAssassinGame.Web.Extensions;
 
@@ -14,26 +15,35 @@ builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IDevSeedService, DevSeedService>();
 
+builder.Services.AddHostedService<TagTimeoutBackgroundService>();
+builder.Services.AddHostedService<AssignmentCooldownBackgroundService>();
+
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:5173"];
 
-// Support remote development via zrok2: add the zrok frontend URL if set.
-var zrokFrontendUrl = builder.Configuration["ZROK_FRONTEND_URL"];
-if (!string.IsNullOrWhiteSpace(zrokFrontendUrl))
+// Support remote development via cloudflared: add the tunnel frontend URL if set.
+var tunnelFrontendUrl = builder.Configuration["CLOUDFLARED_FRONTEND_URL"];
+if (!string.IsNullOrWhiteSpace(tunnelFrontendUrl))
 {
-    allowedOrigins = allowedOrigins.Append(zrokFrontendUrl).ToArray();
+    allowedOrigins = allowedOrigins.Append(tunnelFrontendUrl).ToArray();
 }
 
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy =>
-    policy.WithOrigins(allowedOrigins)
+    policy.SetIsOriginAllowed(origin => allowedOrigins.Contains(origin))
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials()));
-builder.Services.AddSignalR();
+
+builder.Services.AddSignalR(options =>
+{
+    // Allow tokens to be passed via query string for WebSocket connections
+    options.EnableDetailedErrors = true;
+});
 
 var app = builder.Build();
 
 app.UseRouting();
+app.UseWebSockets();
 app.UseCors("Frontend");
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<AuthenticationMiddleware>();

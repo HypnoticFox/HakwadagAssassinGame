@@ -110,14 +110,13 @@ describe('request method & body', () => {
     expect(headers.get('Content-Type')).toBe('application/json')
   })
 
-  it('always sets Accept and skip_zrok_interstitial headers', async () => {
+  it('always sets Accept header', async () => {
     mockFetch(200, [])
     await api.getMyGames()
 
     const call = vi.mocked(fetch).mock.calls[0]
     const headers = call[1]!.headers as Headers
     expect(headers.get('Accept')).toBe('application/json')
-    expect(headers.get('skip_zrok_interstitial')).toBe('1')
   })
 })
 
@@ -352,6 +351,52 @@ describe('endpoint URL construction', () => {
     expect(call[1]!.body).toBe(JSON.stringify({ minutes: 60 }))
   })
 
+  it('updateConfirmationTimeout calls /api/games/:id/admin/confirmation-timeout with PUT', async () => {
+    const updated = {
+      id: 'g1',
+      name: 'G',
+      inviteCode: 'C',
+      status: 0,
+      createdAt: '',
+      maxPlayers: 10,
+      basePointsPerTag: 100,
+      confirmationTimeout: '01:00:00',
+      playerCount: 1,
+      myRole: 1,
+      safeTimeBlocks: [],
+    }
+    mockFetch(200, updated)
+    const result = await api.updateConfirmationTimeout('g1', 60)
+    const call = vi.mocked(fetch).mock.calls[0]
+    expect(call[0]).toBe(`${BASE}/api/games/g1/admin/confirmation-timeout`)
+    expect(call[1]!.method).toBe('PUT')
+    expect(call[1]!.body).toBe(JSON.stringify({ minutes: 60 }))
+    expect(result).toEqual(updated)
+  })
+
+  it('updateAssignmentCooldown calls /api/games/:id/admin/assignment-cooldown with PUT', async () => {
+    const updated = {
+      id: 'g1',
+      name: 'G',
+      inviteCode: 'C',
+      status: 0,
+      createdAt: '',
+      maxPlayers: 10,
+      basePointsPerTag: 100,
+      confirmationTimeout: '00:05:00',
+      playerCount: 1,
+      myRole: 1,
+      safeTimeBlocks: [],
+    }
+    mockFetch(200, updated)
+    const result = await api.updateAssignmentCooldown('g1', 15)
+    const call = vi.mocked(fetch).mock.calls[0]
+    expect(call[0]).toBe(`${BASE}/api/games/g1/admin/assignment-cooldown`)
+    expect(call[1]!.method).toBe('PUT')
+    expect(call[1]!.body).toBe(JSON.stringify({ minutes: 15 }))
+    expect(result).toEqual(updated)
+  })
+
   it('leaveGame calls /api/games/:id/leave', async () => {
     mockFetch(204)
     await api.leaveGame('g1')
@@ -384,6 +429,21 @@ describe('endpoint URL construction', () => {
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/assignments/me`)
   })
 
+  it('getNextAssignmentAvailability calls /api/games/:id/assignments/next-availability', async () => {
+    mockFetch(200, { availableAt: '2024-01-01T00:30:00Z' })
+    const result = await api.getNextAssignmentAvailability('g1')
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(
+      `${BASE}/api/games/g1/assignments/next-availability`,
+    )
+    expect(result).toEqual({ availableAt: '2024-01-01T00:30:00Z' })
+  })
+
+  it('getNextAssignmentAvailability returns null availableAt', async () => {
+    mockFetch(200, { availableAt: null })
+    const result = await api.getNextAssignmentAvailability('g1')
+    expect(result).toEqual({ availableAt: null })
+  })
+
   it('submitTag calls /api/games/:id/tag', async () => {
     mockFetch(200, {
       id: 't1',
@@ -402,6 +462,28 @@ describe('endpoint URL construction', () => {
     mockFetch(200, null)
     await api.getPendingTag('g1')
     expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/pending`)
+  })
+
+  it('getPendingOutgoingTag calls /api/games/:id/tag/outgoing', async () => {
+    mockFetch(200, null)
+    await api.getPendingOutgoingTag('g1')
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/outgoing`)
+  })
+
+  it('getPendingOutgoingTag returns the pending tag when present', async () => {
+    const tag = {
+      id: 't1',
+      assignmentId: 'a1',
+      hunterId: 'h1',
+      targetId: 't2',
+      conditionId: 'c1',
+      status: 0,
+      submittedAt: '2024-01-01T00:00:00Z',
+    }
+    mockFetch(200, tag)
+    const result = await api.getPendingOutgoingTag('g1')
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe(`${BASE}/api/games/g1/tag/outgoing`)
+    expect(result).toEqual(tag)
   })
 
   it('confirmTag calls /api/games/:id/tag/:tagId/confirm', async () => {

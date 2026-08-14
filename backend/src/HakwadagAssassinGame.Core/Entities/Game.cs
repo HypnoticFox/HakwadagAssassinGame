@@ -19,6 +19,7 @@ public sealed class Game
         int basePointsPerTag,
         Dictionary<ConditionType, int> conditionBonuses,
         TimeSpan confirmationTimeout,
+        int assignmentCooldownMinutes,
         List<SafeTimeBlock> safeTimeBlocks)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
@@ -26,6 +27,7 @@ public sealed class Game
         ArgumentOutOfRangeException.ThrowIfLessThan(maxPlayers, 3);
         ArgumentOutOfRangeException.ThrowIfNegative(basePointsPerTag);
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(confirmationTimeout, TimeSpan.Zero);
+        ArgumentOutOfRangeException.ThrowIfNegative(assignmentCooldownMinutes);
 
         Id = id;
         Name = name;
@@ -45,6 +47,7 @@ public sealed class Game
         }
 
         ConfirmationTimeout = confirmationTimeout;
+        AssignmentCooldownMinutes = assignmentCooldownMinutes;
         SafeTimeBlocks = safeTimeBlocks?.ToList() ?? [];
     }
 
@@ -59,7 +62,8 @@ public sealed class Game
         TimeSpan? confirmationTimeout = null,
         IEnumerable<SafeTimeBlock>? safeTimeBlocks = null,
         Guid? id = null,
-        DateTimeOffset? createdAt = null) => new(
+        DateTimeOffset? createdAt = null,
+        int? assignmentCooldownMinutes = null) => new(
             id ?? Guid.NewGuid(),
             name,
             inviteCode,
@@ -71,6 +75,7 @@ public sealed class Game
             basePointsPerTag,
             conditionBonuses is null ? new Dictionary<ConditionType, int>() : new Dictionary<ConditionType, int>(conditionBonuses),
             confirmationTimeout ?? TimeSpan.FromMinutes(5),
+            assignmentCooldownMinutes ?? 30,
             safeTimeBlocks?.ToList() ?? []);
 
     /// <summary>Gets the game identifier.</summary>
@@ -105,6 +110,9 @@ public sealed class Game
 
     /// <summary>Gets the time before an unresolved tag is automatically confirmed.</summary>
     public TimeSpan ConfirmationTimeout { get; private set; }
+
+    /// <summary>Gets the minimum number of minutes a player must wait between assignments. Zero disables the cooldown.</summary>
+    public int AssignmentCooldownMinutes { get; private set; }
 
     /// <summary>Gets the periods during which tags are not allowed.</summary>
     public List<SafeTimeBlock> SafeTimeBlocks { get; private set; }
@@ -154,5 +162,33 @@ public sealed class Game
 
         Status = GameStatus.Ended;
         EndedAt = endedAt ?? DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>Updates the confirmation timeout. Only valid while the game is active.</summary>
+    public void UpdateConfirmationTimeout(TimeSpan timeout)
+    {
+        if (Status != GameStatus.Active)
+        {
+            throw new InvalidOperationException("The confirmation timeout can only be changed while the game is active.");
+        }
+        if (timeout <= TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(timeout), "Timeout must be positive.");
+        }
+        ConfirmationTimeout = timeout;
+    }
+
+    /// <summary>Updates the assignment cooldown. Only valid while the game is active.</summary>
+    public void UpdateAssignmentCooldown(int minutes)
+    {
+        if (Status != GameStatus.Active)
+        {
+            throw new InvalidOperationException("The assignment cooldown can only be changed while the game is active.");
+        }
+        if (minutes < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(minutes), "Cooldown cannot be negative.");
+        }
+        AssignmentCooldownMinutes = minutes;
     }
 }

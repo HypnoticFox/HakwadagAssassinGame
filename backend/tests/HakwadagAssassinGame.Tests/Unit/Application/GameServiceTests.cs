@@ -1,5 +1,6 @@
 using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Exceptions;
+using HakwadagAssassinGame.Application.Interfaces;
 using HakwadagAssassinGame.Application.Services;
 using HakwadagAssassinGame.Core.Entities;
 using HakwadagAssassinGame.Core.Entities.Conditions;
@@ -18,6 +19,7 @@ public sealed class GameServiceTests
     private readonly ITagSubmissionRepository tagSubmissionRepository = Substitute.For<ITagSubmissionRepository>();
     private readonly IInviteCodeGenerator inviteCodeGenerator = Substitute.For<IInviteCodeGenerator>();
     private readonly IConditionLibrary conditionLibrary = Substitute.For<IConditionLibrary>();
+    private readonly IGameEventNotifier gameEventNotifier = Substitute.For<IGameEventNotifier>();
     private readonly GameService sut;
 
     private static readonly Guid PlayerId = Guid.NewGuid();
@@ -31,7 +33,7 @@ public sealed class GameServiceTests
         sut = new GameService(
             gameRepository, playerRepository, gamePlayerRepository,
             assignmentRepository, tagSubmissionRepository,
-            inviteCodeGenerator, conditionLibrary);
+            inviteCodeGenerator, conditionLibrary, gameEventNotifier);
 
         inviteCodeGenerator.GenerateCode().Returns("INVITE123");
         conditionLibrary.GetAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())

@@ -1,5 +1,5 @@
 # Stop all remote development services.
-# Kills zrok2 shares, backend, frontend, and dependencies (Redis).
+# Stops cloudflared tunnel, backend, frontend, and dependencies (Redis).
 
 param(
     [switch]$ExcludeDependencies,
@@ -22,10 +22,17 @@ if (Test-Path $envFile) {
     }
 }
 
+# --- Configuration ---
+$TunnelName = if ($env:CLOUDFLARED_TUNNEL) { $env:CLOUDFLARED_TUNNEL } else { "hakwadag" }
+$RepoRoot = $PSScriptRoot
+$BackendDir = Join-Path $RepoRoot "backend"
+$FrontendDir = Join-Path $RepoRoot "frontend"
+$LogDir = Join-Path $RepoRoot ".logs"
+
 function Write-Status($msg) { Write-Host "[remote] $msg" -ForegroundColor Cyan }
 function Write-Ok($msg) { Write-Host "[remote] $msg" -ForegroundColor Green }
 
-# --- Stop background PowerShell jobs (includes zrok2 shares, backend, frontend) ---
+# --- Stop background PowerShell jobs (includes cloudflared tunnel, backend, frontend) ---
 Write-Status "Stopping background jobs..."
 $jobs = Get-Job | Where-Object { $_.State -ne "Completed" }
 foreach ($job in $jobs) {
@@ -34,43 +41,14 @@ foreach ($job in $jobs) {
 }
 Write-Ok "Background jobs stopped."
 
-# --- Delete active zrok2 shares using zrok2 commands ---
-Write-Status "Deleting active zrok2 shares..."
-$sharesJson = zrok2 list shares --json 2>&1
-if ($sharesJson) {
-    try {
-        $data = $sharesJson | ConvertFrom-Json
-        foreach ($share in $data.shares) {
-            if ($share.shareToken) {
-                Write-Status "  Deleting share $($share.shareToken)..."
-                zrok2 delete share $share.shareToken 2>&1 | Out-Null
-            }
-        }
-        Write-Ok "Active shares deleted."
-    } catch {
-        Write-Status "Could not parse shares list."
-    }
-} else {
-    Write-Status "No active shares found."
-}
-
-# --- Delete reserved zrok2 names (optional) ---
+# --- Delete the cloudflared tunnel (optional) ---
 if ($DeleteReservedNames) {
-    $ApiShareName = if ($env:ZROK_API_NAME) { $env:ZROK_API_NAME } else { "hakwadag-api" }
-    $AppShareName = if ($env:ZROK_APP_NAME) { $env:ZROK_APP_NAME } else { "hakwadag-app" }
-
-    Write-Status "Deleting reserved zrok2 names..."
-    zrok2 delete name $ApiShareName 2>&1 | Out-Null
-    zrok2 delete name $AppShareName 2>&1 | Out-Null
-    Write-Ok "Reserved names deleted. URLs will change on next start."
+    Write-Status "Deleting cloudflared tunnel '$TunnelName'..."
+    cloudflared tunnel delete $TunnelName 2>&1 | Out-Null
+    Write-Ok "Tunnel deleted. URLs will change on next start."
 } else {
-    Write-Status "Reserved names kept. Use -DeleteReservedNames to remove them."
+    Write-Status "Tunnel kept. Use -DeleteReservedNames to delete it."
 }
-
-# --- Configuration ---
-$RepoRoot = $PSScriptRoot
-$BackendDir = Join-Path $RepoRoot "backend"
-$FrontendDir = Join-Path $RepoRoot "frontend"
 
 # --- Stop backend (dotnet) ---
 Write-Status "Stopping backend..."
@@ -86,14 +64,13 @@ Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyCon
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 Write-Ok "Frontend stopped."
 
-# --- Stop zrok2 processes for this project ---
-Write-Status "Stopping zrok2 processes..."
-$ApiShareName = if ($env:ZROK_API_NAME) { $env:ZROK_API_NAME } else { "hakwadag-api" }
-$AppShareName = if ($env:ZROK_APP_NAME) { $env:ZROK_APP_NAME } else { "hakwadag-app" }
-Get-CimInstance Win32_Process -Filter "Name='zrok2.exe'" -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandLine -match $ApiShareName -or $_.CommandLine -match $AppShareName } |
+# --- Stop cloudflared processes for this tunnel ---
+Write-Status "Stopping cloudflared processes..."
+$cfConfigPath = Join-Path $LogDir "cloudflared.yml"
+Get-CimInstance Win32_Process -Filter "Name='cloudflared.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match [regex]::Escape($TunnelName) -or $_.CommandLine -match [regex]::Escape($cfConfigPath) } |
     ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-Write-Ok "zrok2 processes stopped."
+Write-Ok "cloudflared processes stopped."
 
 # --- Stop dependencies (default) ---
 if (-not $ExcludeDependencies) {

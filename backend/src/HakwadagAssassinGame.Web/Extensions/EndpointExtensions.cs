@@ -118,6 +118,11 @@ public static class EndpointExtensions
             var assignment = await service.GetMyAssignmentAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
             return Results.Ok(assignment);
         });
+        assignments.MapGet("/next-availability", async (HttpContext context, Guid gameId, IAssignmentService service, CancellationToken cancellationToken) =>
+        {
+            var availability = await service.GetNextAvailabilityAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
+            return Results.Ok(availability);
+        });
 
         var tag = games.MapGroup("/{gameId:guid}/tag");
         tag.MapPost("", async (HttpContext context, Guid gameId, SubmitTagRequest request, ITagService service, CancellationToken cancellationToken) =>
@@ -128,6 +133,11 @@ public static class EndpointExtensions
         tag.MapGet("/pending", async (HttpContext context, Guid gameId, ITagService service, CancellationToken cancellationToken) =>
         {
             var tagSubmission = await service.GetPendingTagAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
+            return tagSubmission is null ? Results.NotFound() : Results.Ok(tagSubmission);
+        });
+        tag.MapGet("/outgoing", async (HttpContext context, Guid gameId, ITagService service, CancellationToken cancellationToken) =>
+        {
+            var tagSubmission = await service.GetPendingOutgoingTagAsync(context.GetRequiredPlayerId(), gameId, cancellationToken);
             return tagSubmission is null ? Results.NotFound() : Results.Ok(tagSubmission);
         });
         tag.MapPost("/{tagId:guid}/confirm", async (HttpContext context, Guid tagId, ITagService service, CancellationToken cancellationToken) =>
@@ -194,6 +204,20 @@ public static class EndpointExtensions
         {
             await service.ExtendDurationAsync(context.GetRequiredPlayerId(), gameId, request, cancellationToken);
             return Results.Ok();
+        });
+
+        var adminSettings = games.MapGroup("/{gameId:guid}/admin");
+        adminSettings.MapPut("/confirmation-timeout", async (HttpContext context, Guid gameId, UpdateConfirmationTimeoutRequest request, IAdminService service, IGameService gameService, CancellationToken cancellationToken) =>
+        {
+            var playerId = context.GetRequiredPlayerId();
+            await service.UpdateConfirmationTimeoutAsync(playerId, gameId, request, cancellationToken);
+            return Results.Ok(await gameService.GetGameAsync(playerId, gameId, cancellationToken));
+        });
+        adminSettings.MapPut("/assignment-cooldown", async (HttpContext context, Guid gameId, UpdateAssignmentCooldownRequest request, IAdminService service, IGameService gameService, CancellationToken cancellationToken) =>
+        {
+            var playerId = context.GetRequiredPlayerId();
+            await service.UpdateAssignmentCooldownAsync(playerId, gameId, request, cancellationToken);
+            return Results.Ok(await gameService.GetGameAsync(playerId, gameId, cancellationToken));
         });
 
         // Dev-only testing endpoints — not available in production.

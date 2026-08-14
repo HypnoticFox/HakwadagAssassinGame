@@ -8,7 +8,9 @@ test.describe('Tagging flow', () => {
     await loginViaStorage(page, player)
   })
 
-  test('view assignment: navigate to assignment page → see target name and conditions', async ({ page }) => {
+  test('view assignment: navigate to assignment page → see target name and conditions', async ({
+    page,
+  }) => {
     // Create and start a game
     await createGameViaUi(page)
     await page.getByRole('button', { name: 'Start game' }).click()
@@ -66,7 +68,9 @@ test.describe('Tagging flow', () => {
     await expect(page).toHaveURL(/\/assignment/)
   })
 
-  test('confirm a tag: as target → navigate to pending tag → confirm → score updated', async ({ page }) => {
+  test('confirm a tag: as target → navigate to pending tag → confirm → score updated', async ({
+    page,
+  }) => {
     // Set up a pending tag in the mock
     const ctx = await setupApiMocks(page, createPlayer({ displayName: 'Tag Target' }))
     await loginViaStorage(page)
@@ -159,21 +163,23 @@ test.describe('Tagging flow', () => {
 
     await createGameViaUi(page)
 
-    // Go to admin panel
+    // Go to admin page
     await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('h2')
+    await page.waitForURL(/\/games\/[^/]+\/admin/)
 
     // Add a safe time block
-    const adminTimeInputs = page.locator('.admin-form input[type="time"]')
+    const adminTimeInputs = page.locator('.admin-card input[type="time"]')
     await adminTimeInputs.nth(0).fill('22:00')
     await adminTimeInputs.nth(1).fill('08:00')
     await page.getByRole('button', { name: 'Add safe time' }).click()
 
-    // The modal stays open, verify the button is there
+    // The admin page stays open, verify the button is there
     await expect(page.getByRole('button', { name: 'Add safe time' })).toBeVisible()
   })
 
-  test('duplicate pending tag: same target tagged twice → second submission rejected', async ({ page }) => {
+  test('duplicate pending tag: same target tagged twice → second submission rejected', async ({
+    page,
+  }) => {
     await createGameViaUi(page)
     await page.getByRole('button', { name: 'Start game' }).click()
     await page.getByRole('button', { name: 'My assignment' }).click()

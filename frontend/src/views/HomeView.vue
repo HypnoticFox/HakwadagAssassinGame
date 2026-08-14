@@ -231,6 +231,7 @@ async function saveName() {
             maxPlayers: game.maxPlayers,
             basePointsPerTag: game.basePointsPerTag,
             confirmationTimeout: '',
+            assignmentCooldownMinutes: 0,
             playerCount: game.playerCount,
             participantCount: 0,
             isParticipating: false,

@@ -45,6 +45,31 @@ public sealed class RedisAssignmentRepository : RedisRepositoryBase, IAssignment
     }
 
     /// <inheritdoc />
+    public async Task<Assignment?> GetMostRecentByHunterIdAsync(
+        Guid gameId,
+        Guid hunterId,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = await GetIdsAsync($"assignment:game:{gameId}", cancellationToken);
+        Assignment? mostRecent = null;
+        foreach (var id in ids)
+        {
+            var assignment = await GetByIdAsync(id, cancellationToken);
+            if (assignment is null || assignment.HunterId != hunterId)
+            {
+                continue;
+            }
+
+            if (mostRecent is null || assignment.AssignedAt > mostRecent.AssignedAt)
+            {
+                mostRecent = assignment;
+            }
+        }
+
+        return mostRecent;
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<Assignment>> GetByGameIdAsync(
         Guid gameId,
         CancellationToken cancellationToken = default)

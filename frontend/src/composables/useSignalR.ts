@@ -2,8 +2,8 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import { api } from '@/api/client'
-import { useAssignmentStore, useGameStore, useLeaderboardStore, useTagStore } from '@/stores'
-import type { AssignmentDto, GameDto, TagSubmissionDto } from '@/types'
+import { useAssignmentStore, useAuthStore, useGameStore, useLeaderboardStore, useTagStore } from '@/stores'
+import type { GameDto, TagSubmissionDto } from '@/types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -16,6 +16,7 @@ export function useSignalR() {
   const assignmentStore = useAssignmentStore()
   const tagStore = useTagStore()
   const leaderboardStore = useLeaderboardStore()
+  const authStore = useAuthStore()
 
   async function start() {
     if (connection.value) {
@@ -41,14 +42,31 @@ export function useSignalR() {
 
     hub.on('TagSubmitted', (gameId: string, tag: TagSubmissionDto) => {
       if (gameStore.currentGame?.id === gameId) {
-        tagStore.setPendingTag(tag)
+        // Check if current player is the hunter or target
+        const currentPlayerId = authStore.player?.id
+        if (currentPlayerId === tag.hunterId) {
+          // Current player is the hunter - set pending outgoing tag
+          tagStore.setPendingOutgoingTag(tag)
+        } else if (currentPlayerId === tag.targetId) {
+          // Current player is the target - set pending tag
+          tagStore.setPendingTag(tag)
+        }
       }
       void leaderboardStore.loadLeaderboard(gameId)
     })
 
     hub.on('TagResolved', (gameId: string, tag: TagSubmissionDto) => {
       if (gameStore.currentGame?.id === gameId) {
-        tagStore.setPendingTag(tag)
+        // Check if current player is the hunter or target
+        const currentPlayerId = authStore.player?.id
+        if (currentPlayerId === tag.hunterId) {
+          // Current player is the hunter - clear pending outgoing tag and reload assignment
+          tagStore.clearPendingOutgoingTag()
+          void assignmentStore.loadAssignment(gameId)
+        } else if (currentPlayerId === tag.targetId) {
+          // Current player is the target - clear pending tag
+          tagStore.setPendingTag(null)
+        }
       }
       void leaderboardStore.loadLeaderboard(gameId)
     })
@@ -66,9 +84,9 @@ export function useSignalR() {
       }
     })
 
-    hub.on('AssignmentChanged', (gameId: string, assignment: AssignmentDto) => {
+    hub.on('AssignmentChanged', (gameId: string) => {
       if (gameStore.currentGame?.id === gameId) {
-        assignmentStore.setAssignment(assignment)
+        void assignmentStore.loadAssignment(gameId)
       }
     })
 

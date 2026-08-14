@@ -214,6 +214,16 @@ public sealed class InMemoryAssignmentRepository : IAssignmentRepository
         return Task.FromResult(assignment);
     }
 
+    public Task<Assignment?> GetMostRecentByHunterIdAsync(Guid gameId, Guid hunterId, CancellationToken ct = default)
+    {
+        var assignment = _data.Values
+            .Select(json => Deserialize(json)!)
+            .Where(a => a!.GameId == gameId && a.HunterId == hunterId)
+            .OrderByDescending(a => a!.AssignedAt)
+            .FirstOrDefault();
+        return Task.FromResult(assignment);
+    }
+
     public Task<IReadOnlyList<Assignment>> GetByGameIdAsync(Guid gameId, CancellationToken ct = default)
         => Task.FromResult<IReadOnlyList<Assignment>>(
             _data.Values
@@ -256,6 +266,20 @@ public sealed class InMemoryTagSubmissionRepository : ITagSubmissionRepository
             _data.Values
                 .Select(json => Deserialize(json)!)
                 .Where(s => s!.TargetId == targetId && s.Status == TagStatus.Pending)
+                .ToList()!);
+
+    public Task<IReadOnlyList<TagSubmission>> GetPendingByHunterIdAsync(Guid hunterId, CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<TagSubmission>>(
+            _data.Values
+                .Select(json => Deserialize(json)!)
+                .Where(s => s!.HunterId == hunterId && s.Status == TagStatus.Pending)
+                .ToList()!);
+
+    public Task<IReadOnlyList<TagSubmission>> GetAllPendingAsync(CancellationToken ct = default)
+        => Task.FromResult<IReadOnlyList<TagSubmission>>(
+            _data.Values
+                .Select(json => Deserialize(json)!)
+                .Where(s => s!.Status == TagStatus.Pending)
                 .ToList()!);
 
     public Task AddAsync(TagSubmission submission, CancellationToken ct = default)

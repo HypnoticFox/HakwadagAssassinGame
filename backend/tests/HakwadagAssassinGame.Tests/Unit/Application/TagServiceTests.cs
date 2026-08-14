@@ -1,10 +1,12 @@
 using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Exceptions;
+using HakwadagAssassinGame.Application.Interfaces;
 using HakwadagAssassinGame.Application.Services;
 using HakwadagAssassinGame.Core.Entities;
 using HakwadagAssassinGame.Core.Entities.Conditions;
 using HakwadagAssassinGame.Core.Enums;
 using HakwadagAssassinGame.Core.Interfaces;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 namespace HakwadagAssassinGame.Tests.Unit.Application;
@@ -18,6 +20,7 @@ public sealed class TagServiceTests
     private readonly IPlayerRepository playerRepository = Substitute.For<IPlayerRepository>();
     private readonly IPushNotificationService pushNotificationService = Substitute.For<IPushNotificationService>();
     private readonly IConditionLibrary conditionLibrary = Substitute.For<IConditionLibrary>();
+    private readonly IGameEventNotifier gameEventNotifier = Substitute.For<IGameEventNotifier>();
     private readonly TagService sut;
 
     private static readonly Guid HunterId = Guid.NewGuid();
@@ -32,7 +35,8 @@ public sealed class TagServiceTests
         sut = new TagService(
             tagRepository, assignmentRepository, gameRepository,
             gamePlayerRepository, playerRepository,
-            pushNotificationService, conditionLibrary);
+            pushNotificationService, conditionLibrary, gameEventNotifier,
+            Substitute.For<ILogger<TagService>>());
     }
 
     private static Game CreateActiveGame() =>
@@ -273,20 +277,93 @@ public sealed class TagServiceTests
     // ── DenyTagAsync ───────────────────────────────────────────────────────
 
     [Fact]
-    public async Task DenyTagAsync_Valid_DeniesTag()
+    public async Task DenyTagAsync_Valid_DeniesTagAndCompletesAssignment()
     {
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id);
+        var game = CreateActiveGame(); // NotStarted, so no replacement is created
+
+        tagRepository.GetByIdAsync(submission.Id, Arg.Any<CancellationToken>()).Returns(submission);
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var result = await sut.DenyTagAsync(TargetId, submission.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal(TagStatus.Denied, result.Status);
+        Assert.Equal(AssignmentStatus.Completed, assignment.Status);
+        await tagRepository.Received(1).UpdateAsync(submission, Arg.Any<CancellationToken>());
+        await assignmentRepository.Received(1).UpdateAsync(assignment, Arg.Any<CancellationToken>());
+        await assignmentRepository.DidNotReceive().AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DenyTagAsync_ActiveGame_NotInCooldown_CreatesReplacement()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
         var aloneCondition = AloneCondition.Create();
         var assignment = Assignment.Create(GameId, HunterId, TargetId,
             new List<Condition> { aloneCondition }, id: AssignmentId);
         var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id);
 
         tagRepository.GetByIdAsync(submission.Id, Arg.Any<CancellationToken>()).Returns(submission);
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+
+        var hunterMembership = GamePlayer.Create(GameId, HunterId, GameRole.Player);
+        var thirdPlayerId = Guid.NewGuid();
+        gamePlayerRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer>
+            {
+                hunterMembership,
+                GamePlayer.Create(GameId, TargetId, GameRole.Player),
+                GamePlayer.Create(GameId, thirdPlayerId, GameRole.Player)
+            });
+
+        conditionLibrary.GetAsync(GameId, Arg.Any<CancellationToken>())
+            .Returns(new List<Condition>());
+        playerRepository.GetByIdAsync(HunterId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("hunter@test.com", "Hunter", id: HunterId));
+        playerRepository.GetByIdAsync(TargetId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("target@test.com", "Target", id: TargetId));
+        playerRepository.GetByIdAsync(thirdPlayerId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("third@test.com", "Third", id: thirdPlayerId));
 
         var result = await sut.DenyTagAsync(TargetId, submission.Id);
 
-        Assert.NotNull(result);
         Assert.Equal(TagStatus.Denied, result.Status);
-        await tagRepository.Received(1).UpdateAsync(submission, Arg.Any<CancellationToken>());
+        await assignmentRepository.Received(1).AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DenyTagAsync_ActiveGame_InCooldown_DoesNotCreateReplacement()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id);
+        // Most recent assignment was just assigned — still inside the 30 minute cooldown.
+        var latest = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, assignedAt: DateTimeOffset.UtcNow);
+
+        tagRepository.GetByIdAsync(submission.Id, Arg.Any<CancellationToken>()).Returns(submission);
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        await sut.DenyTagAsync(TargetId, submission.Id);
+
+        await assignmentRepository.DidNotReceive().AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -481,5 +558,318 @@ public sealed class TagServiceTests
 
         var result = await sut.GetPendingTagAsync(TargetId, GameId);
         Assert.Null(result);
+    }
+
+    // ── GetPendingOutgoingTagAsync ────────────────────────────────────────
+
+    [Fact]
+    public async Task GetPendingOutgoingTagAsync_Valid_ReturnsDto()
+    {
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id);
+
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(GamePlayer.Create(GameId, HunterId, GameRole.Player));
+        tagRepository.GetPendingByHunterIdAsync(HunterId, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { submission });
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+
+        var result = await sut.GetPendingOutgoingTagAsync(HunterId, GameId);
+
+        Assert.NotNull(result);
+        Assert.Equal(submission.Id, result.Id);
+        Assert.Equal(submission.TargetId, result.TargetId);
+    }
+
+    [Fact]
+    public async Task GetPendingOutgoingTagAsync_NoPending_ReturnsNull()
+    {
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(GamePlayer.Create(GameId, HunterId, GameRole.Player));
+        tagRepository.GetPendingByHunterIdAsync(HunterId, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission>());
+
+        var result = await sut.GetPendingOutgoingTagAsync(HunterId, GameId);
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetPendingOutgoingTagAsync_NotMember_ThrowsUnauthorizedException()
+    {
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns((GamePlayer?)null);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            sut.GetPendingOutgoingTagAsync(HunterId, GameId));
+    }
+
+    [Fact]
+    public async Task GetPendingOutgoingTagAsync_PendingFromDifferentGame_ReturnsNull()
+    {
+        var otherGameId = Guid.NewGuid();
+        var otherAssignment = Assignment.Create(otherGameId, HunterId, TargetId,
+            new List<Condition> { AloneCondition.Create() });
+        var submission = TagSubmission.Create(otherAssignment.Id, HunterId, TargetId, Guid.NewGuid());
+
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(GamePlayer.Create(GameId, HunterId, GameRole.Player));
+        tagRepository.GetPendingByHunterIdAsync(HunterId, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { submission });
+        assignmentRepository.GetByIdAsync(submission.AssignmentId, Arg.Any<CancellationToken>())
+            .Returns(otherAssignment);
+
+        var result = await sut.GetPendingOutgoingTagAsync(HunterId, GameId);
+        Assert.Null(result);
+    }
+
+    // ── Cooldown enforcement on confirmation ──────────────────────────────
+
+    [Fact]
+    public async Task ConfirmTagAsync_StillInCooldown_DoesNotCreateReplacement()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id);
+        // The most recent assignment (the one being resolved) was just assigned,
+        // so the replacement is still inside the 30 minute cooldown.
+        var latest = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, assignedAt: DateTimeOffset.UtcNow);
+
+        tagRepository.GetByIdAsync(submission.Id, Arg.Any<CancellationToken>()).Returns(submission);
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        var hunterMembership = GamePlayer.Create(GameId, HunterId, GameRole.Player);
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>()).Returns(hunterMembership);
+
+        var result = await sut.ConfirmTagAsync(TargetId, submission.Id);
+
+        Assert.Equal(TagStatus.Confirmed, result.Status);
+        await assignmentRepository.DidNotReceive().AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ConfirmTagAsync_CooldownElapsed_CreatesReplacement()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id);
+        // The most recent assignment was assigned over an hour ago — outside the cooldown.
+        var latest = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, assignedAt: DateTimeOffset.UtcNow.AddHours(-1));
+
+        tagRepository.GetByIdAsync(submission.Id, Arg.Any<CancellationToken>()).Returns(submission);
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        var hunterMembership = GamePlayer.Create(GameId, HunterId, GameRole.Player);
+        var thirdPlayerId = Guid.NewGuid();
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>()).Returns(hunterMembership);
+        gamePlayerRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer>
+            {
+                hunterMembership,
+                GamePlayer.Create(GameId, TargetId, GameRole.Player),
+                GamePlayer.Create(GameId, thirdPlayerId, GameRole.Player)
+            });
+
+        conditionLibrary.GetAsync(GameId, Arg.Any<CancellationToken>()).Returns(new List<Condition>());
+        playerRepository.GetByIdAsync(HunterId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("hunter@test.com", "Hunter", id: HunterId));
+        playerRepository.GetByIdAsync(TargetId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("target@test.com", "Target", id: TargetId));
+        playerRepository.GetByIdAsync(thirdPlayerId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("third@test.com", "Third", id: thirdPlayerId));
+
+        var result = await sut.ConfirmTagAsync(TargetId, submission.Id);
+
+        Assert.Equal(TagStatus.Confirmed, result.Status);
+        await assignmentRepository.Received(1).AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    // ── AutoConfirmExpiredTagsAsync ───────────────────────────────────────
+
+    [Fact]
+    public async Task AutoConfirmExpiredTagsAsync_ExpiredPending_ConfirmsAndAwardsPoints()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id,
+            submittedAt: DateTimeOffset.UtcNow.AddHours(-1)); // older than the 15 minute timeout
+
+        tagRepository.GetAllPendingAsync(Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { submission });
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var hunterMembership = GamePlayer.Create(GameId, HunterId, GameRole.Player);
+        gamePlayerRepository.GetAsync(GameId, HunterId, Arg.Any<CancellationToken>()).Returns(hunterMembership);
+
+        var confirmed = await sut.AutoConfirmExpiredTagsAsync();
+
+        Assert.Equal(1, confirmed);
+        Assert.Equal(TagStatus.Confirmed, submission.Status);
+        Assert.Equal(AssignmentStatus.Completed, assignment.Status);
+        Assert.Equal(115, hunterMembership.Score); // base 100 + 15 Alone bonus
+        await tagRepository.Received(1).UpdateAsync(submission, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AutoConfirmExpiredTagsAsync_NotYetExpired_DoesNotConfirm()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id,
+            submittedAt: DateTimeOffset.UtcNow); // younger than the 15 minute timeout
+
+        tagRepository.GetAllPendingAsync(Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { submission });
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var confirmed = await sut.AutoConfirmExpiredTagsAsync();
+
+        Assert.Equal(0, confirmed);
+        Assert.Equal(TagStatus.Pending, submission.Status);
+        await tagRepository.DidNotReceive().UpdateAsync(submission, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AutoConfirmExpiredTagsAsync_GameNotActive_DoesNotConfirm()
+    {
+        var game = CreateActiveGame(); // NotStarted
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var submission = TagSubmission.Create(AssignmentId, HunterId, TargetId, aloneCondition.Id,
+            submittedAt: DateTimeOffset.UtcNow.AddHours(-1));
+
+        tagRepository.GetAllPendingAsync(Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { submission });
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var confirmed = await sut.AutoConfirmExpiredTagsAsync();
+
+        Assert.Equal(0, confirmed);
+        Assert.Equal(TagStatus.Pending, submission.Status);
+    }
+
+    // ── CreateReplacementIfReadyAsync ─────────────────────────────────────
+
+    [Fact]
+    public async Task CreateReplacementIfReadyAsync_CooldownElapsed_CreatesReplacement()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var latest = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { AloneCondition.Create() },
+            assignedAt: DateTimeOffset.UtcNow.AddHours(-1));
+        latest.Complete();
+
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        var hunterMembership = GamePlayer.Create(GameId, HunterId, GameRole.Player);
+        var thirdPlayerId = Guid.NewGuid();
+        gamePlayerRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer>
+            {
+                hunterMembership,
+                GamePlayer.Create(GameId, TargetId, GameRole.Player),
+                GamePlayer.Create(GameId, thirdPlayerId, GameRole.Player)
+            });
+
+        conditionLibrary.GetAsync(GameId, Arg.Any<CancellationToken>()).Returns(new List<Condition>());
+        playerRepository.GetByIdAsync(HunterId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("hunter@test.com", "Hunter", id: HunterId));
+        playerRepository.GetByIdAsync(TargetId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("target@test.com", "Target", id: TargetId));
+        playerRepository.GetByIdAsync(thirdPlayerId, Arg.Any<CancellationToken>())
+            .Returns(Player.Create("third@test.com", "Third", id: thirdPlayerId));
+
+        var created = await sut.CreateReplacementIfReadyAsync(GameId, HunterId);
+
+        Assert.True(created);
+        await assignmentRepository.Received(1).AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateReplacementIfReadyAsync_StillInCooldown_ReturnsFalse()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+        var latest = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { AloneCondition.Create() },
+            assignedAt: DateTimeOffset.UtcNow);
+        latest.Complete();
+
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        var created = await sut.CreateReplacementIfReadyAsync(GameId, HunterId);
+
+        Assert.False(created);
+        await assignmentRepository.DidNotReceive().AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateReplacementIfReadyAsync_HasActiveAssignment_ReturnsFalse()
+    {
+        var game = CreateActiveGame();
+        game.Start();
+        typeof(Game).GetProperty(nameof(Game.Id))!.SetValue(game, GameId);
+
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, HunterId, Arg.Any<CancellationToken>())
+            .Returns(Assignment.Create(GameId, HunterId, TargetId, [AloneCondition.Create()]));
+
+        var created = await sut.CreateReplacementIfReadyAsync(GameId, HunterId);
+
+        Assert.False(created);
+        await assignmentRepository.DidNotReceive().AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateReplacementIfReadyAsync_GameNotActive_ReturnsFalse()
+    {
+        var game = CreateActiveGame(); // NotStarted
+
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var created = await sut.CreateReplacementIfReadyAsync(GameId, HunterId);
+
+        Assert.False(created);
+        await assignmentRepository.DidNotReceive().AddAsync(Arg.Any<Assignment>(), Arg.Any<CancellationToken>());
     }
 }

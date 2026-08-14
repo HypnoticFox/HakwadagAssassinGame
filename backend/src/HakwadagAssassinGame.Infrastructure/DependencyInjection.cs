@@ -2,7 +2,6 @@ using HakwadagAssassinGame.Application.Interfaces;
 using HakwadagAssassinGame.Application.Services;
 using HakwadagAssassinGame.Core.Interfaces;
 using HakwadagAssassinGame.Infrastructure.Persistence.Redis;
-using HakwadagAssassinGame.Infrastructure.Realtime;
 using HakwadagAssassinGame.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,7 +39,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IDevCounter, RedisDevCounter>();
         services.AddScoped<IInviteCodeGenerator, RandomInviteCodeGenerator>();
         services.AddScoped<IPushNotificationService, WebPushNotificationService>();
-        services.AddScoped<INotificationHub, SignalRNotificationHub>();
+        services.AddScoped<IGameEventNotifier, GameEventNotifier>();
 
         services.AddSignalR();
         return services;

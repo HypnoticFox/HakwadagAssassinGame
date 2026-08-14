@@ -6,9 +6,11 @@ using StackExchange.Redis;
 
 namespace HakwadagAssassinGame.Infrastructure.Persistence.Redis;
 
-/// <summary>Stores tag submissions and pending-target indexes in Redis.</summary>
+/// <summary>Stores tag submissions and pending-target and pending-hunter indexes in Redis.</summary>
 public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubmissionRepository
 {
+    private const string AllTagsKey = "tags:all";
+
     /// <summary>Initializes a Redis tag submission repository.</summary>
     public RedisTagSubmissionRepository(IConnectionMultiplexer connectionMultiplexer)
         : base(connectionMultiplexer)
@@ -30,6 +32,43 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
         CancellationToken cancellationToken = default)
     {
         var ids = await GetIdsAsync($"tag:pending:target:{targetId}", cancellationToken);
+        var submissions = new List<TagSubmission>(ids.Count);
+        foreach (var id in ids)
+        {
+            var submission = await GetByIdAsync(id, cancellationToken);
+            if (submission is { Status: TagStatus.Pending })
+            {
+                submissions.Add(submission);
+            }
+        }
+
+        return submissions;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TagSubmission>> GetPendingByHunterIdAsync(
+        Guid hunterId,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = await GetIdsAsync($"tag:pending:hunter:{hunterId}", cancellationToken);
+        var submissions = new List<TagSubmission>(ids.Count);
+        foreach (var id in ids)
+        {
+            var submission = await GetByIdAsync(id, cancellationToken);
+            if (submission is { Status: TagStatus.Pending })
+            {
+                submissions.Add(submission);
+            }
+        }
+
+        return submissions;
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<TagSubmission>> GetAllPendingAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var ids = await GetIdsAsync(AllTagsKey, cancellationToken);
         var submissions = new List<TagSubmission>(ids.Count);
         foreach (var id in ids)
         {
@@ -72,6 +111,7 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
             Key("tag", submission.Id),
             RedisJsonSerializer.Serialize(submission, GameJsonContext.Default.TagSubmission),
             cancellationToken);
+        await AddToSetAsync(AllTagsKey, submission.Id.ToString(), cancellationToken);
         await AddToSetAsync(
             $"tag:assignment:{submission.AssignmentId}",
             submission.Id.ToString(),
@@ -90,6 +130,10 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
         {
             await RemoveFromSetAsync(
                 $"tag:pending:target:{existing.TargetId}",
+                existing.Id.ToString(),
+                cancellationToken);
+            await RemoveFromSetAsync(
+                $"tag:pending:hunter:{existing.HunterId}",
                 existing.Id.ToString(),
                 cancellationToken);
         }
@@ -115,11 +159,21 @@ public sealed class RedisTagSubmissionRepository : RedisRepositoryBase, ITagSubm
 
     private Task UpdatePendingIndexAsync(
         TagSubmission submission,
-        CancellationToken cancellationToken) =>
-        submission.Status == TagStatus.Pending
-            ? AddToSetAsync(
+        CancellationToken cancellationToken)
+    {
+        if (submission.Status != TagStatus.Pending)
+        {
+            return Task.CompletedTask;
+        }
+
+        return Task.WhenAll(
+            AddToSetAsync(
                 $"tag:pending:target:{submission.TargetId}",
                 submission.Id.ToString(),
-                cancellationToken)
-            : Task.CompletedTask;
+                cancellationToken),
+            AddToSetAsync(
+                $"tag:pending:hunter:{submission.HunterId}",
+                submission.Id.ToString(),
+                cancellationToken));
+    }
 }

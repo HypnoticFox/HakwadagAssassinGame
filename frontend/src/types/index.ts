@@ -65,6 +65,7 @@ export interface GameDto {
   maxPlayers: number
   basePointsPerTag: number
   confirmationTimeout: string
+  assignmentCooldownMinutes: number
   playerCount: number
   participantCount: number
   isParticipating: boolean
@@ -123,8 +124,13 @@ export interface CreateGameRequest {
   maxPlayers?: number
   basePointsPerTag: number
   confirmationTimeoutMinutes: number
+  assignmentCooldownMinutes?: number
   conditionBonuses?: Record<ConditionType, number>
   safeTimeBlocks?: SafeTimeBlockDto[]
+}
+
+export interface NextAssignmentAvailabilityDto {
+  availableAt: string | null
 }
 
 export interface SubmitTagRequest {

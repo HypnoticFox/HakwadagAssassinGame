@@ -70,6 +70,7 @@
     "maxPlayers": "Max players",
     "basePointsPerTag": "Base points per tag",
     "confirmationTimeout": "Confirmation timeout (minutes)",
+    "assignmentCooldown": "Assignment cooldown (minutes)",
     "create": "Create game"
   },
   "gameDetail": {
@@ -81,6 +82,14 @@
     "maxPlayers": "Max players",
     "pointsPerTag": "Points per tag",
     "timeout": "Timeout",
+    "confirmationTimeout": "Confirmation timeout",
+    "assignmentCooldown": "Assignment cooldown",
+    "minutes": "{count} minutes",
+    "minutesSingular": "1 minute",
+    "hours": "{count} hours",
+    "hoursSingular": "1 hour",
+    "hoursMinutes": "{hours} hour {minutes} minutes",
+    "hoursMinutesSingular": "{hours} hour 1 minute",
     "created": "Created",
     "scheduledEnd": "Scheduled end",
     "noScheduledEnd": "No end time set",
@@ -92,9 +101,10 @@
     "extend1hour": "+1 hour",
     "extend1day": "+1 day",
     "safeTimes": "Safe times",
+    "noSafeTimes": "No safe time blocks yet.",
     "myAssignment": "My assignment",
     "leaderboard": "Leaderboard",
-    "adminPanel": "Admin panel",
+    "adminPanel": "Game settings",
     "leaveGame": "Leave game",
     "rejoinGame": "Rejoin Game",
     "leaveConfirm": "Are you sure you want to leave this game?",
@@ -107,12 +117,16 @@
     "minParticipants": "At least 3 participants required to start",
     "participationLabel": "Your participation",
     "admin": {
-      "title": "Admin panel",
+      "title": "Game Settings",
+      "settings": "Settings",
+      "confirmationTimeoutLabel": "Confirmation timeout (minutes)",
+      "assignmentCooldownLabel": "Assignment cooldown (minutes)",
+      "updateSettings": "Save",
       "conditions": "Conditions",
       "newCondition": "New condition",
       "newConditionPlaceholder": "Describe the condition",
       "addCondition": "Add condition",
-      "safeTimeBlock": "Safe time block",
+      "safeTimeBlock": "Safe time blocks",
       "startTime": "Start time",
       "endTime": "End time",
       "addSafeTime": "Add safe time",
@@ -120,7 +134,8 @@
       "promoteToModer": "Promote",
       "removeModerator": "Remove",
       "confirmRemoveModerator": "Are you sure you want to remove this moderator?",
-      "noPlayers": "No players yet."
+      "noPlayers": "No players yet.",
+      "notAdmin": "You need administrator rights to view this page."
     }
   },
   "invite": {
@@ -136,6 +151,15 @@
     "loading": "Loading assignment...",
     "noAssignment": "No active assignment.",
     "gameNotStarted": "The game hasn't started yet.",
+    "cooldown": {
+      "title": "Waiting for next assignment",
+      "message": "You'll get a new assignment in",
+      "expired": "Your new assignment is ready!"
+    },
+    "pendingTag": {
+      "title": "Tag submitted",
+      "message": "Waiting for target to confirm"
+    },
     "confirmTag": {
       "title": "Confirm tag",
       "message": "You're about to submit a tag. Make sure the condition was met before confirming.",

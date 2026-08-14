@@ -7,6 +7,7 @@ import { TagStatus, type TagSubmissionDto } from '@/types'
 vi.mock('@/api/client', () => ({
   api: {
     getPendingTag: vi.fn(),
+    getPendingOutgoingTag: vi.fn(),
     submitTag: vi.fn(),
     confirmTag: vi.fn(),
     denyTag: vi.fn(),
@@ -37,6 +38,7 @@ describe('tag store', () => {
     it('has default values', () => {
       const store = useTagStore()
       expect(store.pendingTag).toBeNull()
+      expect(store.pendingOutgoingTag).toBeNull()
       expect(store.isLoading).toBe(false)
       expect(store.error).toBeNull()
     })
@@ -73,8 +75,40 @@ describe('tag store', () => {
     })
   })
 
+  describe('loadPendingOutgoingTag', () => {
+    it('sets pendingOutgoingTag on success', async () => {
+      const tag = makeTag()
+      vi.mocked(api.getPendingOutgoingTag).mockResolvedValue(tag)
+      const store = useTagStore()
+
+      const result = await store.loadPendingOutgoingTag('g1')
+
+      expect(api.getPendingOutgoingTag).toHaveBeenCalledWith('g1')
+      expect(result).toBe(tag)
+      expect(store.pendingOutgoingTag).toStrictEqual(tag)
+    })
+
+    it('sets pendingOutgoingTag to null when api returns null', async () => {
+      vi.mocked(api.getPendingOutgoingTag).mockResolvedValue(null)
+      const store = useTagStore()
+
+      const result = await store.loadPendingOutgoingTag('g1')
+
+      expect(result).toBeNull()
+      expect(store.pendingOutgoingTag).toBeNull()
+    })
+
+    it('sets error on failure', async () => {
+      vi.mocked(api.getPendingOutgoingTag).mockRejectedValue(new Error('Failed'))
+      const store = useTagStore()
+
+      await expect(store.loadPendingOutgoingTag('g1')).rejects.toThrow('Failed')
+      expect(store.error).toBe('Failed')
+    })
+  })
+
   describe('submitTag', () => {
-    it('calls api.submitTag and sets pendingTag', async () => {
+    it('calls api.submitTag and sets pendingTag and pendingOutgoingTag', async () => {
       const tag = makeTag()
       vi.mocked(api.submitTag).mockResolvedValue(tag)
       const store = useTagStore()
@@ -87,6 +121,7 @@ describe('tag store', () => {
       })
       expect(result).toBe(tag)
       expect(store.pendingTag).toStrictEqual(tag)
+      expect(store.pendingOutgoingTag).toStrictEqual(tag)
     })
   })
 
@@ -144,6 +179,21 @@ describe('tag store', () => {
       const store = useTagStore()
       store.setPendingTag(null)
       expect(store.pendingTag).toBeNull()
+    })
+  })
+
+  describe('clearPendingOutgoingTag', () => {
+    it('clears the pending outgoing tag', () => {
+      const store = useTagStore()
+      store.pendingOutgoingTag = makeTag()
+      store.clearPendingOutgoingTag()
+      expect(store.pendingOutgoingTag).toBeNull()
+    })
+
+    it('is a no-op when no pending outgoing tag is set', () => {
+      const store = useTagStore()
+      store.clearPendingOutgoingTag()
+      expect(store.pendingOutgoingTag).toBeNull()
     })
   })
 

@@ -1,16 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
-import Modal from '@/components/Modal.vue'
 import { Copy, Link } from '@lucide/vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useGameStore } from '@/stores'
 import {
-  GameRole,
   GameStatus,
   canEndGame,
   canStartGame,
@@ -18,7 +16,7 @@ import {
   gameStatusLabel,
   isGameAdmin,
 } from '@/types'
-import type { GamePlayerDto } from '@/types'
+import { formatMinutes, formatTimeout } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -28,21 +26,13 @@ const gameStore = useGameStore()
 const gameId = computed(() => route.params.id as string)
 const copiedCode = ref(false)
 const copiedLink = ref(false)
-const adminPanelOpen = ref(false)
-const newCondition = ref('')
-const safeTimeStart = ref('')
-const safeTimeEnd = ref('')
 const localError = ref<string | null>(null)
-const playersLoading = ref(false)
 const newDurationHours = ref('24')
 
 useGameSignalR(gameId.value)
 
 onMounted(async () => {
   await gameStore.loadGame(gameId.value)
-  if (gameStore.isCreator) {
-    await loadPlayers()
-  }
 })
 
 async function copyInviteCode() {
@@ -142,93 +132,6 @@ async function onRejoin() {
     }
   }
 }
-
-async function onAddCondition() {
-  if (!newCondition.value) return
-  localError.value = null
-  try {
-    await gameStore.addCondition(gameId.value, newCondition.value)
-    newCondition.value = ''
-  } catch (err) {
-    if (err instanceof Error) {
-      localError.value = err.message
-    }
-  }
-}
-
-async function onAddSafeTime() {
-  if (!safeTimeStart.value || !safeTimeEnd.value) return
-  localError.value = null
-  try {
-    await gameStore.addSafeTime(gameId.value, {
-      startTime: safeTimeStart.value,
-      endTime: safeTimeEnd.value,
-    })
-    safeTimeStart.value = ''
-    safeTimeEnd.value = ''
-    await gameStore.loadGame(gameId.value)
-  } catch (err) {
-    if (err instanceof Error) {
-      localError.value = err.message
-    }
-  }
-}
-
-async function onRemoveSafeTime(blockId: string) {
-  try {
-    await gameStore.removeSafeTime(gameId.value, blockId)
-    await gameStore.loadGame(gameId.value)
-  } catch (err) {
-    if (err instanceof Error) {
-      localError.value = err.message
-    }
-  }
-}
-
-async function loadPlayers() {
-  if (!gameStore.isCreator) return
-  playersLoading.value = true
-  try {
-    await gameStore.loadGamePlayers(gameId.value)
-  } catch (err) {
-    if (err instanceof Error) {
-      localError.value = err.message
-    }
-  } finally {
-    playersLoading.value = false
-  }
-}
-
-async function onPromote(player: GamePlayerDto) {
-  localError.value = null
-  try {
-    await gameStore.addAdmin(gameId.value, player.playerId)
-    await Promise.all([gameStore.loadGame(gameId.value), loadPlayers()])
-  } catch (err) {
-    if (err instanceof Error) {
-      localError.value = err.message
-    }
-  }
-}
-
-async function onRemove(player: GamePlayerDto) {
-  if (!confirm(t('gameDetail.admin.confirmRemoveModerator'))) return
-  localError.value = null
-  try {
-    await gameStore.removeAdmin(gameId.value, player.playerId)
-    await Promise.all([gameStore.loadGame(gameId.value), loadPlayers()])
-  } catch (err) {
-    if (err instanceof Error) {
-      localError.value = err.message
-    }
-  }
-}
-
-watch(adminPanelOpen, (open) => {
-  if (open) {
-    loadPlayers()
-  }
-})
 
 const formattedCreatedAt = computed(() => {
   if (!gameStore.currentGame) return ''
@@ -403,10 +306,18 @@ const formattedScheduledEndAt = computed(() => {
         </div>
         <div class="detail-card">
           <p class="detail-label">
-            {{ $t('gameDetail.timeout') }}
+            {{ $t('gameDetail.confirmationTimeout') }}
           </p>
           <p class="detail-value">
-            {{ gameStore.currentGame.confirmationTimeout }}
+            {{ formatTimeout(gameStore.currentGame.confirmationTimeout, t) }}
+          </p>
+        </div>
+        <div class="detail-card">
+          <p class="detail-label">
+            {{ $t('gameDetail.assignmentCooldown') }}
+          </p>
+          <p class="detail-value">
+            {{ formatMinutes(gameStore.currentGame.assignmentCooldownMinutes, t) }}
           </p>
         </div>
         <div class="detail-card">
@@ -436,13 +347,6 @@ const formattedScheduledEndAt = computed(() => {
             class="safe-time-item"
           >
             <span>{{ block.startTime }} – {{ block.endTime }}</span>
-            <Button
-              v-if="isGameAdmin(gameStore.currentGame.myRole)"
-              variant="ghost"
-              @click="onRemoveSafeTime(block.id)"
-            >
-              {{ $t('common.remove') }}
-            </Button>
           </li>
         </ul>
       </div>
@@ -470,7 +374,7 @@ const formattedScheduledEndAt = computed(() => {
       </div>
 
       <div v-if="isGameAdmin(gameStore.currentGame.myRole)" class="admin-section">
-        <Button variant="secondary" full-width @click="adminPanelOpen = true">
+        <Button variant="secondary" full-width @click="router.push(`/games/${gameId}/admin`)">
           {{ $t('gameDetail.adminPanel') }}
         </Button>
       </div>
@@ -502,80 +406,6 @@ const formattedScheduledEndAt = computed(() => {
         {{ $t('common.backHome') }}
       </Button>
     </div>
-
-    <Modal
-      :open="adminPanelOpen"
-      :title="$t('gameDetail.admin.title')"
-      @close="adminPanelOpen = false"
-    >
-      <div class="admin-form">
-        <h3>{{ $t('gameDetail.admin.conditions') }}</h3>
-        <Input
-          v-model="newCondition"
-          :label="$t('gameDetail.admin.newCondition')"
-          :placeholder="$t('gameDetail.admin.newConditionPlaceholder')"
-        />
-        <Button full-width @click="onAddCondition">
-          {{ $t('gameDetail.admin.addCondition') }}
-        </Button>
-
-        <h3>{{ $t('gameDetail.admin.safeTimeBlock') }}</h3>
-        <Input
-          v-model="safeTimeStart"
-          :label="$t('gameDetail.admin.startTime')"
-          type="time"
-          required
-        />
-        <Input v-model="safeTimeEnd" :label="$t('gameDetail.admin.endTime')" type="time" required />
-        <Button full-width @click="onAddSafeTime">
-          {{ $t('gameDetail.admin.addSafeTime') }}
-        </Button>
-
-        <template v-if="gameStore.isCreator">
-          <h3>{{ $t('gameDetail.admin.moderators') }}</h3>
-          <p v-if="playersLoading" class="players-loading">
-            {{ $t('common.loading') }}
-          </p>
-          <p v-else-if="gameStore.gamePlayers.length === 0" class="players-empty">
-            {{ $t('gameDetail.admin.noPlayers') }}
-          </p>
-          <ul v-else class="player-management-list">
-            <li
-              v-for="player in gameStore.gamePlayers"
-              :key="player.playerId"
-              class="player-management-item"
-            >
-              <div class="player-management-avatar">
-                <img v-if="player.avatarUrl" :src="player.avatarUrl" :alt="player.displayName" />
-                <span v-else>{{ player.displayName.charAt(0).toUpperCase() }}</span>
-              </div>
-              <div class="player-management-info">
-                <p class="player-management-name">
-                  {{ player.displayName }}
-                </p>
-                <span class="player-management-role">{{ gameRoleLabel(player.role) }}</span>
-              </div>
-              <Button
-                v-if="player.role === GameRole.CoAdmin"
-                variant="ghost"
-                class="player-management-action"
-                @click="onRemove(player)"
-              >
-                {{ $t('gameDetail.admin.removeModerator') }}
-              </Button>
-              <Button
-                v-else-if="player.role === GameRole.Player"
-                variant="secondary"
-                class="player-management-action"
-                @click="onPromote(player)"
-              >
-                {{ $t('gameDetail.admin.promoteToModer') }}
-              </Button>
-            </li>
-          </ul>
-        </template>
-      </div>
-    </Modal>
   </section>
 </template>
 
@@ -706,94 +536,6 @@ const formattedScheduledEndAt = computed(() => {
 
 .admin-section {
   margin-bottom: 1.5rem;
-}
-
-.admin-form {
-  display: grid;
-  gap: 1rem;
-}
-
-.admin-form h3 {
-  font-size: 1rem;
-  margin: 0.5rem 0 0;
-}
-
-.players-loading,
-.players-empty {
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.player-management-list {
-  display: grid;
-  gap: 0.5rem;
-  list-style: none;
-  margin: 0;
-  max-height: 18rem;
-  overflow-y: auto;
-  padding: 0;
-}
-
-.player-management-item {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
-}
-
-.player-management-avatar {
-  align-items: center;
-  background: var(--primary);
-  border-radius: 50%;
-  color: var(--text-inverse);
-  display: flex;
-  flex-shrink: 0;
-  font-size: 0.875rem;
-  font-weight: 700;
-  height: 2.25rem;
-  justify-content: center;
-  overflow: hidden;
-  width: 2.25rem;
-}
-
-.player-management-avatar img {
-  height: 100%;
-  object-fit: cover;
-  width: 100%;
-}
-
-.player-management-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.player-management-name {
-  font-weight: 600;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.player-management-role {
-  background: var(--surface-muted);
-  border-radius: var(--radius-full);
-  color: var(--text-secondary);
-  font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 0.125rem 0.5rem;
-  text-transform: uppercase;
-}
-
-.player-management-action {
-  flex-shrink: 0;
-  font-size: 0.8125rem;
-  min-height: 2rem;
-  padding: 0.375rem 0.625rem;
 }
 
 .participation-card {

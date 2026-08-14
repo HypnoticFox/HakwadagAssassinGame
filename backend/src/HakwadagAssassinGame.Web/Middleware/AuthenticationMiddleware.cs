@@ -20,6 +20,13 @@ public sealed class AuthenticationMiddleware
     /// <summary>Authenticates the request when its endpoint requires a player.</summary>
     public async Task InvokeAsync(HttpContext context)
     {
+        // Skip WebSocket upgrade requests
+        if (context.WebSockets.IsWebSocketRequest)
+        {
+            await next(context);
+            return;
+        }
+
         var endpoint = context.GetEndpoint();
         if (endpoint?.Metadata.GetMetadata<RequirePlayerMetadata>() is null)
         {
@@ -27,7 +34,17 @@ public sealed class AuthenticationMiddleware
             return;
         }
 
+        // For WebSocket connections, extract token from query string
         var authorization = context.Request.Headers.Authorization.ToString();
+        if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            var tokenFromQuery = context.Request.Query["access_token"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(tokenFromQuery))
+            {
+                authorization = $"Bearer {tokenFromQuery}";
+            }
+        }
+
         if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             await UnauthorizedAsync(context);

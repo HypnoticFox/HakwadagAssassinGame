@@ -68,7 +68,7 @@ public sealed class RedisRepositoryTests : RedisTestBase
         var updatedGame = new Game(
             game.Id, updatedName, game.InviteCode, game.Status, game.CreatedAt,
             game.ScheduledEndAt, game.EndedAt, game.MaxPlayers, game.BasePointsPerTag,
-            game.ConditionBonuses, game.ConfirmationTimeout, game.SafeTimeBlocks);
+            game.ConditionBonuses, game.ConfirmationTimeout, game.AssignmentCooldownMinutes, game.SafeTimeBlocks);
         await repo.UpdateAsync(updatedGame);
 
         var retrieved = await repo.GetByIdAsync(game.Id);
@@ -86,7 +86,7 @@ public sealed class RedisRepositoryTests : RedisTestBase
         var updatedGame = new Game(
             game.Id, game.Name, "NEWCODE", game.Status, game.CreatedAt,
             game.ScheduledEndAt, game.EndedAt, game.MaxPlayers, game.BasePointsPerTag,
-            game.ConditionBonuses, game.ConfirmationTimeout, game.SafeTimeBlocks);
+            game.ConditionBonuses, game.ConfirmationTimeout, game.AssignmentCooldownMinutes, game.SafeTimeBlocks);
         await repo.UpdateAsync(updatedGame);
 
         var byOldCode = await repo.GetByInviteCodeAsync("OLDCODE");
@@ -392,6 +392,59 @@ public sealed class RedisRepositoryTests : RedisTestBase
         Assert.Single(byGame2);
     }
 
+    [Fact]
+    public async Task AssignmentRepository_GetMostRecentByHunterId_ReturnsLatestAssignment()
+    {
+        var repo = new RedisAssignmentRepository(Multiplexer);
+        var gameId = Guid.NewGuid();
+        var hunterId = Guid.NewGuid();
+        var conditions = new List<Condition> { AloneCondition.Create() };
+        var older = Assignment.Create(gameId, hunterId, Guid.NewGuid(), conditions,
+            assignedAt: DateTimeOffset.UtcNow.AddHours(-2));
+        var newer = Assignment.Create(gameId, hunterId, Guid.NewGuid(), conditions,
+            assignedAt: DateTimeOffset.UtcNow.AddHours(-1));
+        var otherHunter = Assignment.Create(gameId, Guid.NewGuid(), Guid.NewGuid(), conditions,
+            assignedAt: DateTimeOffset.UtcNow);
+
+        await repo.AddAsync(older);
+        await repo.AddAsync(newer);
+        await repo.AddAsync(otherHunter);
+
+        var retrieved = await repo.GetMostRecentByHunterIdAsync(gameId, hunterId);
+
+        Assert.NotNull(retrieved);
+        Assert.Equal(newer.Id, retrieved.Id);
+    }
+
+    [Fact]
+    public async Task AssignmentRepository_GetMostRecentByHunterId_NoAssignments_ReturnsNull()
+    {
+        var repo = new RedisAssignmentRepository(Multiplexer);
+
+        var retrieved = await repo.GetMostRecentByHunterIdAsync(Guid.NewGuid(), Guid.NewGuid());
+
+        Assert.Null(retrieved);
+    }
+
+    [Fact]
+    public async Task AssignmentRepository_GetMostRecentByHunterId_CompletedAssignmentStillReturned()
+    {
+        var repo = new RedisAssignmentRepository(Multiplexer);
+        var gameId = Guid.NewGuid();
+        var hunterId = Guid.NewGuid();
+        var assignment = Assignment.Create(gameId, hunterId, Guid.NewGuid(), [AloneCondition.Create()]);
+        await repo.AddAsync(assignment);
+
+        assignment.Complete();
+        await repo.UpdateAsync(assignment);
+
+        var retrieved = await repo.GetMostRecentByHunterIdAsync(gameId, hunterId);
+
+        Assert.NotNull(retrieved);
+        Assert.Equal(assignment.Id, retrieved.Id);
+        Assert.Equal(AssignmentStatus.Completed, retrieved.Status);
+    }
+
     // ── TagSubmission Repository ──────────────────────────────────────────
 
     [Fact]
@@ -450,6 +503,96 @@ public sealed class RedisRepositoryTests : RedisTestBase
 
         var pending = await repo.GetPendingByTargetIdAsync(targetId);
         Assert.Empty(pending);
+    }
+
+    [Fact]
+    public async Task TagSubmissionRepository_GetPendingByHunterId()
+    {
+        var repo = new RedisTagSubmissionRepository(Multiplexer);
+        var hunterId = Guid.NewGuid();
+        var submission = TagSubmission.Create(Guid.NewGuid(), hunterId, Guid.NewGuid(), Guid.NewGuid());
+        await repo.AddAsync(submission);
+
+        var pending = await repo.GetPendingByHunterIdAsync(hunterId);
+
+        Assert.Single(pending);
+        Assert.Equal(submission.Id, pending[0].Id);
+    }
+
+    [Fact]
+    public async Task TagSubmissionRepository_GetPendingByHunterId_ConfirmedNotIncluded()
+    {
+        var repo = new RedisTagSubmissionRepository(Multiplexer);
+        var hunterId = Guid.NewGuid();
+        var submission = TagSubmission.Create(Guid.NewGuid(), hunterId, Guid.NewGuid(), Guid.NewGuid());
+        await repo.AddAsync(submission);
+        submission.Confirm();
+        await repo.UpdateAsync(submission);
+
+        var pending = await repo.GetPendingByHunterIdAsync(hunterId);
+
+        Assert.Empty(pending);
+    }
+
+    [Fact]
+    public async Task TagSubmissionRepository_Update_ResolvedSubmission_RemovesHunterPendingIndex()
+    {
+        var repo = new RedisTagSubmissionRepository(Multiplexer);
+        var hunterId = Guid.NewGuid();
+        var submission = TagSubmission.Create(Guid.NewGuid(), hunterId, Guid.NewGuid(), Guid.NewGuid());
+        await repo.AddAsync(submission);
+
+        submission.Deny();
+        await repo.UpdateAsync(submission);
+
+        var pending = await repo.GetPendingByHunterIdAsync(hunterId);
+        Assert.Empty(pending);
+    }
+
+    [Fact]
+    public async Task TagSubmissionRepository_GetPendingByHunterId_OnlyReturnsOwnSubmissions()
+    {
+        var repo = new RedisTagSubmissionRepository(Multiplexer);
+        var hunterId = Guid.NewGuid();
+        var otherHunterId = Guid.NewGuid();
+        var own = TagSubmission.Create(Guid.NewGuid(), hunterId, Guid.NewGuid(), Guid.NewGuid());
+        var other = TagSubmission.Create(Guid.NewGuid(), otherHunterId, Guid.NewGuid(), Guid.NewGuid());
+        await repo.AddAsync(own);
+        await repo.AddAsync(other);
+
+        var pending = await repo.GetPendingByHunterIdAsync(hunterId);
+
+        var retrieved = Assert.Single(pending);
+        Assert.Equal(own.Id, retrieved.Id);
+    }
+
+    [Fact]
+    public async Task TagSubmissionRepository_GetAllPending_ReturnsOnlyPending()
+    {
+        var repo = new RedisTagSubmissionRepository(Multiplexer);
+        var pending = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        var resolved = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        resolved.Confirm();
+        await repo.AddAsync(pending);
+        await repo.AddAsync(resolved);
+
+        var all = await repo.GetAllPendingAsync();
+
+        var retrieved = Assert.Single(all);
+        Assert.Equal(pending.Id, retrieved.Id);
+    }
+
+    [Fact]
+    public async Task TagSubmissionRepository_GetAllPending_NoPending_ReturnsEmpty()
+    {
+        var repo = new RedisTagSubmissionRepository(Multiplexer);
+        var resolved = TagSubmission.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
+        resolved.Deny();
+        await repo.AddAsync(resolved);
+
+        var all = await repo.GetAllPendingAsync();
+
+        Assert.Empty(all);
     }
 
     // ── Condition Library ─────────────────────────────────────────────────

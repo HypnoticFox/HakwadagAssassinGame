@@ -9,6 +9,7 @@
     <ItemGroup>
       <ProjectReference Include="..\HakwadagAssassinGame.Core\HakwadagAssassinGame.Core.csproj" />
       <ProjectReference Include="..\HakwadagAssassinGame.Utils\HakwadagAssassinGame.Utils.csproj" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
     </ItemGroup>
 
 </Project>

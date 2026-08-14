@@ -347,6 +347,74 @@ public sealed class GameTests
         Assert.InRange(game.ScheduledEndAt!.Value, before.AddHours(1), after.AddHours(1));
     }
 
+    // ── UpdateConfirmationTimeout ─────────────────────────────────────────
+
+    [Fact]
+    public void UpdateConfirmationTimeout_Active_UpdatesTimeout()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        game.UpdateConfirmationTimeout(TimeSpan.FromMinutes(20));
+
+        Assert.Equal(TimeSpan.FromMinutes(20), game.ConfirmationTimeout);
+    }
+
+    [Fact]
+    public void UpdateConfirmationTimeout_NotStarted_ThrowsInvalidOperationException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            game.UpdateConfirmationTimeout(TimeSpan.FromMinutes(20)));
+        Assert.Contains("active", ex.Message);
+    }
+
+    [Fact]
+    public void UpdateConfirmationTimeout_NonPositive_ThrowsArgumentOutOfRangeException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            game.UpdateConfirmationTimeout(TimeSpan.Zero));
+        Assert.Contains("timeout", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── UpdateAssignmentCooldown ──────────────────────────────────────────
+
+    [Fact]
+    public void UpdateAssignmentCooldown_Active_UpdatesCooldown()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        game.UpdateAssignmentCooldown(15);
+
+        Assert.Equal(15, game.AssignmentCooldownMinutes);
+    }
+
+    [Fact]
+    public void UpdateAssignmentCooldown_NotStarted_ThrowsInvalidOperationException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            game.UpdateAssignmentCooldown(15));
+        Assert.Contains("active", ex.Message);
+    }
+
+    [Fact]
+    public void UpdateAssignmentCooldown_NegativeMinutes_ThrowsArgumentOutOfRangeException()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+        game.Start();
+
+        var ex = Assert.Throws<ArgumentOutOfRangeException>(() =>
+            game.UpdateAssignmentCooldown(-5));
+        Assert.Contains("cooldown", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     // ── SafeTimeBlocks defensive copy ──────────────────────────────────────
 
     [Fact]
@@ -411,7 +479,32 @@ public sealed class GameTests
     {
         var game = new Game(
             Guid.NewGuid(), "Test", "CODE", GameStatus.NotStarted, DateTimeOffset.UtcNow,
-            DefaultEndAt, null, 4, 10, null, TimeSpan.FromMinutes(5), null);
+            DefaultEndAt, null, 4, 10, null, TimeSpan.FromMinutes(5), 30, null);
         Assert.Equal(GameStatus.NotStarted, game.Status);
+    }
+
+    [Fact]
+    public void Create_DefaultsAssignmentCooldownTo30Minutes()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10);
+
+        Assert.Equal(30, game.AssignmentCooldownMinutes);
+    }
+
+    [Fact]
+    public void Create_OverridesAssignmentCooldown()
+    {
+        var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10, assignmentCooldownMinutes: 10);
+
+        Assert.Equal(10, game.AssignmentCooldownMinutes);
+    }
+
+    [Fact]
+    public void Constructor_NegativeAssignmentCooldown_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            new Game(
+                Guid.NewGuid(), "Test", "CODE", GameStatus.NotStarted, DateTimeOffset.UtcNow,
+                DefaultEndAt, null, 4, 10, null, TimeSpan.FromMinutes(5), -1, null));
     }
 }

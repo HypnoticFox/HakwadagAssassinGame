@@ -1,5 +1,6 @@
-# Remote development setup using zrok2 tunnels.
-# Starts Redis, backend, frontend, and creates public zrok2 shares.
+# Remote development setup using a cloudflared tunnel.
+# Starts Redis, backend, frontend, and a single named cloudflared tunnel with
+# ingress rules for both the API and frontend hostnames.
 
 param(
     [switch]$SkipDependencies,
@@ -24,12 +25,13 @@ if (Test-Path $envFile) {
 }
 
 # --- Configuration ---
-$ApiShareName = if ($env:ZROK_API_NAME) { $env:ZROK_API_NAME } else { "hakwadag-api" }
-$AppShareName = if ($env:ZROK_APP_NAME) { $env:ZROK_APP_NAME } else { "hakwadag-app" }
+$TunnelName = if ($env:CLOUDFLARED_TUNNEL) { $env:CLOUDFLARED_TUNNEL } else { "hakwadag" }
+$ApiHost = if ($env:CLOUDFLARED_API_HOST) { $env:CLOUDFLARED_API_HOST } else { "hakwadag-api.jarnovos.com" }
+$AppHost = if ($env:CLOUDFLARED_APP_HOST) { $env:CLOUDFLARED_APP_HOST } else { "hakwadag-app.jarnovos.com" }
 $BackendPort = 5000
 $FrontendPort = 5173
-$ZrokApiUrl = "https://$ApiShareName.shares.zrok.io"
-$ZrokAppUrl = "https://$AppShareName.shares.zrok.io"
+$CloudflaredApiUrl = "https://$ApiHost"
+$CloudflaredAppUrl = "https://$AppHost"
 
 $RepoRoot = $PSScriptRoot
 $BackendDir = Join-Path $RepoRoot "backend"
@@ -45,6 +47,31 @@ function Write-Ok($msg) { Write-Host "[remote] $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "[remote] $msg" -ForegroundColor Yellow }
 function Write-Err($msg) { Write-Host "[remote] $msg" -ForegroundColor Red }
 
+# Runs a native command silently, ignoring stderr and exit codes.
+# (In PowerShell 5.1, native stderr redirected with 2>&1 becomes error records
+# that are subject to $ErrorActionPreference; temporarily relaxing it prevents
+# false failures from commands like "cloudflared tunnel create" on an existing tunnel.)
+function Invoke-Silent([scriptblock]$Command) {
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        & $Command 2>&1 | Out-Null
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
+# Captures native stdout+stderr as a single string without throwing.
+function Get-NativeOutput([scriptblock]$Command) {
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        return (& $Command 2>&1 | Out-String)
+    } finally {
+        $ErrorActionPreference = $prevEap
+    }
+}
+
 function Stop-AllJobs {
     Write-Status "Stopping all services..."
     foreach ($job in $jobs) {
@@ -54,23 +81,12 @@ function Stop-AllJobs {
         }
     }
 
-    # Delete active zrok2 shares using zrok2 commands
-    Write-Status "Deleting active zrok2 shares..."
-    $sharesJson = zrok2 list shares --json 2>&1
-    if ($sharesJson) {
-        try {
-            $data = $sharesJson | ConvertFrom-Json
-            foreach ($share in $data.shares) {
-                if ($share.shareToken) {
-                    Write-Status "  Deleting share $($share.shareToken)..."
-                    zrok2 delete share $share.shareToken 2>&1 | Out-Null
-                }
-            }
-            Write-Ok "Active shares deleted."
-        } catch {
-            Write-Status "Could not parse shares list."
-        }
-    }
+    # Stop cloudflared processes for this tunnel
+    Write-Status "Stopping cloudflared tunnel..."
+    $cfConfigPath = Join-Path $LogDir "cloudflared.yml"
+    Get-CimInstance Win32_Process -Filter "Name='cloudflared.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -match [regex]::Escape($TunnelName) -or $_.CommandLine -match [regex]::Escape($cfConfigPath) } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 
     # Stop backend and frontend processes (only those related to this project)
     Get-CimInstance Win32_Process -Filter "Name='dotnet.exe'" -ErrorAction SilentlyContinue |
@@ -94,23 +110,20 @@ function Stop-AllJobs {
 # --- Prerequisite checks ---
 Write-Status "Checking prerequisites..."
 
-if (-not (Get-Command "zrok2" -ErrorAction SilentlyContinue)) {
-    Write-Err "zrok2 is not installed."
+if (-not (Get-Command "cloudflared" -ErrorAction SilentlyContinue)) {
+    Write-Err "cloudflared is not installed."
     Write-Host ""
-    Write-Host 'Install zrok2:' -ForegroundColor White
-    Write-Host '  1. Download from https://github.com/openziti/zrok/releases'
-    Write-Host '  2. Extract zrok2.exe to a folder on your PATH'
-    Write-Host '  3. Run: zrok2 invite'
-    Write-Host '  4. Run: zrok2 enable <your-token>'
+    Write-Host 'Install cloudflared:' -ForegroundColor White
+    Write-Host '  1. Download from https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/'
+    Write-Host '  2. Add cloudflared.exe to your PATH'
     Write-Host ""
     exit 1
 }
 
-$zrokDir = Join-Path $env:USERPROFILE ".zrok2"
-if (-not (Test-Path $zrokDir)) {
-    Write-Err "zrok2 is not enabled. Run:"
-    Write-Host '  zrok2 invite'
-    Write-Host '  zrok2 enable <your-account-token>'
+$certFile = Join-Path $env:USERPROFILE ".cloudflared\cert.pem"
+if (-not (Test-Path $certFile)) {
+    Write-Err "cloudflared is not authorized for your Cloudflare account."
+    Write-Host 'Run: cloudflared tunnel login'
     exit 1
 }
 
@@ -146,46 +159,76 @@ if (-not $SkipDependencies) {
     Write-Warn "Skipping dependencies (use -SkipDependencies to skip)"
 }
 
-# --- Create zrok2 reserved names (if they don't exist) ---
-Write-Status "Checking zrok2 reserved names..."
-$existingNames = zrok2 list names --json 2>&1
-$existingNamesList = @()
-if ($existingNames) {
-    try {
-        $namesData = $existingNames | ConvertFrom-Json
-        $existingNamesList = $namesData | ForEach-Object { $_.name }
-    } catch {
-        Write-Status "Could not parse names list, will attempt to create..."
+# --- Set up the cloudflared tunnel (idempotent) ---
+Write-Status "Setting up cloudflared tunnel '$TunnelName'..."
+
+# Create the tunnel if it doesn't exist yet (fails silently if it already exists)
+Invoke-Silent { cloudflared tunnel create $TunnelName }
+
+# Route the API and app hostnames to the tunnel (safe to run repeatedly)
+Invoke-Silent { cloudflared tunnel route dns $TunnelName $ApiHost }
+Invoke-Silent { cloudflared tunnel route dns $TunnelName $AppHost }
+
+# Determine the tunnel ID from `cloudflared tunnel info` output...
+$TunnelId = $null
+$tunnelInfo = Get-NativeOutput { cloudflared tunnel info $TunnelName }
+if ($tunnelInfo -match '([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})') {
+    $TunnelId = $matches[1]
+}
+
+# ...falling back to scanning the credentials files in ~/.cloudflared
+if (-not $TunnelId) {
+    $credsDir = Join-Path $env:USERPROFILE ".cloudflared"
+    $credsFiles = Get-ChildItem -Path (Join-Path $credsDir "*.json") -ErrorAction SilentlyContinue
+    foreach ($file in $credsFiles) {
+        try {
+            $creds = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
+            if ($creds.TunnelName -eq $TunnelName -and $creds.TunnelID) {
+                $TunnelId = $creds.TunnelID
+                break
+            }
+        } catch {
+            # Ignore files that aren't tunnel credentials
+        }
     }
 }
 
-if ($existingNamesList -notcontains $ApiShareName) {
-    Write-Status "Creating reserved name: $ApiShareName"
-    zrok2 create name $ApiShareName 2>&1 | Out-Null
-} else {
-    Write-Status "Reserved name already exists: $ApiShareName"
+if (-not $TunnelId) {
+    Write-Err "Could not determine the tunnel ID for '$TunnelName'."
+    Write-Host 'Run "cloudflared tunnel list" and check ~/.cloudflared for the credentials file.'
+    exit 1
 }
 
-if ($existingNamesList -notcontains $AppShareName) {
-    Write-Status "Creating reserved name: $AppShareName"
-    zrok2 create name $AppShareName 2>&1 | Out-Null
-} else {
-    Write-Status "Reserved name already exists: $AppShareName"
-}
+Write-Ok "Tunnel ID: $TunnelId"
 
-Write-Ok "Reserved names: $ApiShareName, $AppShareName"
+# --- Generate the cloudflared config file ---
+New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+$configPath = Join-Path $LogDir "cloudflared.yml"
+$credsDir = Join-Path $env:USERPROFILE ".cloudflared"
+$credsFile = "$($credsDir -replace '\\','/')/$TunnelId.json"
+
+$config = @"
+tunnel: $TunnelName
+credentials-file: $credsFile
+
+ingress:
+  - hostname: $ApiHost
+    service: http://localhost:$BackendPort
+  - hostname: $AppHost
+    service: http://localhost:$FrontendPort
+  - service: http_status:404
+"@
+Set-Content -Path $configPath -Value $config -Encoding UTF8
+Write-Ok "cloudflared config written to $configPath"
 
 # --- Start backend ---
 Write-Status "Starting backend on port $BackendPort..."
 
 if ($Detach) {
-    # Create log directory
-    New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
-    
     # Use cmd /c with shell redirection to avoid file handle issues
     $env:ASPNETCORE_HTTP_PORTS = $BackendPort
     $env:ASPNETCORE_ENVIRONMENT = "Development"
-    $env:ZROK_FRONTEND_URL = $ZrokAppUrl
+    $env:CLOUDFLARED_FRONTEND_URL = $CloudflaredAppUrl
     $backendStdout = Join-Path $LogDir "backend-stdout.log"
     $backendStderr = Join-Path $LogDir "backend-stderr.log"
     Start-Process -FilePath "cmd.exe" `
@@ -193,15 +236,15 @@ if ($Detach) {
         -WindowStyle Hidden
     Write-Ok "Backend started on port $BackendPort (logs: .logs/backend-*.log)"
 } else {
-    $env:ZROK_FRONTEND_URL = $ZrokAppUrl
+    $env:CLOUDFLARED_FRONTEND_URL = $CloudflaredAppUrl
     $env:ASPNETCORE_HTTP_PORTS = $BackendPort
 
     $backendJob = Start-Job -ScriptBlock {
         param($project, $port, $frontendUrl)
-        $env:ZROK_FRONTEND_URL = $frontendUrl
+        $env:CLOUDFLARED_FRONTEND_URL = $frontendUrl
         $env:ASPNETCORE_HTTP_PORTS = $port
         dotnet watch run --project $project --no-launch-profile 2>&1
-    } -ArgumentList $BackendProject, $BackendPort, $ZrokAppUrl
+    } -ArgumentList $BackendProject, $BackendPort, $CloudflaredAppUrl
     $jobs += $backendJob
     Write-Ok "Backend starting..."
 }
@@ -210,8 +253,8 @@ if ($Detach) {
 Write-Status "Starting frontend on port $FrontendPort..."
 
 if ($Detach) {
-    $env:VITE_API_URL = $ZrokApiUrl
-    $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
+    $env:VITE_API_URL = $CloudflaredApiUrl
+    $env:VITE_ALLOWED_HOST = $AppHost
     $frontendStdout = Join-Path $LogDir "frontend-stdout.log"
     $frontendStderr = Join-Path $LogDir "frontend-stderr.log"
     Start-Process -FilePath "cmd.exe" `
@@ -219,8 +262,8 @@ if ($Detach) {
         -WindowStyle Hidden
     Write-Ok "Frontend started on port $FrontendPort (logs: .logs/frontend-*.log)"
 } else {
-    $env:VITE_API_URL = $ZrokApiUrl
-    $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
+    $env:VITE_API_URL = $CloudflaredApiUrl
+    $env:VITE_ALLOWED_HOST = $AppHost
 
     $frontendJob = Start-Job -ScriptBlock {
         param($dir, $apiUrl, $port, $allowedHost)
@@ -228,7 +271,7 @@ if ($Detach) {
         $env:VITE_ALLOWED_HOST = $allowedHost
         Set-Location $dir
         npm run dev -- --port $port --host 2>&1
-    } -ArgumentList $FrontendDir, $ZrokApiUrl, $FrontendPort, "$AppShareName.shares.zrok.io"
+    } -ArgumentList $FrontendDir, $CloudflaredApiUrl, $FrontendPort, $AppHost
     $jobs += $frontendJob
     Write-Ok "Frontend starting..."
 }
@@ -237,34 +280,24 @@ if ($Detach) {
 Write-Status "Waiting for services to start..."
 Start-Sleep -Seconds 5
 
-# --- Start zrok2 shares ---
-Write-Status "Creating zrok2 public shares..."
+# --- Start cloudflared tunnel ---
+Write-Status "Starting cloudflared tunnel..."
 
 if ($Detach) {
     # Use cmd /c with shell redirection to avoid file handle issues
-    $zrokApiStdout = Join-Path $LogDir "zrok-api-stdout.log"
-    $zrokApiStderr = Join-Path $LogDir "zrok-api-stderr.log"
-    $zrokAppStdout = Join-Path $LogDir "zrok-app-stdout.log"
-    $zrokAppStderr = Join-Path $LogDir "zrok-app-stderr.log"
+    $cfStdout = Join-Path $LogDir "cloudflared-stdout.log"
+    $cfStderr = Join-Path $LogDir "cloudflared-stderr.log"
     Start-Process -FilePath "cmd.exe" `
-        -ArgumentList "/c", "zrok2 share public localhost:$BackendPort -n public:$ApiShareName > `"$zrokApiStdout`" 2> `"$zrokApiStderr`"" `
+        -ArgumentList "/c", "cloudflared tunnel --config `"$configPath`" run > `"$cfStdout`" 2> `"$cfStderr`"" `
         -WindowStyle Hidden
-    Start-Process -FilePath "cmd.exe" `
-        -ArgumentList "/c", "zrok2 share public localhost:$FrontendPort -n public:$AppShareName > `"$zrokAppStdout`" 2> `"$zrokAppStderr`"" `
-        -WindowStyle Hidden
-    Write-Ok "zrok2 shares created (logs: .logs/zrok-*.log)"
+    Write-Ok "cloudflared tunnel started (logs: .logs/cloudflared-*.log)"
 } else {
-    $apiShareJob = Start-Job -ScriptBlock {
-        param($port, $name)
-        zrok2 share public "localhost:$port" -n "public:$name" 2>&1
-    } -ArgumentList $BackendPort, $ApiShareName
-    $jobs += $apiShareJob
-
-    $appShareJob = Start-Job -ScriptBlock {
-        param($port, $name)
-        zrok2 share public "localhost:$port" -n "public:$name" 2>&1
-    } -ArgumentList $FrontendPort, $AppShareName
-    $jobs += $appShareJob
+    $tunnelJob = Start-Job -ScriptBlock {
+        param($config)
+        cloudflared tunnel --config $config run 2>&1
+    } -ArgumentList $configPath
+    $jobs += $tunnelJob
+    Write-Ok "cloudflared tunnel starting..."
 }
 
 Start-Sleep -Seconds 3
@@ -275,8 +308,8 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host "  Remote development environment ready!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
-Write-Host "  Backend API:  $ZrokApiUrl" -ForegroundColor White
-Write-Host "  Frontend App: $ZrokAppUrl" -ForegroundColor White
+Write-Host "  Backend API:  $CloudflaredApiUrl" -ForegroundColor White
+Write-Host "  Frontend App: $CloudflaredAppUrl" -ForegroundColor White
 Write-Host ""
 Write-Host "  Local URLs:" -ForegroundColor Gray
 Write-Host "    Backend:  http://localhost:$BackendPort" -ForegroundColor Gray

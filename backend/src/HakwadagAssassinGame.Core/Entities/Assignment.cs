@@ -14,7 +14,8 @@ public sealed class Assignment
         Guid hunterId,
         Guid targetId,
         DateTimeOffset assignedAt,
-        List<Condition> conditions)
+        List<Condition> conditions,
+        AssignmentStatus status = AssignmentStatus.Active)
     {
         ValidateIdentifier(gameId, nameof(gameId));
         ValidateIdentifier(hunterId, nameof(hunterId));
@@ -34,7 +35,7 @@ public sealed class Assignment
         GameId = gameId;
         HunterId = hunterId;
         TargetId = targetId;
-        Status = AssignmentStatus.Active;
+        Status = status;
         AssignedAt = assignedAt;
         Conditions = conditionList;
     }

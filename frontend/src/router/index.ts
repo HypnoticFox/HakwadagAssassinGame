@@ -36,6 +36,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/games/:id/admin',
+      name: 'game-admin',
+      component: () => import('@/views/GameAdminView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/games/:id/assignment',
       name: 'assignment',
       component: () => import('@/views/AssignmentView.vue'),

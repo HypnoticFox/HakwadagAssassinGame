@@ -1,4 +1,4 @@
-# Restart frontend and backend services without stopping dependencies or zrok2 shares.
+# Restart frontend and backend services without stopping dependencies or the cloudflared tunnel.
 # Use this when dotnet watch or npm run dev don't pick up changes correctly.
 
 param(
@@ -23,12 +23,13 @@ if (Test-Path $envFile) {
 }
 
 # --- Configuration ---
-$ApiShareName = if ($env:ZROK_API_NAME) { $env:ZROK_API_NAME } else { "hakwadag-api" }
-$AppShareName = if ($env:ZROK_APP_NAME) { $env:ZROK_APP_NAME } else { "hakwadag-app" }
+$TunnelName = if ($env:CLOUDFLARED_TUNNEL) { $env:CLOUDFLARED_TUNNEL } else { "hakwadag" }
+$ApiHost = if ($env:CLOUDFLARED_API_HOST) { $env:CLOUDFLARED_API_HOST } else { "hakwadag-api.jarnovos.com" }
+$AppHost = if ($env:CLOUDFLARED_APP_HOST) { $env:CLOUDFLARED_APP_HOST } else { "hakwadag-app.jarnovos.com" }
 $BackendPort = 5000
 $FrontendPort = 5173
-$ZrokApiUrl = "https://$ApiShareName.shares.zrok.io"
-$ZrokAppUrl = "https://$AppShareName.shares.zrok.io"
+$CloudflaredApiUrl = "https://$ApiHost"
+$CloudflaredAppUrl = "https://$AppHost"
 
 $RepoRoot = $PSScriptRoot
 $BackendDir = Join-Path $RepoRoot "backend"
@@ -74,7 +75,7 @@ Start-Sleep -Seconds 2
 # --- Restart backend ---
 if (-not $FrontendOnly) {
     Write-Status "Starting backend..."
-    $env:ZROK_FRONTEND_URL = $ZrokAppUrl
+    $env:CLOUDFLARED_FRONTEND_URL = $CloudflaredAppUrl
     $env:ASPNETCORE_HTTP_PORTS = $BackendPort
     $env:ASPNETCORE_ENVIRONMENT = "Development"
 
@@ -89,8 +90,8 @@ if (-not $FrontendOnly) {
 # --- Restart frontend ---
 if (-not $BackendOnly) {
     Write-Status "Starting frontend..."
-    $env:VITE_API_URL = $ZrokApiUrl
-    $env:VITE_ALLOWED_HOST = "$AppShareName.shares.zrok.io"
+    $env:VITE_API_URL = $CloudflaredApiUrl
+    $env:VITE_ALLOWED_HOST = $AppHost
 
     $frontendStdout = Join-Path $LogDir "frontend-stdout.log"
     $frontendStderr = Join-Path $LogDir "frontend-stderr.log"
@@ -103,6 +104,6 @@ if (-not $BackendOnly) {
 Write-Host ""
 Write-Ok "Services restarted."
 Write-Host ""
-Write-Host "  Backend API:  $ZrokApiUrl" -ForegroundColor White
-Write-Host "  Frontend App: $ZrokAppUrl" -ForegroundColor White
+Write-Host "  Backend API:  $CloudflaredApiUrl" -ForegroundColor White
+Write-Host "  Frontend App: $CloudflaredAppUrl" -ForegroundColor White
 Write-Host ""

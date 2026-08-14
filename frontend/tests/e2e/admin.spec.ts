@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { setupApiMocks, loginViaStorage, createGameViaUi, createPlayer } from './helpers'
 
 test.describe('Administration', () => {
@@ -8,62 +8,56 @@ test.describe('Administration', () => {
     await loginViaStorage(page, player)
   })
 
-  test('admin panel is accessible for game creator', async ({ page }) => {
+  /** Creates a game via the UI and navigates to the dedicated admin page. */
+  async function openAdminPage(page: Page) {
+    await createGameViaUi(page)
+    await page.getByRole('button', { name: 'Admin panel' }).click()
+    await page.waitForURL(/\/games\/[^/]+\/admin/)
+    await expect(page.getByRole('heading', { name: 'Game Settings' })).toBeVisible()
+  }
+
+  test('admin page is accessible for game creator', async ({ page }) => {
     await createGameViaUi(page)
 
     // Admin panel button should be visible for creator
     const adminBtn = page.getByRole('button', { name: 'Admin panel' })
     await expect(adminBtn).toBeVisible()
 
-    // Open admin panel
+    // Clicking it navigates to the dedicated admin page
     await adminBtn.click()
-    await page.waitForSelector('h2')
-    await expect(page.locator('h2')).toContainText('Admin panel')
+    await page.waitForURL(/\/games\/[^/]+\/admin/)
+    await expect(page.getByRole('heading', { name: 'Game Settings' })).toBeVisible()
+  })
+
+  test('admin page shows settings, conditions, safe time, and moderators sections', async ({
+    page,
+  }) => {
+    await openAdminPage(page)
+
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Conditions' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Safe time blocks' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Moderators' })).toBeVisible()
   })
 
   test('add safe time block: admin adds block → shown on game detail', async ({ page }) => {
-    await createGameViaUi(page)
+    await openAdminPage(page)
 
-    // Open admin panel
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('h2')
-
-    // Fill safe time form — use positional locators within admin form
-    const adminInputs = page.locator('.admin-form input[type="time"]')
-    await adminInputs.nth(0).fill('22:00')
-    await adminInputs.nth(1).fill('08:00')
-    await page.locator('.admin-form input[type="number"]').fill('0')
+    // Fill safe time form — first two time inputs in the safe time section
+    const timeInputs = page.locator('.admin-card input[type="time"]')
+    await timeInputs.nth(0).fill('22:00')
+    await timeInputs.nth(1).fill('08:00')
     await page.getByRole('button', { name: 'Add safe time' }).click()
 
-    // The admin modal stays open after adding (the component doesn't close it automatically)
-    // Verify the API call was made by checking the button is still clickable
+    // Verify the API call was made by checking the form is still usable
     await expect(page.getByRole('button', { name: 'Add safe time' })).toBeVisible()
   })
 
-  test('remove safe time block: admin removes block → no longer shown', async ({ page }) => {
-    await createGameViaUi(page)
+  test('add custom condition: admin adds condition → input is cleared', async ({ page }) => {
+    await openAdminPage(page)
 
-    // Open admin panel and add a safe time block first
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('h2')
-    // Verify the admin input fields are present
-    await expect(page.locator('.admin-form input[type="time"]')).toHaveCount(2)
-    await page.getByRole('button', { name: 'Add safe time' }).click()
-
-    // Note: The mock returns safeTimeBlocks: [] so there won't be any to remove
-    // This test validates the admin panel is functional
-    await expect(page.getByRole('button', { name: 'Add safe time' })).toBeVisible()
-  })
-
-  test('add custom condition: admin adds condition → appears in future assignments', async ({ page }) => {
-    await createGameViaUi(page)
-
-    // Open admin panel
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('h2')
-
-    // Add a custom condition — the first text input in the admin form is the condition input
-    const conditionInput = page.locator('.admin-form input[type="text"]').first()
+    // The first text input on the page is the condition input
+    const conditionInput = page.locator('.admin-card input[type="text"]').first()
     await conditionInput.fill('Tag them while they are eating')
     await page.getByRole('button', { name: 'Add condition' }).click()
 
@@ -71,56 +65,23 @@ test.describe('Administration', () => {
     await expect(conditionInput).toHaveValue('')
   })
 
-  test('promote co-admin: creator promotes player → player can start/end game', async ({ page }) => {
-    await createGameViaUi(page)
+  test('update confirmation timeout and assignment cooldown', async ({ page }) => {
+    await openAdminPage(page)
 
-    // The promote/demote actions go through the API.
-    // We verify the API is called correctly.
-    // Open admin panel to verify it's accessible
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('h2')
+    const numberInputs = page.locator('.admin-card input[type="number"]')
+    await numberInputs.nth(0).fill('10')
+    await page.getByRole('button', { name: 'Save', exact: true }).first().click()
+    await expect(page.getByRole('button', { name: 'Save', exact: true }).first()).toBeEnabled()
 
-    // Verify the admin panel sections are present
-    await expect(page.locator('h3')).toHaveCount(2) // "Conditions" and "Safe time block"
+    await numberInputs.nth(1).fill('15')
+    await page.getByRole('button', { name: 'Save', exact: true }).nth(1).click()
+    await expect(page.getByRole('button', { name: 'Save', exact: true }).nth(1)).toBeEnabled()
   })
 
-  test('demote co-admin: creator demotes → player becomes regular', async ({ page }) => {
-    // Promotion/demotion is handled via API calls.
-    // The mock returns success for both addAdmin and removeAdmin.
-    // This test verifies the API endpoints are reachable from the admin panel.
-    await createGameViaUi(page)
+  test('back to game button returns to the game detail page', async ({ page }) => {
+    await openAdminPage(page)
 
-    // Open admin panel
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('h2')
-
-    // Close admin panel
-    await page.locator('.modal-close').click()
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 })
-  })
-
-  test('admin panel can be opened and closed', async ({ page }) => {
-    await createGameViaUi(page)
-
-    // Open
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('[role="dialog"]')
-    await expect(page.locator('h2')).toContainText('Admin panel')
-
-    // Close via X button
-    await page.locator('.modal-close').click()
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 })
-  })
-
-  test('admin panel can be closed by clicking backdrop', async ({ page }) => {
-    await createGameViaUi(page)
-
-    // Open
-    await page.getByRole('button', { name: 'Admin panel' }).click()
-    await page.waitForSelector('[role="dialog"]')
-
-    // Close via backdrop click
-    await page.locator('.modal-backdrop').click({ position: { x: 10, y: 10 } })
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 3000 })
+    await page.getByRole('button', { name: 'Back to game' }).click()
+    await page.waitForURL(/\/games\/[^/]+$/)
   })
 })

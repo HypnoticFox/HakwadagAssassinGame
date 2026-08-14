@@ -116,7 +116,7 @@ describe('DevPlayerSwitcher.vue', () => {
     await wrapper.find('#dev-seed-game-button').trigger('click')
     await flushPromises()
 
-    expect(mockApi.seedGame).toHaveBeenCalledWith(3)
+    expect(mockApi.seedGame).toHaveBeenCalledWith(3, true)
     expect(wrapper.text()).toContain('Alice')
     expect(wrapper.text()).toContain('Bob')
   })

@@ -1,5 +1,6 @@
 using HakwadagAssassinGame.Application.Dtos;
 using HakwadagAssassinGame.Application.Exceptions;
+using HakwadagAssassinGame.Application.Interfaces;
 using HakwadagAssassinGame.Core.Entities;
 using HakwadagAssassinGame.Core.Enums;
 using HakwadagAssassinGame.Core.Interfaces;
@@ -50,6 +51,7 @@ public sealed class GameService : IGameService
     private readonly ITagSubmissionRepository tagSubmissionRepository;
     private readonly IInviteCodeGenerator inviteCodeGenerator;
     private readonly IConditionLibrary conditionLibrary;
+    private readonly IGameEventNotifier gameEventNotifier;
 
     /// <summary>Initializes the game service.</summary>
     public GameService(
@@ -59,7 +61,8 @@ public sealed class GameService : IGameService
         IAssignmentRepository assignmentRepository,
         ITagSubmissionRepository tagSubmissionRepository,
         IInviteCodeGenerator inviteCodeGenerator,
-        IConditionLibrary conditionLibrary)
+        IConditionLibrary conditionLibrary,
+        IGameEventNotifier gameEventNotifier)
     {
         this.gameRepository = gameRepository;
         this.playerRepository = playerRepository;
@@ -68,6 +71,7 @@ public sealed class GameService : IGameService
         this.tagSubmissionRepository = tagSubmissionRepository;
         this.inviteCodeGenerator = inviteCodeGenerator;
         this.conditionLibrary = conditionLibrary;
+        this.gameEventNotifier = gameEventNotifier;
     }
 
     /// <inheritdoc />
@@ -83,6 +87,10 @@ public sealed class GameService : IGameService
         {
             throw new InvalidGameStateException("Confirmation timeout must be positive.");
         }
+        if (request.AssignmentCooldownMinutes < 0)
+        {
+            throw new InvalidGameStateException("Assignment cooldown must not be negative.");
+        }
 
         var safeTimeBlocks = request.SafeTimeBlocks?.Select(block => SafeTimeBlock.Create(block.StartTime, block.EndTime, block.Day));
         var scheduledEndAt = request.DurationHours.HasValue
@@ -96,7 +104,8 @@ public sealed class GameService : IGameService
             request.BasePointsPerTag,
             request.ConditionBonuses,
             TimeSpan.FromMinutes(request.ConfirmationTimeoutMinutes),
-            safeTimeBlocks);
+            safeTimeBlocks,
+            assignmentCooldownMinutes: request.AssignmentCooldownMinutes);
         await gameRepository.AddAsync(game, cancellationToken);
         await gamePlayerRepository.AddAsync(GamePlayer.Create(game.Id, playerId, GameRole.Creator), cancellationToken);
         await conditionLibrary.GetAsync(game.Id, cancellationToken);
@@ -254,7 +263,9 @@ public sealed class GameService : IGameService
         }
 
         await gameRepository.UpdateAsync(game, cancellationToken);
-        return await ToDtoAsync(game, playerId, cancellationToken);
+        var startedDto = await ToDtoAsync(game, playerId, cancellationToken);
+        await gameEventNotifier.GameStartedAsync(game.Id.ToString(), startedDto, cancellationToken);
+        return startedDto;
     }
 
     /// <inheritdoc />
@@ -269,7 +280,9 @@ public sealed class GameService : IGameService
 
         game.End();
         await gameRepository.UpdateAsync(game, cancellationToken);
-        return await ToDtoAsync(game, playerId, cancellationToken);
+        var endedDto = await ToDtoAsync(game, playerId, cancellationToken);
+        await gameEventNotifier.GameEndedAsync(game.Id.ToString(), endedDto, cancellationToken);
+        return endedDto;
     }
 
     /// <inheritdoc />
@@ -402,6 +415,8 @@ public sealed class GameService : IGameService
                 await assignmentRepository.AddAsync(replacement, cancellationToken);
             }
         }
+
+        await gameEventNotifier.PlayerLeftAsync(game.Id.ToString(), cancellationToken);
     }
 
     /// <inheritdoc />
@@ -490,6 +505,7 @@ public sealed class GameService : IGameService
             game.MaxPlayers,
             game.BasePointsPerTag,
             game.ConfirmationTimeout,
+            game.AssignmentCooldownMinutes,
             memberships.Count(item => item.IsActive),
             memberships.Count(m => m.IsActive && m.IsParticipating),
             membership.IsParticipating,

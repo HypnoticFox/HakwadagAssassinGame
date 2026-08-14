@@ -14,6 +14,7 @@ const durationHours = ref('')
 const maxPlayers = ref('20')
 const basePointsPerTag = ref('100')
 const confirmationTimeoutMinutes = ref('5')
+const assignmentCooldownMinutes = ref('30')
 const localError = ref<string | null>(null)
 
 async function onSubmit() {
@@ -25,6 +26,9 @@ async function onSubmit() {
       maxPlayers: maxPlayers.value ? Number(maxPlayers.value) : undefined,
       basePointsPerTag: Number(basePointsPerTag.value),
       confirmationTimeoutMinutes: Number(confirmationTimeoutMinutes.value),
+      assignmentCooldownMinutes: assignmentCooldownMinutes.value
+        ? Number(assignmentCooldownMinutes.value)
+        : undefined,
     })
     await router.push(`/games/${game.id}`)
   } catch (err) {
@@ -82,6 +86,13 @@ async function onSubmit() {
         inputmode="numeric"
         min="1"
         required
+      />
+      <Input
+        v-model="assignmentCooldownMinutes"
+        :label="$t('createGame.assignmentCooldown')"
+        type="number"
+        inputmode="numeric"
+        min="0"
       />
 
       <p

@@ -33,6 +33,12 @@ public interface IAdminService
 
     /// <summary>Extends the remaining time of an active game.</summary>
     Task ExtendDurationAsync(Guid playerId, Guid gameId, ExtendDurationRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates the confirmation timeout.</summary>
+    Task UpdateConfirmationTimeoutAsync(Guid playerId, Guid gameId, UpdateConfirmationTimeoutRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Updates the assignment cooldown.</summary>
+    Task UpdateAssignmentCooldownAsync(Guid playerId, Guid gameId, UpdateAssignmentCooldownRequest request, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Default game administration service.</summary>
@@ -162,6 +168,40 @@ public sealed class AdminService : IAdminService
         try
         {
             game.ExtendTime(TimeSpan.FromMinutes(request.Minutes));
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new InvalidGameStateException(exception.Message);
+        }
+        await gameRepository.UpdateAsync(game, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateConfirmationTimeoutAsync(Guid playerId, Guid gameId, UpdateConfirmationTimeoutRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        await RequireAdminAsync(playerId, gameId, cancellationToken);
+        var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        try
+        {
+            game.UpdateConfirmationTimeout(TimeSpan.FromMinutes(request.Minutes));
+        }
+        catch (InvalidOperationException exception)
+        {
+            throw new InvalidGameStateException(exception.Message);
+        }
+        await gameRepository.UpdateAsync(game, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task UpdateAssignmentCooldownAsync(Guid playerId, Guid gameId, UpdateAssignmentCooldownRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        await RequireAdminAsync(playerId, gameId, cancellationToken);
+        var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
+        try
+        {
+            game.UpdateAssignmentCooldown(request.Minutes);
         }
         catch (InvalidOperationException exception)
         {

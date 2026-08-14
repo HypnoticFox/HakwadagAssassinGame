@@ -13,7 +13,9 @@ public sealed class TagSubmission
         Guid hunterId,
         Guid targetId,
         Guid conditionId,
-        DateTimeOffset submittedAt)
+        DateTimeOffset submittedAt,
+        TagStatus status = TagStatus.Pending,
+        DateTimeOffset? resolvedAt = null)
     {
         ValidateIdentifier(assignmentId, nameof(assignmentId));
         ValidateIdentifier(hunterId, nameof(hunterId));
@@ -25,8 +27,9 @@ public sealed class TagSubmission
         HunterId = hunterId;
         TargetId = targetId;
         ConditionId = conditionId;
-        Status = TagStatus.Pending;
+        Status = status;
         SubmittedAt = submittedAt;
+        ResolvedAt = resolvedAt;
     }
 
     /// <summary>Creates a pending tag submission.</summary>

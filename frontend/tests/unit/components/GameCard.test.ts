@@ -14,6 +14,7 @@ function makeGame(overrides: Partial<GameDto> = {}): GameDto {
     maxPlayers: 10,
     basePointsPerTag: 100,
     confirmationTimeout: '01:00:00',
+    assignmentCooldownMinutes: 30,
     playerCount: 3,
     myRole: 0 as GameRole,
     safeTimeBlocks: [],

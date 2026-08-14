@@ -11,6 +11,12 @@ public interface ITagSubmissionRepository
     /// <summary>Gets pending submissions for a target.</summary>
     Task<IReadOnlyList<TagSubmission>> GetPendingByTargetIdAsync(Guid targetId, CancellationToken cancellationToken = default);
 
+    /// <summary>Gets pending submissions by hunter.</summary>
+    Task<IReadOnlyList<TagSubmission>> GetPendingByHunterIdAsync(Guid hunterId, CancellationToken cancellationToken = default);
+
+    /// <summary>Gets all pending submissions across all games.</summary>
+    Task<IReadOnlyList<TagSubmission>> GetAllPendingAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Gets all submissions for an assignment.</summary>
     Task<IReadOnlyList<TagSubmission>> GetByAssignmentIdAsync(Guid assignmentId, CancellationToken cancellationToken = default);
 

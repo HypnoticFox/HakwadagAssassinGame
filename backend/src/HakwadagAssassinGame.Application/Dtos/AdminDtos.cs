@@ -14,3 +14,9 @@ public record UpdateDurationRequest(int DurationHours);
 
 /// <summary>Extends the remaining time of an active game.</summary>
 public record ExtendDurationRequest(int Minutes);
+
+/// <summary>Updates the confirmation timeout for tag submissions.</summary>
+public record UpdateConfirmationTimeoutRequest(int Minutes);
+
+/// <summary>Updates the assignment cooldown.</summary>
+public record UpdateAssignmentCooldownRequest(int Minutes);

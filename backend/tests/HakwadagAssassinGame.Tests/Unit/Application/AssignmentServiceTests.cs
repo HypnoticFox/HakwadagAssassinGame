@@ -14,6 +14,7 @@ public sealed class AssignmentServiceTests
     private readonly IAssignmentRepository assignmentRepository = Substitute.For<IAssignmentRepository>();
     private readonly IPlayerRepository playerRepository = Substitute.For<IPlayerRepository>();
     private readonly IGamePlayerRepository gamePlayerRepository = Substitute.For<IGamePlayerRepository>();
+    private readonly IGameRepository gameRepository = Substitute.For<IGameRepository>();
     private readonly AssignmentService sut;
 
     private static readonly Guid PlayerId = Guid.NewGuid();
@@ -22,7 +23,7 @@ public sealed class AssignmentServiceTests
 
     public AssignmentServiceTests()
     {
-        sut = new AssignmentService(assignmentRepository, playerRepository, gamePlayerRepository);
+        sut = new AssignmentService(assignmentRepository, playerRepository, gamePlayerRepository, gameRepository);
     }
 
     // ── GetMyAssignmentAsync ───────────────────────────────────────────────
@@ -89,5 +90,104 @@ public sealed class AssignmentServiceTests
 
         await Assert.ThrowsAsync<AssignmentNotFoundException>(() =>
             sut.GetMyAssignmentAsync(PlayerId, GameId));
+    }
+
+    // ── GetNextAvailabilityAsync ──────────────────────────────────────────
+
+    [Fact]
+    public async Task GetNextAvailability_ActiveAssignment_ReturnsNull()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        var game = Game.Create("Test", "CODE", DateTimeOffset.UtcNow.AddDays(1), 4, 10);
+        var active = Assignment.Create(GameId, PlayerId, TargetId, [AloneCondition.Create()]);
+
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns(active);
+
+        var result = await sut.GetNextAvailabilityAsync(PlayerId, GameId);
+
+        Assert.NotNull(result);
+        Assert.Null(result.AvailableAt);
+    }
+
+    [Fact]
+    public async Task GetNextAvailability_InCooldown_ReturnsCooldownExpiry()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        var game = Game.Create("Test", "CODE", DateTimeOffset.UtcNow.AddDays(1), 4, 10,
+            assignmentCooldownMinutes: 30);
+        var latest = Assignment.Create(GameId, PlayerId, TargetId, [AloneCondition.Create()],
+            assignedAt: DateTimeOffset.UtcNow.AddMinutes(-10));
+
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        var result = await sut.GetNextAvailabilityAsync(PlayerId, GameId);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.AvailableAt);
+        // Cooldown expires 30 minutes after the last assignment (10 minutes ago) → ~20 minutes from now.
+        Assert.True(result.AvailableAt > DateTimeOffset.UtcNow.AddMinutes(19));
+        Assert.True(result.AvailableAt <= DateTimeOffset.UtcNow.AddMinutes(21));
+    }
+
+    [Fact]
+    public async Task GetNextAvailability_CooldownElapsed_ReturnsNow()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        var game = Game.Create("Test", "CODE", DateTimeOffset.UtcNow.AddDays(1), 4, 10,
+            assignmentCooldownMinutes: 30);
+        var latest = Assignment.Create(GameId, PlayerId, TargetId, [AloneCondition.Create()],
+            assignedAt: DateTimeOffset.UtcNow.AddHours(-1));
+
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns(latest);
+
+        var result = await sut.GetNextAvailabilityAsync(PlayerId, GameId);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.AvailableAt);
+        Assert.True(result.AvailableAt <= DateTimeOffset.UtcNow.AddSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetNextAvailability_NoAssignmentHistory_ReturnsNow()
+    {
+        var membership = GamePlayer.Create(GameId, PlayerId, GameRole.Player);
+        var game = Game.Create("Test", "CODE", DateTimeOffset.UtcNow.AddDays(1), 4, 10,
+            assignmentCooldownMinutes: 30);
+
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>()).Returns(membership);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        assignmentRepository.GetActiveByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+        assignmentRepository.GetMostRecentByHunterIdAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns((Assignment?)null);
+
+        var result = await sut.GetNextAvailabilityAsync(PlayerId, GameId);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.AvailableAt);
+        Assert.True(result.AvailableAt <= DateTimeOffset.UtcNow.AddSeconds(5));
+    }
+
+    [Fact]
+    public async Task GetNextAvailability_NotMember_ThrowsUnauthorizedException()
+    {
+        gamePlayerRepository.GetAsync(GameId, PlayerId, Arg.Any<CancellationToken>())
+            .Returns((GamePlayer?)null);
+
+        await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            sut.GetNextAvailabilityAsync(PlayerId, GameId));
     }
 }

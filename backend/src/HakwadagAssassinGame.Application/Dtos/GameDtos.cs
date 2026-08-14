@@ -10,7 +10,8 @@ public record CreateGameRequest(
     int BasePointsPerTag,
     int ConfirmationTimeoutMinutes,
     Dictionary<ConditionType, int>? ConditionBonuses,
-    List<SafeTimeBlockDto>? SafeTimeBlocks);
+    List<SafeTimeBlockDto>? SafeTimeBlocks,
+    int AssignmentCooldownMinutes = 30);
 
 /// <summary>Describes a recurring safe-time period.</summary>
 public record SafeTimeBlockDto(Guid Id, TimeSpan StartTime, TimeSpan EndTime, DayOfWeek? Day);
@@ -27,6 +28,7 @@ public record GameDto(
     int MaxPlayers,
     int BasePointsPerTag,
     TimeSpan ConfirmationTimeout,
+    int AssignmentCooldownMinutes,
     int PlayerCount,
     int ParticipantCount,
     bool IsParticipating,

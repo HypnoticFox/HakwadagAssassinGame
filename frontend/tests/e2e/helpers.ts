@@ -1,5 +1,12 @@
 import { Page, expect } from '@playwright/test'
-import type { GameDto, PlayerDto, AssignmentDto, ConditionDto, TagSubmissionDto, LeaderboardEntryDto } from '../../src/types/index'
+import type {
+  GameDto,
+  PlayerDto,
+  AssignmentDto,
+  ConditionDto,
+  TagSubmissionDto,
+  LeaderboardEntryDto,
+} from '../../src/types/index'
 
 // ---------------------------------------------------------------------------
 // Test data factories
@@ -35,6 +42,7 @@ export function createGameDto(overrides?: Partial<GameDto>): GameDto {
     maxPlayers: 20,
     basePointsPerTag: 100,
     confirmationTimeout: '00:05:00',
+    assignmentCooldownMinutes: 30,
     playerCount: 1,
     myRole: 1, // Creator
     safeTimeBlocks: [],
@@ -338,33 +346,36 @@ export async function setupApiMocks(page: Page, player?: PlayerDto) {
     }
   })
 
-  await page.route(/\/api\/games\/([^/]+)\/tag\/([^/]+)\/(confirm|deny|void)/, async (route, request) => {
-    if (!isAuthenticated(request)) {
-      await route.fulfill({ status: 401 })
-      return
-    }
+  await page.route(
+    /\/api\/games\/([^/]+)\/tag\/([^/]+)\/(confirm|deny|void)/,
+    async (route, request) => {
+      if (!isAuthenticated(request)) {
+        await route.fulfill({ status: 401 })
+        return
+      }
 
-    const match = request.url().match(/\/api\/games\/([^/]+)\/tag\/([^/]+)\/(confirm|deny|void)/)
-    const tagId = match?.[2] ?? ''
-    const action = match?.[3] ?? ''
-    let tag = tagMap.get(tagId) ?? createTagSubmission({ id: tagId })
-    tagMap.set(tag.id, tag)
+      const match = request.url().match(/\/api\/games\/([^/]+)\/tag\/([^/]+)\/(confirm|deny|void)/)
+      const tagId = match?.[2] ?? ''
+      const action = match?.[3] ?? ''
+      let tag = tagMap.get(tagId) ?? createTagSubmission({ id: tagId })
+      tagMap.set(tag.id, tag)
 
-    if (action === 'confirm') {
-      tag = { ...tag, status: 1, resolvedAt: new Date().toISOString() }
-    } else if (action === 'deny') {
-      tag = { ...tag, status: 2, resolvedAt: new Date().toISOString() }
-    } else if (action === 'void') {
-      tag = { ...tag, status: 3, resolvedAt: new Date().toISOString() }
-    }
-    tagMap.set(tag.id, tag)
+      if (action === 'confirm') {
+        tag = { ...tag, status: 1, resolvedAt: new Date().toISOString() }
+      } else if (action === 'deny') {
+        tag = { ...tag, status: 2, resolvedAt: new Date().toISOString() }
+      } else if (action === 'void') {
+        tag = { ...tag, status: 3, resolvedAt: new Date().toISOString() }
+      }
+      tagMap.set(tag.id, tag)
 
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(tag),
-    })
-  })
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(tag),
+      })
+    },
+  )
 
   // ---------- Leaderboard endpoints ----------
 
@@ -381,6 +392,76 @@ export async function setupApiMocks(page: Page, player?: PlayerDto) {
   })
 
   // ---------- Admin endpoints ----------
+
+  await page.route('**/api/games/*/players', async (route, request) => {
+    if (!isAuthenticated(request)) {
+      await route.fulfill({ status: 401 })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify([
+        {
+          playerId: currentPlayer.id,
+          displayName: currentPlayer.displayName,
+          email: currentPlayer.email,
+          role: 1, // Creator
+        },
+      ]),
+    })
+  })
+
+  await page.route('**/api/games/*/admin/confirmation-timeout', async (route, request) => {
+    if (!isAuthenticated(request)) {
+      await route.fulfill({ status: 401 })
+      return
+    }
+    if (request.method() === 'PUT') {
+      const body = JSON.parse(request.postData() || '{}')
+      const gameId = request.url().match(/\/api\/games\/([^/]+)\/admin/)?.[1] ?? ''
+      const game = gamesMap.get(gameId) ?? createGameDto({ id: gameId })
+      const minutes = Number(body.minutes ?? 5)
+      const hours = Math.floor(minutes / 60)
+      const mins = minutes % 60
+      const updated: GameDto = {
+        ...game,
+        confirmationTimeout: `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`,
+      }
+      gamesMap.set(gameId, updated)
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(updated),
+      })
+    } else {
+      await route.fulfill({ status: 405 })
+    }
+  })
+
+  await page.route('**/api/games/*/admin/assignment-cooldown', async (route, request) => {
+    if (!isAuthenticated(request)) {
+      await route.fulfill({ status: 401 })
+      return
+    }
+    if (request.method() === 'PUT') {
+      const body = JSON.parse(request.postData() || '{}')
+      const gameId = request.url().match(/\/api\/games\/([^/]+)\/admin/)?.[1] ?? ''
+      const game = gamesMap.get(gameId) ?? createGameDto({ id: gameId })
+      const updated: GameDto = {
+        ...game,
+        assignmentCooldownMinutes: Number(body.minutes ?? 30),
+      }
+      gamesMap.set(gameId, updated)
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(updated),
+      })
+    } else {
+      await route.fulfill({ status: 405 })
+    }
+  })
 
   await page.route('**/api/games/*/admins', async (route, request) => {
     if (!isAuthenticated(request)) {
@@ -462,7 +543,9 @@ export async function setupApiMocks(page: Page, player?: PlayerDto) {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ publicKey: 'BNd8P3qLuGKr5Lm6EwNhG7YxRfIkJzQvSgWjTnMpVkHc9Fb2A4sD6fHgJkLzXcVbNm' }),
+      body: JSON.stringify({
+        publicKey: 'BNd8P3qLuGKr5Lm6EwNhG7YxRfIkJzQvSgWjTnMpVkHc9Fb2A4sD6fHgJkLzXcVbNm',
+      }),
     })
   })
 
@@ -510,10 +593,7 @@ export async function loginViaStorage(page: Page, player?: PlayerDto) {
   await page.evaluate(
     ({ token, player }) => {
       localStorage.setItem('hakwadag_token', token)
-      localStorage.setItem(
-        'pinia_auth',
-        JSON.stringify({ token, player }),
-      )
+      localStorage.setItem('pinia_auth', JSON.stringify({ token, player }))
     },
     { token: TEST_TOKEN, player: p },
   )

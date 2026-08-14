@@ -215,7 +215,7 @@ When the user asks to start, stop, or restart remote services, call the correspo
 * **Stop**: `.\stop-remote-services.ps1`
 * **Restart**: `.\restart-remote-services.ps1`
 
-These scripts manage Redis, backend, frontend, and zrok2 tunnels for remote access.
+These scripts manage Redis, backend, frontend, and the cloudflared tunnel for remote access.
 
 **Important**: Always use `-Detach` when starting services so the script exits after starting everything in the background.
 
@@ -228,7 +228,7 @@ These scripts manage Redis, backend, frontend, and zrok2 tunnels for remote acce
 
 **stop-remote-services.ps1**
 - `-ExcludeDependencies`: Skip stopping dependencies like Redis (default: stops them)
-- `-DeleteReservedNames`: Delete zrok2 reserved names (URLs will change on next start)
+- `-DeleteReservedNames`: Delete the cloudflared tunnel (URLs will change on next start)
 
 **restart-remote-services.ps1**
 - `-BackendOnly`: Only restart the backend (leave frontend running)
@@ -247,8 +247,7 @@ When services are started with `-Detach`, output is redirected to log files in t
 
 - `backend-stdout.log` / `backend-stderr.log` - Backend build output, runtime logs, and dotnet watch messages
 - `frontend-stdout.log` / `frontend-stderr.log` - Vite dev server output and npm messages
-- `zrok-api-stdout.log` / `zrok-api-stderr.log` - API tunnel status
-- `zrok-app-stdout.log` / `zrok-app-stderr.log` - Frontend tunnel status
+- `cloudflared-stdout.log` / `cloudflared-stderr.log` - Cloudflared tunnel status (routes both API and frontend hostnames)
 
 Use these logs to debug issues when services aren't responding or behaving unexpectedly. The `.logs/` directory is gitignored.
 
