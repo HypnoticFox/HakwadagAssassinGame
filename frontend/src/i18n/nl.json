@@ -24,7 +24,8 @@
     "copied": "Gekopieerd!",
     "remove": "Verwijderen",
     "players": "spelers",
-    "ptsPerTag": "ptn per tag"
+    "ptsPerTag": "ptn per tag",
+    "pts": "ptn"
   },
   "home": {
     "eyebrow": "Tagspel in het echt",
@@ -84,7 +85,11 @@
     "copyInviteCode": "Uitnodigingscode kopiëren",
     "copyInviteLink": "Uitnodigingslink kopiëren",
     "maxPlayers": "Max. spelers",
+    "points": "punten",
     "pointsPerTag": "Punten per tag",
+    "yourScore": "Jouw score",
+    "yourRank": "Jouw rang",
+    "rankUnit": "plaats",
     "timeout": "Time-out",
     "confirmationTimeout": "Bevestigingstime-out",
     "assignmentCooldown": "Opdracht-cooldown",

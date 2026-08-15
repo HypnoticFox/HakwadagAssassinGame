@@ -158,7 +158,7 @@ test.describe('Game lifecycle', () => {
 
     // Verify game details
     await expect(page.locator('.invite-code')).toBeVisible()
-    await expect(page.locator('.detail-card')).toHaveCount(6) // max players, points, timeout, cooldown, created, scheduled end
-    await expect(page.locator('.detail-card').first()).toContainText('Max. spelers')
+    await expect(page.locator('.detail-card')).toHaveCount(2) // points per tag, scheduled end
+    await expect(page.locator('.detail-card').first()).toContainText('Punten per tag')
   })
 })

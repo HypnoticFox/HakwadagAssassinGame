@@ -24,7 +24,8 @@
     "copied": "Copied!",
     "remove": "Remove",
     "players": "players",
-    "ptsPerTag": "pts per tag"
+    "ptsPerTag": "pts per tag",
+    "pts": "pts"
   },
   "home": {
     "eyebrow": "Real-world tagging game",
@@ -84,7 +85,11 @@
     "copyInviteCode": "Copy invite code",
     "copyInviteLink": "Copy invite link",
     "maxPlayers": "Max players",
+    "points": "points",
     "pointsPerTag": "Points per tag",
+    "yourScore": "Your score",
+    "yourRank": "Your rank",
+    "rankUnit": "place",
     "timeout": "Timeout",
     "confirmationTimeout": "Confirmation timeout",
     "assignmentCooldown": "Assignment cooldown",

@@ -5,10 +5,10 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
-import { Copy, Link } from '@lucide/vue'
+import { Copy, Crosshair, Link, Trophy } from '@lucide/vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
-import { useGameStore } from '@/stores'
+import { useAuthStore, useGameStore, useLeaderboardStore } from '@/stores'
 import {
   GameStatus,
   canEndGame,
@@ -17,12 +17,13 @@ import {
   gameStatusLabel,
   isGameAdmin,
 } from '@/types'
-import { formatMinutes, formatTimeout } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const gameStore = useGameStore()
+const authStore = useAuthStore()
+const leaderboardStore = useLeaderboardStore()
 
 const gameId = computed(() => route.params.id as string)
 const copiedCode = ref(false)
@@ -33,7 +34,10 @@ const newDurationHours = ref('24')
 useGameSignalR(gameId.value)
 
 onMounted(async () => {
-  await gameStore.loadGame(gameId.value)
+  await Promise.all([
+    gameStore.loadGame(gameId.value),
+    leaderboardStore.loadLeaderboard(gameId.value).catch(() => undefined),
+  ])
 })
 
 async function copyInviteCode() {
@@ -128,9 +132,18 @@ async function onRejoin() {
   }
 }
 
-const formattedCreatedAt = computed(() => {
-  if (!gameStore.currentGame) return ''
-  return new Date(gameStore.currentGame.createdAt).toLocaleString()
+const myScore = computed(() => {
+  const playerId = authStore.player?.id
+  if (!playerId || !leaderboardStore.entries.length) return 0
+  const entry = leaderboardStore.entries.find((e) => e.player.id === playerId)
+  return entry?.score ?? 0
+})
+
+const myRank = computed(() => {
+  const playerId = authStore.player?.id
+  if (!playerId || !leaderboardStore.entries.length) return null
+  const index = leaderboardStore.entries.findIndex((e) => e.player.id === playerId)
+  return index >= 0 ? index + 1 : null
 })
 
 const formattedScheduledEndAt = computed(() => {
@@ -174,7 +187,7 @@ const formattedScheduledEndAt = computed(() => {
       <div
         v-if="
           gameStore.currentGame.status === GameStatus.Active &&
-          !gameStore.currentGame.isParticipating
+            !gameStore.currentGame.isParticipating
         "
         class="left-banner"
       >
@@ -183,74 +196,64 @@ const formattedScheduledEndAt = computed(() => {
 
       <div
         v-if="
-          isGameAdmin(gameStore.currentGame.myRole) &&
-          gameStore.currentGame.status === GameStatus.NotStarted
-        "
-        class="participation-card"
-      >
-        <p class="participation-label">{{ $t('gameDetail.participationLabel') }}</p>
-        <label class="toggle-row">
-          <span class="toggle-text">{{
+          gameStore.currentGame.status === GameStatus.Active &&
             gameStore.currentGame.isParticipating
-              ? $t('gameDetail.participating')
-              : $t('gameDetail.notParticipating')
-          }}</span>
-          <div class="toggle-switch">
-            <input
-              type="checkbox"
-              class="toggle-input"
-              :checked="gameStore.currentGame.isParticipating"
-              @change="
-                gameStore.setParticipation(gameId, ($event.target as HTMLInputElement).checked)
-              "
-            />
-            <span class="toggle-slider"></span>
+        "
+        class="hero-section"
+      >
+        <div class="score-board">
+          <div class="score-content">
+            <div class="score-header">
+              <span class="score-label">{{ $t('gameDetail.yourScore') }}</span>
+            </div>
+            <div class="score-value-row">
+              <div class="score-value">
+                {{ myScore }}
+              </div>
+              <div class="score-unit">
+                {{ $t('common.pts') }}
+              </div>
+            </div>
           </div>
-        </label>
-        <p class="min-participants-note">{{ $t('gameDetail.minParticipants') }}</p>
-      </div>
-
-      <div
-        v-if="
-          isGameAdmin(gameStore.currentGame.myRole) &&
-          gameStore.currentGame.status === GameStatus.NotStarted
-        "
-        class="duration-card"
-      >
-        <p class="duration-label">{{ $t('gameDetail.duration') }}</p>
-        <div class="duration-edit">
-          <Input
-            v-model="newDurationHours"
-            :label="$t('gameDetail.durationHours')"
-            type="number"
-            inputmode="numeric"
-            min="1"
+          <div v-if="myRank !== null" class="rank-content">
+            <div class="rank-header">
+              <span class="rank-label">{{ $t('gameDetail.yourRank') }}</span>
+            </div>
+            <div class="rank-value-row">
+              <div class="rank-value">
+                <span class="rank-hash">#</span>{{ myRank }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <Button
+          size="large"
+          full-width
+          class="assignment-button"
+          @click="router.push(`/games/${gameId}/assignment`)"
+        >
+          <Crosshair
+            :size="24"
+            aria-hidden="true"
           />
-          <Button variant="secondary" :loading="gameStore.isLoading" @click="onUpdateDuration">
-            {{ $t('gameDetail.updateDuration') }}
-          </Button>
-        </div>
+          {{ $t('gameDetail.myAssignment') }}
+        </Button>
       </div>
 
       <div
-        v-if="
-          isGameAdmin(gameStore.currentGame.myRole) &&
-          gameStore.currentGame.status === GameStatus.Active
-        "
-        class="extend-card"
+        v-if="gameStore.currentGame.safeTimeBlocks.length > 0"
+        class="safe-times"
       >
-        <p class="extend-label">{{ $t('gameDetail.extendGame') }}</p>
-        <div class="extend-buttons">
-          <Button variant="secondary" :loading="gameStore.isLoading" @click="onExtend(5)">
-            {{ $t('gameDetail.extend5min') }}
-          </Button>
-          <Button variant="secondary" :loading="gameStore.isLoading" @click="onExtend(60)">
-            {{ $t('gameDetail.extend1hour') }}
-          </Button>
-          <Button variant="secondary" :loading="gameStore.isLoading" @click="onExtend(1440)">
-            {{ $t('gameDetail.extend1day') }}
-          </Button>
-        </div>
+        <h2>{{ $t('gameDetail.safeTimes') }}</h2>
+        <ul class="safe-time-list">
+          <li
+            v-for="block in gameStore.currentGame.safeTimeBlocks"
+            :key="block.id"
+            class="safe-time-item"
+          >
+            <span>{{ block.startTime }} – {{ block.endTime }}</span>
+          </li>
+        </ul>
       </div>
 
       <div class="invite-card">
@@ -285,42 +288,10 @@ const formattedScheduledEndAt = computed(() => {
       <div class="detail-grid">
         <div class="detail-card">
           <p class="detail-label">
-            {{ $t('gameDetail.maxPlayers') }}
-          </p>
-          <p class="detail-value">
-            {{ gameStore.currentGame.maxPlayers }}
-          </p>
-        </div>
-        <div class="detail-card">
-          <p class="detail-label">
             {{ $t('gameDetail.pointsPerTag') }}
           </p>
           <p class="detail-value">
             {{ gameStore.currentGame.basePointsPerTag }}
-          </p>
-        </div>
-        <div class="detail-card">
-          <p class="detail-label">
-            {{ $t('gameDetail.confirmationTimeout') }}
-          </p>
-          <p class="detail-value">
-            {{ formatTimeout(gameStore.currentGame.confirmationTimeout, t) }}
-          </p>
-        </div>
-        <div class="detail-card">
-          <p class="detail-label">
-            {{ $t('gameDetail.assignmentCooldown') }}
-          </p>
-          <p class="detail-value">
-            {{ formatMinutes(gameStore.currentGame.assignmentCooldownMinutes, t) }}
-          </p>
-        </div>
-        <div class="detail-card">
-          <p class="detail-label">
-            {{ $t('gameDetail.created') }}
-          </p>
-          <p class="detail-value">
-            {{ formattedCreatedAt }}
           </p>
         </div>
         <div class="detail-card">
@@ -333,31 +304,7 @@ const formattedScheduledEndAt = computed(() => {
         </div>
       </div>
 
-      <div v-if="gameStore.currentGame.safeTimeBlocks.length > 0" class="safe-times">
-        <h2>{{ $t('gameDetail.safeTimes') }}</h2>
-        <ul class="safe-time-list">
-          <li
-            v-for="block in gameStore.currentGame.safeTimeBlocks"
-            :key="block.id"
-            class="safe-time-item"
-          >
-            <span>{{ block.startTime }} – {{ block.endTime }}</span>
-          </li>
-        </ul>
-      </div>
-
       <div class="action-grid">
-        <Button
-          v-if="
-            gameStore.currentGame.status === GameStatus.Active &&
-            gameStore.currentGame.isParticipating
-          "
-          size="large"
-          full-width
-          @click="router.push(`/games/${gameId}/assignment`)"
-        >
-          {{ $t('gameDetail.myAssignment') }}
-        </Button>
         <Button
           variant="secondary"
           size="large"
@@ -368,31 +315,144 @@ const formattedScheduledEndAt = computed(() => {
         </Button>
       </div>
 
-      <div v-if="isGameAdmin(gameStore.currentGame.myRole)" class="admin-section">
-        <Button variant="secondary" full-width @click="router.push(`/games/${gameId}/admin`)">
+      <div
+        v-if="isGameAdmin(gameStore.currentGame.myRole)"
+        class="admin-section"
+      >
+        <div
+          v-if="gameStore.currentGame.status === GameStatus.NotStarted"
+          class="participation-card"
+        >
+          <p class="participation-label">
+            {{ $t('gameDetail.participationLabel') }}
+          </p>
+          <label class="toggle-row">
+            <span class="toggle-text">{{
+              gameStore.currentGame.isParticipating
+                ? $t('gameDetail.participating')
+                : $t('gameDetail.notParticipating')
+            }}</span>
+            <div class="toggle-switch">
+              <input
+                type="checkbox"
+                class="toggle-input"
+                :checked="gameStore.currentGame.isParticipating"
+                @change="
+                  gameStore.setParticipation(gameId, ($event.target as HTMLInputElement).checked)
+                "
+              >
+              <span class="toggle-slider" />
+            </div>
+          </label>
+          <p class="min-participants-note">
+            {{ $t('gameDetail.minParticipants') }}
+          </p>
+        </div>
+
+        <div
+          v-if="gameStore.currentGame.status === GameStatus.NotStarted"
+          class="duration-card"
+        >
+          <p class="duration-label">
+            {{ $t('gameDetail.duration') }}
+          </p>
+          <div class="duration-edit">
+            <Input
+              v-model="newDurationHours"
+              :label="$t('gameDetail.durationHours')"
+              type="number"
+              inputmode="numeric"
+              min="1"
+            />
+            <Button
+              variant="secondary"
+              :loading="gameStore.isLoading"
+              @click="onUpdateDuration"
+            >
+              {{ $t('gameDetail.updateDuration') }}
+            </Button>
+          </div>
+        </div>
+
+        <div
+          v-if="gameStore.currentGame.status === GameStatus.Active"
+          class="extend-card"
+        >
+          <p class="extend-label">
+            {{ $t('gameDetail.extendGame') }}
+          </p>
+          <div class="extend-buttons">
+            <Button
+              variant="secondary"
+              :loading="gameStore.isLoading"
+              @click="onExtend(5)"
+            >
+              {{ $t('gameDetail.extend5min') }}
+            </Button>
+            <Button
+              variant="secondary"
+              :loading="gameStore.isLoading"
+              @click="onExtend(60)"
+            >
+              {{ $t('gameDetail.extend1hour') }}
+            </Button>
+            <Button
+              variant="secondary"
+              :loading="gameStore.isLoading"
+              @click="onExtend(1440)"
+            >
+              {{ $t('gameDetail.extend1day') }}
+            </Button>
+          </div>
+        </div>
+
+        <Button
+          variant="secondary"
+          full-width
+          @click="router.push(`/games/${gameId}/admin`)"
+        >
           {{ $t('gameDetail.adminPanel') }}
         </Button>
       </div>
 
       <!-- Leave/Rejoin button based on participation status -->
       <div v-if="gameStore.currentGame.status === GameStatus.Active">
-        <Button v-if="gameStore.currentGame.isParticipating" variant="ghost" @click="onLeave">
+        <Button
+          v-if="gameStore.currentGame.isParticipating"
+          variant="ghost"
+          @click="onLeave"
+        >
           {{ $t('gameDetail.leaveGame') }}
         </Button>
-        <Button v-else variant="secondary" size="large" full-width @click="onRejoin">
+        <Button
+          v-else
+          variant="secondary"
+          size="large"
+          full-width
+          @click="onRejoin"
+        >
           {{ $t('gameDetail.rejoinGame') }}
         </Button>
       </div>
-      <Button v-else variant="ghost" @click="onLeave">
+      <Button
+        v-else
+        variant="ghost"
+        @click="onLeave"
+      >
         {{ $t('gameDetail.leaveGame') }}
       </Button>
-
     </div>
 
-    <div v-else-if="gameStore.isLoading" class="loading">
+    <div
+      v-else-if="gameStore.isLoading"
+      class="loading"
+    >
       {{ $t('gameDetail.loading') }}
     </div>
-    <div v-else class="empty">
+    <div
+      v-else
+      class="empty"
+    >
       <p>{{ $t('gameDetail.notFound') }}</p>
       <Button @click="router.push('/')">
         {{ $t('common.backHome') }}
@@ -431,6 +491,96 @@ const formattedScheduledEndAt = computed(() => {
 .game-actions {
   display: flex;
   gap: 0.75rem;
+}
+
+.hero-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+}
+
+.score-board {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.75rem 0;
+}
+
+.score-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.score-header,
+.rank-header {
+  color: var(--primary);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.score-value-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.375rem;
+}
+
+.score-value {
+  color: var(--text);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-unit {
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.rank-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rank-value-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.375rem;
+}
+
+.rank-value {
+  color: var(--text);
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'Roboto Slab', serif;
+}
+
+.rank-hash {
+  color: var(--text-muted);
+  font-size: 2rem;
+  font-weight: 600;
+  margin-right: 0.25rem;
+  align-self: flex-end;
+  margin-bottom: 0.375rem;
+}
+
+.hero-section .assignment-button {
+  font-size: 1.25rem;
+  gap: 0.75rem;
+  min-height: 4rem;
 }
 
 .invite-card {
