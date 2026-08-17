@@ -204,6 +204,7 @@ opencode.jsonc
 .codegraph/
 .env.remote
 .logs/
+.openchamber/
 
 # Playwright
 frontend/playwright-report/
