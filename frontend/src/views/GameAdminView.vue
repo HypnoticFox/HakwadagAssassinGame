@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
+import Modal from '@/components/Modal.vue'
 import { ArrowLeft, Clock, ListChecks, Settings, Shield } from '@lucide/vue'
 import { formatTimeOfDay, localTimeToDateTimeOffset } from '@/composables/useSafeTime'
 import { useGameSignalR } from '@/composables/useSignalR'
@@ -16,7 +16,6 @@ import { timeSpanToMinutes } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
 const gameStore = useGameStore()
 
 const gameId = computed(() => route.params.id as string)
@@ -27,6 +26,8 @@ const safeTimeEnd = ref('')
 const timeoutMinutes = ref('')
 const cooldownMinutes = ref('')
 const playersLoading = ref(false)
+const showRemoveModeratorModal = ref(false)
+const removeModeratorTarget = ref<GamePlayerDto | null>(null)
 
 useGameSignalR(gameId.value)
 
@@ -130,10 +131,17 @@ async function onPromote(player: GamePlayerDto) {
   }
 }
 
-async function onRemove(player: GamePlayerDto) {
-  if (!confirm(t('gameDetail.admin.confirmRemoveModerator'))) return
+function onRemove(player: GamePlayerDto) {
+  removeModeratorTarget.value = player
+  showRemoveModeratorModal.value = true
+}
+
+async function confirmRemoveModerator() {
+  const target = removeModeratorTarget.value
+  if (!target) return
+  showRemoveModeratorModal.value = false
   try {
-    await gameStore.removeAdmin(gameId.value, player.playerId)
+    await gameStore.removeAdmin(gameId.value, target.playerId)
     await Promise.all([gameStore.loadGame(gameId.value), loadPlayers()])
   } catch (err) {
     if (err instanceof Error) {
@@ -297,6 +305,29 @@ async function onRemove(player: GamePlayerDto) {
           </ul>
         </section>
 
+        <!-- Remove moderator confirmation dialog -->
+        <Modal
+          :open="showRemoveModeratorModal"
+          :title="$t('gameDetail.admin.removeModerator')"
+          @close="showRemoveModeratorModal = false"
+        >
+          <p>{{ $t('gameDetail.admin.confirmRemoveModerator') }}</p>
+          <template #footer>
+            <Button
+              variant="secondary"
+              @click="showRemoveModeratorModal = false"
+            >
+              {{ $t('common.cancel') }}
+            </Button>
+            <Button
+              variant="danger"
+              :loading="gameStore.isLoading"
+              @click="confirmRemoveModerator"
+            >
+              {{ $t('common.confirm') }}
+            </Button>
+          </template>
+        </Modal>
       </template>
 
       <div v-else class="empty">

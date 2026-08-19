@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { api } from '@/api/client'
+import Modal from '@/components/Modal.vue'
 import { useAuthStore } from '@/stores'
 import { gameRoleLabel, tagStatusLabel } from '@/types'
 import type { DevAssignment, DevPlayer, DevTag, PlayerDto } from '@/types'
@@ -22,6 +23,7 @@ const isDev = import.meta.env.DEV
 const isExpanded = ref(false)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const showEndGameModal = ref(false)
 
 const devEmail = ref('test@example.com')
 const playerCount = ref(5)
@@ -270,12 +272,16 @@ async function handleDenyTag() {
   }
 }
 
-async function handleEndGame() {
+function handleEndGame() {
   if (!quickActionGameId.value) {
     actionError.value = 'No game selected'
     return
   }
-  if (!confirm('End the current game? This cannot be undone.')) return
+  showEndGameModal.value = true
+}
+
+async function confirmEndGame() {
+  showEndGameModal.value = false
   actionLoading.value = true
   clearActionStatus()
   try {
@@ -763,6 +769,31 @@ watch(isExpanded, (expanded) => {
         </div>
       </Transition>
     </Teleport>
+
+    <Modal
+      :open="showEndGameModal"
+      title="End game"
+      @close="showEndGameModal = false"
+    >
+      <p>End the current game? This cannot be undone.</p>
+      <template #footer>
+        <button
+          type="button"
+          class="dev-switcher__modal-button dev-switcher__modal-button--secondary"
+          @click="showEndGameModal = false"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="dev-switcher__modal-button dev-switcher__modal-button--danger"
+          :disabled="actionLoading"
+          @click="confirmEndGame"
+        >
+          Confirm
+        </button>
+      </template>
+    </Modal>
   </div>
 </template>
 

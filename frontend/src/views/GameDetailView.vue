@@ -31,6 +31,7 @@ const gameId = computed(() => route.params.id as string)
 const copiedCode = ref(false)
 const copiedLink = ref(false)
 const showEndGameModal = ref(false)
+const showLeaveModal = ref(false)
 const { toast } = useToast()
 const newDurationHours = ref('24')
 const safeTimeBlocks = computed(() => gameStore.currentGame?.safeTimeBlocks ?? [])
@@ -41,6 +42,14 @@ const safeTimeEndFormatted = computed(() => {
   if (!activeSafeTimeBlock.value) return ''
   return formatTimeOfDay(activeSafeTimeBlock.value.endTime)
 })
+
+const leaveConfirmMessage = computed(() =>
+  t(
+    gameStore.currentGame?.status === GameStatus.Active
+      ? 'gameDetail.leaveConfirmActive'
+      : 'gameDetail.leaveConfirm',
+  ),
+)
 
 useGameSignalR(gameId.value)
 
@@ -120,12 +129,12 @@ async function onExtend(minutes: number) {
   }
 }
 
-async function onLeave() {
-  const confirmKey =
-    gameStore.currentGame?.status === GameStatus.Active
-      ? 'gameDetail.leaveConfirmActive'
-      : 'gameDetail.leaveConfirm'
-  if (!confirm(t(confirmKey))) return
+function onLeave() {
+  showLeaveModal.value = true
+}
+
+async function confirmLeave() {
+  showLeaveModal.value = false
   try {
     await gameStore.leaveGame(gameId.value)
     if (gameStore.currentGame?.status !== GameStatus.Active) {
@@ -500,6 +509,30 @@ const formattedScheduledEndAt = computed(() => {
             variant="danger"
             :loading="gameStore.isLoading"
             @click="confirmEnd"
+          >
+            {{ $t('common.confirm') }}
+          </Button>
+        </template>
+      </Modal>
+
+      <!-- Leave game confirmation dialog -->
+      <Modal
+        :open="showLeaveModal"
+        :title="$t('gameDetail.leaveGame')"
+        @close="showLeaveModal = false"
+      >
+        <p>{{ leaveConfirmMessage }}</p>
+        <template #footer>
+          <Button
+            variant="secondary"
+            @click="showLeaveModal = false"
+          >
+            {{ $t('common.cancel') }}
+          </Button>
+          <Button
+            variant="danger"
+            :loading="gameStore.isLoading"
+            @click="confirmLeave"
           >
             {{ $t('common.confirm') }}
           </Button>

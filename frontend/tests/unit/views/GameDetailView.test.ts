@@ -17,6 +17,7 @@ vi.mock('@/api/client', () => ({
     getGame: vi.fn(),
     getLeaderboard: vi.fn(),
     endGame: vi.fn(),
+    leaveGame: vi.fn(),
   },
 }))
 
@@ -273,6 +274,67 @@ describe('GameDetailView.vue', () => {
       const wrapper = await mountView()
 
       expect(wrapper.find('.leave-section').exists()).toBe(false)
+
+      wrapper.unmount()
+    })
+  })
+
+  describe('Leave game confirmation', () => {
+    it('opens a confirmation modal instead of leaving immediately', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.Active, isParticipating: true }),
+      )
+
+      const wrapper = await mountView()
+
+      await wrapper.find('.leave-section button').trigger('click')
+      await flushPromises()
+
+      const modals = wrapper.findAllComponents(Modal)
+      const openModal = modals.find((m) => m.props('open') === true)
+      expect(openModal).toBeDefined()
+      expect(api.leaveGame).not.toHaveBeenCalled()
+
+      wrapper.unmount()
+    })
+
+    it('calls leaveGame when the confirm button is clicked', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.Active, isParticipating: true }),
+      )
+      vi.mocked(api.leaveGame).mockResolvedValue(undefined)
+
+      const wrapper = await mountView()
+
+      await wrapper.find('.leave-section button').trigger('click')
+      await flushPromises()
+
+      const footerButtons = document.body.querySelectorAll('.modal-footer button')
+      expect(footerButtons).toHaveLength(2)
+      ;(footerButtons[1] as HTMLElement).click()
+      await flushPromises()
+
+      expect(api.leaveGame).toHaveBeenCalledWith('g1')
+
+      wrapper.unmount()
+    })
+
+    it('does not call leaveGame when the cancel button is clicked', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.Active, isParticipating: true }),
+      )
+
+      const wrapper = await mountView()
+
+      await wrapper.find('.leave-section button').trigger('click')
+      await flushPromises()
+
+      const footerButtons = document.body.querySelectorAll('.modal-footer button')
+      expect(footerButtons).toHaveLength(2)
+      ;(footerButtons[0] as HTMLElement).click()
+      await flushPromises()
+
+      expect(api.leaveGame).not.toHaveBeenCalled()
 
       wrapper.unmount()
     })

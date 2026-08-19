@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 import DevPlayerSwitcher from '@/components/DevPlayerSwitcher.vue'
+import Modal from '@/components/Modal.vue'
+import { withI18n } from '../helpers/i18n'
 
 const { mockApi, mockAuthStore, mockRouterPush } = vi.hoisted(() => {
   return {
@@ -44,6 +46,7 @@ beforeEach(() => {
   mockAuthStore.player = null
   vi.stubEnv('DEV', true)
   localStorage.clear()
+  document.body.innerHTML = ''
 })
 
 function mockPlayer() {
@@ -57,25 +60,25 @@ function mockPlayer() {
 describe('DevPlayerSwitcher.vue', () => {
   it('does not render in production mode', () => {
     vi.stubEnv('DEV', false)
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     expect(wrapper.find('.dev-switcher').exists()).toBe(false)
   })
 
   it('renders the toggle button in dev mode', () => {
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     expect(wrapper.find('.dev-switcher__toggle').exists()).toBe(true)
     expect(wrapper.find('.dev-switcher__icon').exists()).toBe(true)
   })
 
   it('expands when the toggle is clicked', async () => {
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     expect(wrapper.find('.dev-switcher__panel').exists()).toBe(true)
   })
 
   it('shows current player info when authenticated', async () => {
     mockAuthStore.player = mockPlayer()
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     await flushPromises()
 
@@ -84,7 +87,7 @@ describe('DevPlayerSwitcher.vue', () => {
   })
 
   it('shows not logged in when no player', async () => {
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     await flushPromises()
 
@@ -92,7 +95,7 @@ describe('DevPlayerSwitcher.vue', () => {
   })
 
   it('calls devLogin with the email when the dev login button is clicked', async () => {
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
 
     const input = wrapper.find('#dev-email')
@@ -109,7 +112,7 @@ describe('DevPlayerSwitcher.vue', () => {
     ]
     mockApi.seedGame.mockResolvedValue({ game: { id: 'g1' }, players: seeded })
 
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
 
     await wrapper.find('#dev-player-count').setValue('3')
@@ -133,7 +136,7 @@ describe('DevPlayerSwitcher.vue', () => {
       writable: true,
     })
 
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     await wrapper.find('#dev-seed-game-button').trigger('click')
     await flushPromises()
@@ -147,7 +150,7 @@ describe('DevPlayerSwitcher.vue', () => {
 
   it('shows an error when devLogin fails', async () => {
     mockAuthStore.devLogin.mockRejectedValue(new Error('Dev login failed'))
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     await wrapper.find('#dev-login-button').trigger('click')
     await flushPromises()
@@ -156,7 +159,7 @@ describe('DevPlayerSwitcher.vue', () => {
   })
 
   it('navigates to the dev dashboard when the dashboard link is clicked', async () => {
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     await wrapper.find('#dev-open-dashboard').trigger('click')
 
@@ -164,7 +167,7 @@ describe('DevPlayerSwitcher.vue', () => {
   })
 
   it('disables quick action buttons when no game ID is set', async () => {
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
 
     const buttons = wrapper.findAll('.dev-switcher__quick-button')
@@ -174,11 +177,10 @@ describe('DevPlayerSwitcher.vue', () => {
     }
   })
 
-  it('ends the current game when the end game button is clicked', async () => {
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('opens a confirmation modal instead of ending the game immediately', async () => {
     mockApi.devEndGame.mockResolvedValue({ id: 'g1', status: 2 })
 
-    const wrapper = mount(DevPlayerSwitcher)
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
     await wrapper.find('.dev-switcher__toggle').trigger('click')
     await wrapper.find('#dev-quick-game-id').setValue('g1')
 
@@ -186,10 +188,53 @@ describe('DevPlayerSwitcher.vue', () => {
     await endGameButton.trigger('click')
     await flushPromises()
 
-    expect(confirmSpy).toHaveBeenCalledWith('End the current game? This cannot be undone.')
+    const modal = wrapper.findComponent(Modal)
+    expect(modal.exists()).toBe(true)
+    expect(modal.props('open')).toBe(true)
+    expect(modal.props('title')).toBe('End game')
+    expect(mockApi.devEndGame).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('calls devEndGame when the confirm button is clicked', async () => {
+    mockApi.devEndGame.mockResolvedValue({ id: 'g1', status: 2 })
+
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
+    await wrapper.find('.dev-switcher__toggle').trigger('click')
+    await wrapper.find('#dev-quick-game-id').setValue('g1')
+
+    const endGameButton = wrapper.findAll('.dev-switcher__quick-button')[3]
+    await endGameButton.trigger('click')
+    await flushPromises()
+
+    const footerButtons = document.body.querySelectorAll('.modal-footer button')
+    expect(footerButtons).toHaveLength(2)
+    ;(footerButtons[1] as HTMLElement).click()
+    await flushPromises()
+
     expect(mockApi.devEndGame).toHaveBeenCalledWith('g1')
     expect(wrapper.text()).toContain('Game ended')
 
-    confirmSpy.mockRestore()
+    wrapper.unmount()
+  })
+
+  it('does not call devEndGame when the cancel button is clicked', async () => {
+    const wrapper = mount(DevPlayerSwitcher, { ...withI18n() })
+    await wrapper.find('.dev-switcher__toggle').trigger('click')
+    await wrapper.find('#dev-quick-game-id').setValue('g1')
+
+    const endGameButton = wrapper.findAll('.dev-switcher__quick-button')[3]
+    await endGameButton.trigger('click')
+    await flushPromises()
+
+    const footerButtons = document.body.querySelectorAll('.modal-footer button')
+    expect(footerButtons).toHaveLength(2)
+    ;(footerButtons[0] as HTMLElement).click()
+    await flushPromises()
+
+    expect(mockApi.devEndGame).not.toHaveBeenCalled()
+
+    wrapper.unmount()
   })
 })
