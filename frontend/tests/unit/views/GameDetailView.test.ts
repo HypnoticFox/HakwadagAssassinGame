@@ -6,8 +6,9 @@ import { ref } from 'vue'
 import { api } from '@/api/client'
 import { clearToasts } from '@/composables/useToast'
 import { useSafeTime } from '@/composables/useSafeTime'
+import Modal from '@/components/Modal.vue'
 import GameDetailView from '@/views/GameDetailView.vue'
-import { GameStatus, type GameDto } from '@/types'
+import { GameRole, GameStatus, type GameDto } from '@/types'
 import { withI18n } from '../helpers/i18n'
 
 vi.mock('@/api/client', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/api/client', () => ({
     getToken: vi.fn(() => null),
     getGame: vi.fn(),
     getLeaderboard: vi.fn(),
+    endGame: vi.fn(),
   },
 }))
 
@@ -146,5 +148,133 @@ describe('GameDetailView.vue', () => {
     expect(assignmentButton.attributes('disabled')).toBeDefined()
 
     wrapper.unmount()
+  })
+
+  describe('End game confirmation', () => {
+    it('places the End Game button at the bottom, not in the header', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Creator, status: GameStatus.Active }),
+      )
+
+      const wrapper = await mountView()
+
+      const endGameSection = wrapper.find('.end-game-action')
+      expect(endGameSection.exists()).toBe(true)
+      expect(endGameSection.text()).toContain('End game')
+      expect(wrapper.find('.game-actions').text()).not.toContain('End game')
+
+      wrapper.unmount()
+    })
+
+    it('does not show the End Game button for non-admins', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.Active }),
+      )
+
+      const wrapper = await mountView()
+
+      expect(wrapper.find('.end-game-action').exists()).toBe(false)
+
+      wrapper.unmount()
+    })
+
+    it('opens a confirmation modal instead of ending the game immediately', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Creator, status: GameStatus.Active }),
+      )
+
+      const wrapper = await mountView()
+
+      await wrapper.find('.end-game-action button').trigger('click')
+      await flushPromises()
+
+      const modal = wrapper.findComponent(Modal)
+      expect(modal.props('open')).toBe(true)
+      expect(api.endGame).not.toHaveBeenCalled()
+
+      wrapper.unmount()
+    })
+
+    it('calls endGame when the confirm button is clicked', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Creator, status: GameStatus.Active }),
+      )
+      vi.mocked(api.endGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Creator, status: GameStatus.Ended }),
+      )
+
+      const wrapper = await mountView()
+
+      await wrapper.find('.end-game-action button').trigger('click')
+      await flushPromises()
+
+      const footerButtons = document.body.querySelectorAll('.modal-footer button')
+      expect(footerButtons).toHaveLength(2)
+      ;(footerButtons[1] as HTMLElement).click()
+      await flushPromises()
+
+      expect(api.endGame).toHaveBeenCalledWith('g1')
+
+      wrapper.unmount()
+    })
+
+    it('does not call endGame when the cancel button is clicked', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Creator, status: GameStatus.Active }),
+      )
+
+      const wrapper = await mountView()
+
+      await wrapper.find('.end-game-action button').trigger('click')
+      await flushPromises()
+
+      const footerButtons = document.body.querySelectorAll('.modal-footer button')
+      expect(footerButtons).toHaveLength(2)
+      ;(footerButtons[0] as HTMLElement).click()
+      await flushPromises()
+
+      expect(api.endGame).not.toHaveBeenCalled()
+
+      wrapper.unmount()
+    })
+  })
+
+  describe('Leave button visibility', () => {
+    it('shows the Leave button when the game is active and participating', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.Active, isParticipating: true }),
+      )
+
+      const wrapper = await mountView()
+
+      expect(wrapper.find('.leave-section').exists()).toBe(true)
+      expect(wrapper.find('.leave-section').text()).toContain('Leave game')
+
+      wrapper.unmount()
+    })
+
+    it('does not show the Leave button when the game has not started', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.NotStarted }),
+      )
+
+      const wrapper = await mountView()
+
+      expect(wrapper.find('.leave-section').exists()).toBe(false)
+
+      wrapper.unmount()
+    })
+
+    it('does not show the Leave button when the game has ended', async () => {
+      vi.mocked(api.getGame).mockResolvedValue(
+        makeGame({ myRole: GameRole.Player, status: GameStatus.Ended }),
+      )
+
+      const wrapper = await mountView()
+
+      expect(wrapper.find('.leave-section').exists()).toBe(false)
+
+      wrapper.unmount()
+    })
   })
 })

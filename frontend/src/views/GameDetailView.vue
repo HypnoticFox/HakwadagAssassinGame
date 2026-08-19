@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
-import { Copy, Crosshair, Link } from '@lucide/vue'
+import Modal from '@/components/Modal.vue'
+import { Copy, Crosshair, Link, LogOut } from '@lucide/vue'
 import { formatTimeOfDay, useSafeTime } from '@/composables/useSafeTime'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
@@ -29,6 +30,7 @@ const leaderboardStore = useLeaderboardStore()
 const gameId = computed(() => route.params.id as string)
 const copiedCode = ref(false)
 const copiedLink = ref(false)
+const showEndGameModal = ref(false)
 const { toast } = useToast()
 const newDurationHours = ref('24')
 const safeTimeBlocks = computed(() => gameStore.currentGame?.safeTimeBlocks ?? [])
@@ -82,7 +84,12 @@ async function onStart() {
   }
 }
 
-async function onEnd() {
+function onEnd() {
+  showEndGameModal.value = true
+}
+
+async function confirmEnd() {
+  showEndGameModal.value = false
   try {
     await gameStore.endGame(gameId.value)
   } catch (err) {
@@ -182,13 +189,6 @@ const formattedScheduledEndAt = computed(() => {
             @click="onStart"
           >
             {{ $t('gameDetail.startGame') }}
-          </Button>
-          <Button
-            v-if="canEndGame(gameStore.currentGame.myRole, gameStore.currentGame.status)"
-            variant="danger"
-            @click="onEnd"
-          >
-            {{ $t('gameDetail.endGame') }}
           </Button>
         </div>
       </div>
@@ -428,6 +428,7 @@ const formattedScheduledEndAt = computed(() => {
 
         <Button
           variant="secondary"
+          size="large"
           full-width
           @click="router.push(`/games/${gameId}/admin`)"
         >
@@ -437,13 +438,24 @@ const formattedScheduledEndAt = computed(() => {
 
       <!-- Leave/Rejoin button based on participation status -->
       <div v-if="gameStore.currentGame.status === GameStatus.Active">
-        <Button
+        <div
           v-if="gameStore.currentGame.isParticipating"
-          variant="ghost"
-          @click="onLeave"
+          class="leave-section"
         >
-          {{ $t('gameDetail.leaveGame') }}
-        </Button>
+          <Button
+            variant="secondary"
+            size="large"
+            full-width
+            class="leave-button"
+            @click="onLeave"
+          >
+            <LogOut
+              :size="24"
+              aria-hidden="true"
+            />
+            {{ $t('gameDetail.leaveGame') }}
+          </Button>
+        </div>
         <Button
           v-else
           variant="secondary"
@@ -454,13 +466,45 @@ const formattedScheduledEndAt = computed(() => {
           {{ $t('gameDetail.rejoinGame') }}
         </Button>
       </div>
-      <Button
-        v-else
-        variant="ghost"
-        @click="onLeave"
+
+      <!-- End game action (admin only, active game) -->
+      <div
+        v-if="canEndGame(gameStore.currentGame.myRole, gameStore.currentGame.status)"
+        class="end-game-action"
       >
-        {{ $t('gameDetail.leaveGame') }}
-      </Button>
+        <Button
+          variant="danger"
+          size="large"
+          full-width
+          @click="onEnd"
+        >
+          {{ $t('gameDetail.endGame') }}
+        </Button>
+      </div>
+
+      <!-- End game confirmation dialog -->
+      <Modal
+        :open="showEndGameModal"
+        :title="$t('gameDetail.endGame')"
+        @close="showEndGameModal = false"
+      >
+        <p>{{ $t('gameDetail.endGameConfirm') }}</p>
+        <template #footer>
+          <Button
+            variant="secondary"
+            @click="showEndGameModal = false"
+          >
+            {{ $t('common.cancel') }}
+          </Button>
+          <Button
+            variant="danger"
+            :loading="gameStore.isLoading"
+            @click="confirmEnd"
+          >
+            {{ $t('common.confirm') }}
+          </Button>
+        </template>
+      </Modal>
     </div>
 
     <div
@@ -842,5 +886,31 @@ const formattedScheduledEndAt = computed(() => {
 
 .empty p {
   margin-bottom: 1rem;
+}
+
+.end-game-action {
+  margin-top: 1rem;
+}
+
+.leave-section {
+  border-top: 1px solid var(--border);
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.leave-button {
+  background: var(--surface);
+  border: 2px solid var(--danger);
+  color: var(--danger);
+}
+
+.leave-button:hover:not(:disabled) {
+  background: var(--danger-bg);
+}
+
+:deep(.leave-button .button__content) {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
 }
 </style>
