@@ -334,7 +334,7 @@ export const useGameStore = defineStore('game', () => {
 
   async function addSafeTime(
     gameId: string,
-    block: { startTime: string; endTime: string; day?: number },
+    block: { startTime: string; endTime: string },
   ) {
     await api.addSafeTime(gameId, block)
   }

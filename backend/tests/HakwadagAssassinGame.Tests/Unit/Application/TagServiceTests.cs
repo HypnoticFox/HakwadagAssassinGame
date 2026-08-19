@@ -156,8 +156,8 @@ public sealed class TagServiceTests
         var game = CreateActiveGame();
         game.SafeTimeBlocks.Add(
             SafeTimeBlock.Create(
-                TimeSpan.FromHours(0),
-                TimeSpan.FromHours(23.9999)));
+                new DateTimeOffset(2025, 6, 15, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2025, 6, 15, 23, 59, 59, TimeSpan.Zero)));
         game.Start();
         var assignment = CreateActiveAssignment();
 

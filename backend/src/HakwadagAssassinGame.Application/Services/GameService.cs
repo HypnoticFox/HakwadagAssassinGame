@@ -92,7 +92,7 @@ public sealed class GameService : IGameService
             throw new InvalidGameStateException("Assignment cooldown must not be negative.");
         }
 
-        var safeTimeBlocks = request.SafeTimeBlocks?.Select(block => SafeTimeBlock.Create(block.StartTime, block.EndTime, block.Day));
+        var safeTimeBlocks = request.SafeTimeBlocks?.Select(block => SafeTimeBlock.Create(block.StartTime, block.EndTime));
         var scheduledEndAt = request.DurationHours.HasValue
             ? DateTimeOffset.UtcNow.AddHours(request.DurationHours.Value)
             : (DateTimeOffset?)null;
@@ -512,7 +512,7 @@ public sealed class GameService : IGameService
             memberships.Count(m => m.IsActive && m.IsParticipating),
             membership.IsParticipating,
             membership.Role,
-            game.SafeTimeBlocks.Select(block => new SafeTimeBlockDto(block.Id, block.StartTime, block.EndTime, block.Day)).ToList());
+            game.SafeTimeBlocks.Select(block => new SafeTimeBlockDto(block.Id, block.StartTime, block.EndTime)).ToList());
     }
 
     private async Task<List<Player>> LoadPlayersAsync(IReadOnlyList<GamePlayer> memberships, CancellationToken cancellationToken)

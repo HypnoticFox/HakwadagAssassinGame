@@ -5,7 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
-import { Copy, Crosshair, Link, Trophy } from '@lucide/vue'
+import { Copy, Crosshair, Link } from '@lucide/vue'
+import { formatTimeOfDay, useSafeTime } from '@/composables/useSafeTime'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore, useGameStore, useLeaderboardStore } from '@/stores'
@@ -30,6 +31,14 @@ const copiedCode = ref(false)
 const copiedLink = ref(false)
 const { toast } = useToast()
 const newDurationHours = ref('24')
+const safeTimeBlocks = computed(() => gameStore.currentGame?.safeTimeBlocks ?? [])
+const { isInSafeTime: isSafeTimeActive, currentBlock: activeSafeTimeBlock } =
+  useSafeTime(safeTimeBlocks)
+
+const safeTimeEndFormatted = computed(() => {
+  if (!activeSafeTimeBlock.value) return ''
+  return formatTimeOfDay(activeSafeTimeBlock.value.endTime)
+})
 
 useGameSignalR(gameId.value)
 
@@ -197,6 +206,16 @@ const formattedScheduledEndAt = computed(() => {
       <div
         v-if="
           gameStore.currentGame.status === GameStatus.Active &&
+            isSafeTimeActive
+        "
+        class="safe-time-banner"
+      >
+        <p>{{ $t('gameDetail.safeTimeActive', { endTime: safeTimeEndFormatted }) }}</p>
+      </div>
+
+      <div
+        v-if="
+          gameStore.currentGame.status === GameStatus.Active &&
             gameStore.currentGame.isParticipating
         "
         class="hero-section"
@@ -230,6 +249,7 @@ const formattedScheduledEndAt = computed(() => {
           size="large"
           full-width
           class="assignment-button"
+          :disabled="isSafeTimeActive"
           @click="router.push(`/games/${gameId}/assignment`)"
         >
           <Crosshair
@@ -251,7 +271,7 @@ const formattedScheduledEndAt = computed(() => {
             :key="block.id"
             class="safe-time-item"
           >
-            <span>{{ block.startTime }} – {{ block.endTime }}</span>
+            <span>{{ formatTimeOfDay(block.startTime) }} – {{ formatTimeOfDay(block.endTime) }}</span>
           </li>
         </ul>
       </div>
@@ -484,6 +504,21 @@ const formattedScheduledEndAt = computed(() => {
 }
 
 .left-banner p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.safe-time-banner {
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: 0.75rem;
+  color: var(--warning-text);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.safe-time-banner p {
   margin: 0;
   font-weight: 500;
 }

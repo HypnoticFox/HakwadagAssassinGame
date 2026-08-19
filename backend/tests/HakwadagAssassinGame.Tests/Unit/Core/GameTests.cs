@@ -104,7 +104,9 @@ public sealed class GameTests
         var bonuses = new Dictionary<ConditionType, int> { { ConditionType.Alone, 15 } };
         var safeBlocks = new List<SafeTimeBlock>
         {
-            SafeTimeBlock.Create(TimeSpan.FromHours(22), TimeSpan.FromHours(6))
+            SafeTimeBlock.Create(
+                new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2)))
         };
 
         var game = Game.Create(
@@ -422,7 +424,9 @@ public sealed class GameTests
     {
         var blocks = new List<SafeTimeBlock>
         {
-            SafeTimeBlock.Create(TimeSpan.FromHours(22), TimeSpan.FromHours(6))
+            SafeTimeBlock.Create(
+                new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2)))
         };
         var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10, safeTimeBlocks: blocks);
 
@@ -436,7 +440,9 @@ public sealed class GameTests
     {
         var blocks = new List<SafeTimeBlock>
         {
-            SafeTimeBlock.Create(TimeSpan.FromHours(22), TimeSpan.FromHours(6))
+            SafeTimeBlock.Create(
+                new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2)))
         };
         var game = Game.Create("Test", "CODE", DefaultEndAt, 4, 10, safeTimeBlocks: blocks);
 

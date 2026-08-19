@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
 import { ArrowLeft, Clock, ListChecks, Settings, Shield } from '@lucide/vue'
+import { formatTimeOfDay, localTimeToDateTimeOffset } from '@/composables/useSafeTime'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
 import { useGameStore } from '@/stores'
@@ -80,8 +81,8 @@ async function onAddSafeTime() {
   if (!safeTimeStart.value || !safeTimeEnd.value) return
   try {
     await gameStore.addSafeTime(gameId.value, {
-      startTime: safeTimeStart.value,
-      endTime: safeTimeEnd.value,
+      startTime: localTimeToDateTimeOffset(safeTimeStart.value),
+      endTime: localTimeToDateTimeOffset(safeTimeEnd.value),
     })
     safeTimeStart.value = ''
     safeTimeEnd.value = ''
@@ -221,7 +222,7 @@ async function onRemove(player: GamePlayerDto) {
               :key="block.id"
               class="safe-time-item"
             >
-              <span>{{ block.startTime }} – {{ block.endTime }}</span>
+              <span>{{ formatTimeOfDay(block.startTime) }} – {{ formatTimeOfDay(block.endTime) }}</span>
               <Button variant="ghost" @click="onRemoveSafeTime(block.id)">
                 {{ $t('common.remove') }}
               </Button>

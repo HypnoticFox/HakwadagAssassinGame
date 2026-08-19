@@ -103,9 +103,8 @@ public sealed class AdminEndpointTests : ApiTestBase
         var response = await AuthenticatedPostAsync(
             $"/api/games/{game.Id}/safe-times",
             new AddSafeTimeBlockRequest(
-                TimeSpan.FromHours(22),
-                TimeSpan.FromHours(6),
-                null),
+                new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2))),
             token);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
@@ -125,9 +124,8 @@ public sealed class AdminEndpointTests : ApiTestBase
         var response = await AuthenticatedPostAsync(
             $"/api/games/{game.Id}/safe-times",
             new AddSafeTimeBlockRequest(
-                TimeSpan.FromHours(22),
-                TimeSpan.FromHours(6),
-                null),
+                new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+                new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2))),
             token);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -140,7 +138,9 @@ public sealed class AdminEndpointTests : ApiTestBase
     {
         var (creator, token) = await CreateAuthenticatedPlayerAsync("creator@test.com", "Creator");
         var game = await SeedGameAsync(creator: creator);
-        var block = SafeTimeBlock.Create(TimeSpan.FromHours(22), TimeSpan.FromHours(6));
+        var block = SafeTimeBlock.Create(
+            new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2)));
         game.SafeTimeBlocks.Add(block);
         await GameRepo.UpdateAsync(game);
 

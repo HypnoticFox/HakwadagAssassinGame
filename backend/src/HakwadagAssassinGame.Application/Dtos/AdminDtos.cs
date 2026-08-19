@@ -4,7 +4,7 @@ namespace HakwadagAssassinGame.Application.Dtos;
 public record AddAdminRequest(Guid PlayerId);
 
 /// <summary>Describes a safe-time block to add.</summary>
-public record AddSafeTimeBlockRequest(TimeSpan StartTime, TimeSpan EndTime, DayOfWeek? Day);
+public record AddSafeTimeBlockRequest(DateTimeOffset StartTime, DateTimeOffset EndTime);
 
 /// <summary>Describes a custom condition to add to a game's condition library.</summary>
 public record AddCustomConditionRequest(string Description);

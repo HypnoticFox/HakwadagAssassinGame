@@ -51,7 +51,6 @@ export interface SafeTimeBlockDto {
   id: string
   startTime: string
   endTime: string
-  day?: number
 }
 
 export interface GameDto {

@@ -14,7 +14,7 @@ public record CreateGameRequest(
     int AssignmentCooldownMinutes = 30);
 
 /// <summary>Describes a recurring safe-time period.</summary>
-public record SafeTimeBlockDto(Guid Id, TimeSpan StartTime, TimeSpan EndTime, DayOfWeek? Day);
+public record SafeTimeBlockDto(Guid Id, DateTimeOffset StartTime, DateTimeOffset EndTime);
 
 /// <summary>Represents a game visible to a player.</summary>
 public record GameDto(

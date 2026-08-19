@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
+import { ref } from 'vue'
 
 import { clearToasts } from '@/composables/useToast'
+import { useSafeTime } from '@/composables/useSafeTime'
 import AssignmentView from '@/views/AssignmentView.vue'
 import { useAssignmentStore, useTagStore } from '@/stores'
 import {
@@ -29,12 +31,16 @@ vi.mock('@/composables/useSignalR', () => ({
   useGameSignalR: vi.fn(),
 }))
 
+vi.mock('@/composables/useSafeTime', () => ({
+  useSafeTime: vi.fn(),
+}))
+
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: 'g1' } }),
   useRouter: () => ({ push: vi.fn() }),
 }))
 
-function makeGame(): GameDto {
+function makeGame(overrides: Partial<GameDto> = {}): GameDto {
   return {
     id: 'g1',
     name: 'Hunt',
@@ -50,6 +56,7 @@ function makeGame(): GameDto {
     isParticipating: true,
     myRole: 0,
     safeTimeBlocks: [],
+    ...overrides,
   }
 }
 
@@ -86,6 +93,10 @@ beforeEach(() => {
   vi.mocked(api.getGame).mockResolvedValue(makeGame())
   vi.mocked(api.getPendingOutgoingTag).mockResolvedValue(null)
   vi.mocked(api.getNextAssignmentAvailability).mockResolvedValue(futureAvailability())
+  vi.mocked(useSafeTime).mockReturnValue({
+    isInSafeTime: ref(false),
+    currentBlock: ref(null),
+  })
 })
 
 async function mountView() {
@@ -161,6 +172,58 @@ describe('AssignmentView.vue', () => {
     await flushPromises()
 
     expect(vi.mocked(api.getMyAssignment).mock.calls.length).toBeGreaterThan(callsBefore)
+
+    wrapper.unmount()
+  })
+
+  it('shows the safe time message when safe time is active', async () => {
+    vi.mocked(useSafeTime).mockReturnValue({
+      isInSafeTime: ref(true),
+      currentBlock: ref(null),
+    })
+    vi.mocked(api.getGame).mockResolvedValue(
+      makeGame({
+        safeTimeBlocks: [{ id: 'safe-1', startTime: '2025-06-15T22:00:00+00:00', endTime: '2025-06-15T06:00:00+00:00' }],
+      }),
+    )
+    vi.mocked(api.getMyAssignment).mockResolvedValue(makeAssignment())
+
+    const wrapper = await mountView()
+    const message = wrapper.find('.safe-time-message')
+
+    expect(message.exists()).toBe(true)
+    expect(message.text()).toContain('Safe time is active')
+    expect(message.text()).toContain('Tags cannot be submitted during safe time')
+    expect(wrapper.find('.target-card').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('shows the assignment when safe time is not active', async () => {
+    vi.mocked(useSafeTime).mockReturnValue({
+      isInSafeTime: ref(false),
+      currentBlock: ref(null),
+    })
+    vi.mocked(api.getMyAssignment).mockResolvedValue(makeAssignment())
+
+    const wrapper = await mountView()
+
+    expect(wrapper.find('.target-card').exists()).toBe(true)
+    expect(wrapper.find('.safe-time-message').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('does not show the safe time message when the game is not active', async () => {
+    vi.mocked(useSafeTime).mockReturnValue({
+      isInSafeTime: ref(true),
+      currentBlock: ref(null),
+    })
+    vi.mocked(api.getGame).mockResolvedValue(makeGame({ status: GameStatus.NotStarted }))
+
+    const wrapper = await mountView()
+
+    expect(wrapper.find('.safe-time-message').exists()).toBe(false)
 
     wrapper.unmount()
   })

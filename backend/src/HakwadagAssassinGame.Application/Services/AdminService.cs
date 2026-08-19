@@ -88,7 +88,7 @@ public sealed class AdminService : IAdminService
         ArgumentNullException.ThrowIfNull(request);
         await RequireAdminAsync(playerId, gameId, cancellationToken);
         var game = await ServiceHelpers.RequireGameAsync(gameRepository, gameId, cancellationToken);
-        var block = SafeTimeBlock.Create(request.StartTime, request.EndTime, request.Day);
+        var block = SafeTimeBlock.Create(request.StartTime, request.EndTime);
         game.SafeTimeBlocks.Add(block);
         await gameRepository.UpdateAsync(game, cancellationToken);
         return block.Id;

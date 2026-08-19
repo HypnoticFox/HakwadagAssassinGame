@@ -111,6 +111,7 @@
     "extend1day": "+1 day",
     "safeTimes": "Safe times",
     "noSafeTimes": "No safe time blocks yet.",
+    "safeTimeActive": "Safe time is active until {endTime}. Tagging is paused.",
     "myAssignment": "My assignment",
     "leaderboard": "Leaderboard",
     "adminPanel": "Game settings",
@@ -160,6 +161,10 @@
     "loading": "Loading assignment...",
     "noAssignment": "No active assignment.",
     "gameNotStarted": "The game hasn't started yet.",
+    "safeTimeActive": {
+      "title": "Safe time is active",
+      "message": "Tags cannot be submitted during safe time. Try again later."
+    },
     "cooldown": {
       "title": "Waiting for next assignment",
       "message": "You'll get a new assignment in",

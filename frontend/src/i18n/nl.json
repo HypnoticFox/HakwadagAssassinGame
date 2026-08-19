@@ -111,6 +111,7 @@
     "extend1day": "+1 dag",
     "safeTimes": "Veilige tijden",
     "noSafeTimes": "Nog geen veilige tijdvakken.",
+    "safeTimeActive": "Veilige tijd is actief tot {endTime}. Taggen is gepauzeerd.",
     "myAssignment": "Mijn opdracht",
     "leaderboard": "Scorebord",
     "adminPanel": "Spelinstellingen",
@@ -160,6 +161,10 @@
     "loading": "Opdracht laden...",
     "noAssignment": "Geen actieve opdracht.",
     "gameNotStarted": "Het spel is nog niet gestart.",
+    "safeTimeActive": {
+      "title": "Veilige tijd is actief",
+      "message": "Tijdens veilige tijd kunnen geen tags worden ingediend. Probeer het later opnieuw."
+    },
     "cooldown": {
       "title": "Wachten op de volgende opdracht",
       "message": "Je krijgt een nieuwe opdracht over",

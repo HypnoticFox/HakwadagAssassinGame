@@ -8,6 +8,7 @@ import AssignmentCooldownTimer from '@/components/AssignmentCooldownTimer.vue'
 import ConditionCard from '@/components/ConditionCard.vue'
 import Modal from '@/components/Modal.vue'
 import PendingTagCountdown from '@/components/PendingTagCountdown.vue'
+import { useSafeTime } from '@/composables/useSafeTime'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
 import { useAssignmentStore, useGameStore, useTagStore } from '@/stores'
@@ -25,6 +26,8 @@ const selectedConditionId = ref<string | null>(null)
 const submitModalOpen = ref(false)
 const { toast } = useToast()
 const isReady = ref(false)
+const safeTimeBlocks = computed(() => gameStore.currentGame?.safeTimeBlocks ?? [])
+const { isInSafeTime: isSafeTimeActive } = useSafeTime(safeTimeBlocks)
 
 const cooldownAvailableAt = computed(() => {
   const availableAt = assignmentStore.nextAvailability?.availableAt
@@ -155,6 +158,14 @@ async function onSubmitTag() {
     />
     <div v-if="!isReady" class="loading">
       {{ $t('assignment.loading') }}
+    </div>
+
+    <div
+      v-else-if="isSafeTimeActive && gameStore.currentGame?.status === GameStatus.Active"
+      class="safe-time-message"
+    >
+      <h2>{{ $t('assignment.safeTimeActive.title') }}</h2>
+      <p>{{ $t('assignment.safeTimeActive.message') }}</p>
     </div>
 
     <div v-else-if="pendingAvailableAt" class="empty">
@@ -311,6 +322,21 @@ async function onSubmitTag() {
   color: var(--text-muted);
   padding: 2rem 0;
   text-align: center;
+}
+
+.safe-time-message {
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.safe-time-message h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.safe-time-message p {
+  color: var(--text-muted);
+  margin: 0;
 }
 
 .empty p {

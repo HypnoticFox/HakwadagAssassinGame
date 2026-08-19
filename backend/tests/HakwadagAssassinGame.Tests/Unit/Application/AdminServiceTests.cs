@@ -134,7 +134,8 @@ public sealed class AdminServiceTests
         gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
 
         var request = new AddSafeTimeBlockRequest(
-            TimeSpan.FromHours(22), TimeSpan.FromHours(6), DayOfWeek.Friday);
+            new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+            new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2)));
         var blockId = await sut.AddSafeTimeBlockAsync(CreatorId, GameId, request);
 
         Assert.NotEqual(Guid.Empty, blockId);
@@ -157,7 +158,9 @@ public sealed class AdminServiceTests
 
         await Assert.ThrowsAsync<UnauthorizedException>(() =>
             sut.AddSafeTimeBlockAsync(PlayerId, GameId,
-                new AddSafeTimeBlockRequest(TimeSpan.Zero, TimeSpan.FromHours(1), null)));
+                new AddSafeTimeBlockRequest(
+                    new DateTimeOffset(2025, 6, 15, 0, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2025, 6, 15, 1, 0, 0, TimeSpan.Zero))));
     }
 
     [Fact]
@@ -169,7 +172,9 @@ public sealed class AdminServiceTests
 
         await Assert.ThrowsAsync<GameNotFoundException>(() =>
             sut.AddSafeTimeBlockAsync(CreatorId, GameId,
-                new AddSafeTimeBlockRequest(TimeSpan.Zero, TimeSpan.FromHours(1), null)));
+                new AddSafeTimeBlockRequest(
+                    new DateTimeOffset(2025, 6, 15, 0, 0, 0, TimeSpan.Zero),
+                    new DateTimeOffset(2025, 6, 15, 1, 0, 0, TimeSpan.Zero))));
     }
 
     // ── RemoveSafeTimeBlockAsync ───────────────────────────────────────────
@@ -181,7 +186,10 @@ public sealed class AdminServiceTests
             DateTimeOffset.UtcNow.AddDays(1), 10, 100,
             safeTimeBlocks: new List<SafeTimeBlock>
             {
-                SafeTimeBlock.Create(TimeSpan.FromHours(22), TimeSpan.FromHours(6), id: Guid.NewGuid())
+                SafeTimeBlock.Create(
+                    new DateTimeOffset(2025, 6, 15, 22, 0, 0, TimeSpan.FromHours(2)),
+                    new DateTimeOffset(2025, 6, 15, 6, 0, 0, TimeSpan.FromHours(2)),
+                    id: Guid.NewGuid())
             },
             confirmationTimeout: TimeSpan.FromMinutes(15));
         var blockId = game.SafeTimeBlocks[0].Id;

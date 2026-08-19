@@ -6,51 +6,39 @@ namespace HakwadagAssassinGame.Core.Entities;
 public sealed class SafeTimeBlock
 {
     [JsonConstructor]
-    public SafeTimeBlock(TimeSpan startTime, TimeSpan endTime, DayOfWeek? day, Guid id)
+    public SafeTimeBlock(DateTimeOffset startTime, DateTimeOffset endTime, Guid id)
     {
-        ValidateTime(startTime, nameof(startTime));
-        ValidateTime(endTime, nameof(endTime));
         Id = id;
         StartTime = startTime;
         EndTime = endTime;
-        Day = day;
     }
 
     /// <summary>Creates a safe-time block. End times earlier than start times cross midnight.</summary>
-    public static SafeTimeBlock Create(TimeSpan startTime, TimeSpan endTime, DayOfWeek? day = null, Guid? id = null) =>
-        new(startTime, endTime, day, id ?? Guid.NewGuid());
+    public static SafeTimeBlock Create(DateTimeOffset startTime, DateTimeOffset endTime, Guid? id = null) =>
+        new(startTime, endTime, id ?? Guid.NewGuid());
 
     /// <summary>Gets the identifier of the block.</summary>
     public Guid Id { get; private set; }
 
-    /// <summary>Gets the start time of the block.</summary>
-    public TimeSpan StartTime { get; private set; }
+    /// <summary>Gets the start time of the block (with the creator's timezone offset).</summary>
+    public DateTimeOffset StartTime { get; private set; }
 
-    /// <summary>Gets the end time of the block.</summary>
-    public TimeSpan EndTime { get; private set; }
+    /// <summary>Gets the end time of the block (with the creator's timezone offset).</summary>
+    public DateTimeOffset EndTime { get; private set; }
 
-    /// <summary>Gets the day to which the block applies, or all days when null.</summary>
-    public DayOfWeek? Day { get; private set; }
-
-    /// <summary>Determines whether the supplied instant falls within this block.</summary>
+    /// <summary>Determines whether the supplied UTC instant falls within this block.</summary>
     public bool Contains(DateTimeOffset instant)
     {
-        if (Day.HasValue && Day.Value != instant.DayOfWeek)
-        {
-            return false;
-        }
+        // Convert the instant to the block's timezone offset
+        var offset = StartTime.Offset;
+        var instantInBlockOffset = instant.ToOffset(offset);
+        var instantTime = instantInBlockOffset.TimeOfDay;
 
-        var time = instant.TimeOfDay;
-        return StartTime <= EndTime
-            ? time >= StartTime && time < EndTime
-            : time >= StartTime || time < EndTime;
-    }
+        var startTime = StartTime.TimeOfDay;
+        var endTime = EndTime.ToOffset(offset).TimeOfDay;
 
-    private static void ValidateTime(TimeSpan time, string parameterName)
-    {
-        if (time < TimeSpan.Zero || time >= TimeSpan.FromDays(1))
-        {
-            throw new ArgumentOutOfRangeException(parameterName, "A time must be between 00:00 and 23:59:59.9999999.");
-        }
+        return startTime <= endTime
+            ? instantTime >= startTime && instantTime < endTime
+            : instantTime >= startTime || instantTime < endTime;
     }
 }
