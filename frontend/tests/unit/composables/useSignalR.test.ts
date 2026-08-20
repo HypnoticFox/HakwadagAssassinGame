@@ -2,26 +2,52 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { api } from '@/api/client'
 
-// Mock stores before importing the composable
-vi.mock('@/stores', () => ({
-  useGameStore: vi.fn(() => ({
-    currentGame: null,
+const {
+  mockGameStore,
+  mockAssignmentStore,
+  mockTagStore,
+  mockLeaderboardStore,
+  mockAuthStore,
+  mockRouter,
+} = vi.hoisted(() => ({
+  mockGameStore: {
+    currentGame: null as { id: string } | null,
     setGame: vi.fn(),
     loadGame: vi.fn(),
-  })),
-  useAssignmentStore: vi.fn(() => ({
+  },
+  mockAssignmentStore: {
     loadAssignment: vi.fn(),
     setAssignment: vi.fn(),
-  })),
-  useTagStore: vi.fn(() => ({
+  },
+  mockTagStore: {
     setPendingTag: vi.fn(),
-  })),
-  useLeaderboardStore: vi.fn(() => ({
+    setPendingOutgoingTag: vi.fn(),
+    queuePendingTag: vi.fn(),
+    clearPendingOutgoingTag: vi.fn(),
+  },
+  mockLeaderboardStore: {
     loadLeaderboard: vi.fn(),
-  })),
-  useAuthStore: vi.fn(() => ({
-    player: null,
-  })),
+  },
+  mockAuthStore: {
+    player: null as { id: string } | null,
+  },
+  mockRouter: {
+    currentRoute: { value: { name: 'home' as string } },
+    push: vi.fn(),
+  },
+}))
+
+// Mock stores before importing the composable
+vi.mock('@/stores', () => ({
+  useGameStore: vi.fn(() => mockGameStore),
+  useAssignmentStore: vi.fn(() => mockAssignmentStore),
+  useTagStore: vi.fn(() => mockTagStore),
+  useLeaderboardStore: vi.fn(() => mockLeaderboardStore),
+  useAuthStore: vi.fn(() => mockAuthStore),
+}))
+
+vi.mock('vue-router', () => ({
+  useRouter: () => mockRouter,
 }))
 
 vi.mock('@/api/client', () => ({
@@ -90,6 +116,9 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockHubInstances = []
   startShouldFail = false
+  mockGameStore.currentGame = null
+  mockAuthStore.player = null
+  mockRouter.currentRoute.value.name = 'home'
 })
 
 describe('useSignalR', () => {
@@ -196,6 +225,56 @@ describe('useSignalR', () => {
       expect(hub.onclose).toHaveBeenCalled()
       expect(hub.onreconnecting).toHaveBeenCalled()
       expect(hub.onreconnected).toHaveBeenCalled()
+    })
+
+    describe('TagSubmitted handler', () => {
+      const tag = {
+        id: 'tag1',
+        assignmentId: 'a1',
+        hunterId: 'hunter1',
+        targetId: 'target1',
+        conditionId: 'c1',
+        status: 0,
+        submittedAt: '2024-01-01T00:00:00Z',
+      }
+
+      async function startWithPlayer(playerId: string) {
+        vi.mocked(api.getToken).mockReturnValue('valid-token')
+        mockGameStore.currentGame = { id: 'g1' }
+        mockAuthStore.player = { id: playerId }
+        const { useSignalR } = await loadComposable()
+        const signalR = useSignalR()
+        await signalR.start()
+        return mockHubInstances[0]
+      }
+
+      it('redirects the target to the tag confirmation page', async () => {
+        const hub = await startWithPlayer('target1')
+
+        hub._trigger('TagSubmitted', 'g1', tag)
+
+        expect(mockTagStore.setPendingTag).toHaveBeenCalledWith(tag)
+        expect(mockRouter.push).toHaveBeenCalledWith('/games/g1/tag/tag1')
+      })
+
+      it('queues a tag when the target is already confirming a tag', async () => {
+        mockRouter.currentRoute.value.name = 'tag-confirm'
+        const hub = await startWithPlayer('target1')
+
+        hub._trigger('TagSubmitted', 'g1', tag)
+
+        expect(mockTagStore.queuePendingTag).toHaveBeenCalledWith('g1', tag)
+        expect(mockRouter.push).not.toHaveBeenCalled()
+      })
+
+      it('sets the outgoing tag for the hunter without redirecting', async () => {
+        const hub = await startWithPlayer('hunter1')
+
+        hub._trigger('TagSubmitted', 'g1', tag)
+
+        expect(mockTagStore.setPendingOutgoingTag).toHaveBeenCalledWith(tag)
+        expect(mockRouter.push).not.toHaveBeenCalled()
+      })
     })
   })
 

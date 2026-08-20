@@ -100,7 +100,7 @@ public sealed class TagService : ITagService
         }
 
         var pending = await tagRepository.GetPendingByTargetIdAsync(assignment.TargetId, cancellationToken);
-        if (pending.Any(submission => submission.Status == TagStatus.Pending))
+        if (pending.Any(submission => submission.HunterId == playerId))
         {
             throw new PendingTagExistsException(assignment.TargetId);
         }

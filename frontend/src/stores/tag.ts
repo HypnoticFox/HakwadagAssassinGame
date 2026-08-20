@@ -4,9 +4,15 @@ import { ref } from 'vue'
 import { api } from '@/api/client'
 import { TagStatus, type TagSubmissionDto } from '@/types'
 
+export interface QueuedTag {
+  gameId: string
+  tag: TagSubmissionDto
+}
+
 export const useTagStore = defineStore('tag', () => {
   const pendingTag = ref<TagSubmissionDto | null>(null)
   const pendingOutgoingTag = ref<TagSubmissionDto | null>(null)
+  const pendingTagQueue = ref<QueuedTag[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -121,6 +127,18 @@ export const useTagStore = defineStore('tag', () => {
     pendingOutgoingTag.value = tag
   }
 
+  function queuePendingTag(gameId: string, tag: TagSubmissionDto) {
+    pendingTagQueue.value.push({ gameId, tag })
+  }
+
+  function dequeuePendingTag(): QueuedTag | null {
+    return pendingTagQueue.value.shift() ?? null
+  }
+
+  function clearPendingTagQueue() {
+    pendingTagQueue.value = []
+  }
+
   function clearPendingOutgoingTag() {
     pendingOutgoingTag.value = null
   }
@@ -132,6 +150,7 @@ export const useTagStore = defineStore('tag', () => {
   return {
     pendingTag,
     pendingOutgoingTag,
+    pendingTagQueue,
     isLoading,
     error,
     loadPendingTag,
@@ -142,6 +161,9 @@ export const useTagStore = defineStore('tag', () => {
     voidTag,
     setPendingTag,
     setPendingOutgoingTag,
+    queuePendingTag,
+    dequeuePendingTag,
+    clearPendingTagQueue,
     clearPendingOutgoingTag,
     isTagPending,
   }

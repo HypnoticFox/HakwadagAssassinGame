@@ -169,7 +169,7 @@ public sealed class TagServiceTests
     }
 
     [Fact]
-    public async Task SubmitTagAsync_PendingTagExists_ThrowsPendingTagExistsException()
+    public async Task SubmitTagAsync_SameHunterAlreadyHasPendingTag_ThrowsPendingTagExistsException()
     {
         var aloneCondition = AloneCondition.Create();
         var assignment = Assignment.Create(GameId, HunterId, TargetId,
@@ -187,6 +187,34 @@ public sealed class TagServiceTests
 
         await Assert.ThrowsAsync<PendingTagExistsException>(() =>
             sut.SubmitTagAsync(HunterId, new SubmitTagRequest(AssignmentId, assignment.Conditions[0].Id)));
+    }
+
+    [Fact]
+    public async Task SubmitTagAsync_DifferentHunterTargetHasPendingTag_SubmitsSuccessfully()
+    {
+        var aloneCondition = AloneCondition.Create();
+        var assignment = Assignment.Create(GameId, HunterId, TargetId,
+            new List<Condition> { aloneCondition }, id: AssignmentId);
+        var game = CreateActiveGame();
+        game.Start();
+
+        var otherHunterId = Guid.NewGuid();
+        var otherAssignmentId = Guid.NewGuid();
+
+        assignmentRepository.GetByIdAsync(AssignmentId, Arg.Any<CancellationToken>()).Returns(assignment);
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+        tagRepository.GetPendingByTargetIdAsync(TargetId, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission>
+            {
+                TagSubmission.Create(otherAssignmentId, otherHunterId, TargetId, Guid.NewGuid())
+            });
+
+        var request = new SubmitTagRequest(AssignmentId, assignment.Conditions[0].Id);
+        var result = await sut.SubmitTagAsync(HunterId, request);
+
+        Assert.NotNull(result);
+        Assert.Equal(TagStatus.Pending, result.Status);
+        await tagRepository.Received(1).AddAsync(Arg.Any<TagSubmission>(), Arg.Any<CancellationToken>());
     }
 
     // ── ConfirmTagAsync ────────────────────────────────────────────────────

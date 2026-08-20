@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Menu, Swords } from '@lucide/vue'
-import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { RouterLink, RouterView, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
@@ -8,6 +8,7 @@ import DevPlayerSwitcher from '@/components/DevPlayerSwitcher.vue'
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import Toast from '@/components/Toast.vue'
+import { usePendingTagRedirect } from '@/composables/usePendingTagRedirect'
 import { useAuthStore, useGameStore } from '@/stores'
 import { GameStatus } from '@/types'
 
@@ -15,6 +16,7 @@ const { t } = useI18n()
 const authStore = useAuthStore()
 const gameStore = useGameStore()
 const router = useRouter()
+const { checkPendingTags } = usePendingTagRedirect()
 
 const headerLink = computed(() => {
   if (!authStore.isAuthenticated) return '/'
@@ -51,10 +53,23 @@ function onEscape(event: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onEscape)
-  if (authStore.isAuthenticated) {
-    void gameStore.loadMyGames()
-  }
 })
+
+// Check for pending tags whenever the player becomes authenticated.
+// On a fresh page load (e.g. after dev player switch via location.reload()),
+// authStore.token is set from localStorage but player is still null when
+// onMounted fires — the router guard resolves it asynchronously via
+// loadFromStorage(). A watch on isAuthenticated catches that delayed
+// resolution, while still working when auth is already ready at mount.
+watch(
+  () => authStore.isAuthenticated,
+  (isAuthed) => {
+    if (isAuthed) {
+      void gameStore.loadMyGames().then(() => void checkPendingTags())
+    }
+  },
+  { immediate: true },
+)
 
 onUnmounted(() => {
   document.removeEventListener('click', onClickOutside)

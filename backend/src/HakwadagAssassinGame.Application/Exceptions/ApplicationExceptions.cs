@@ -56,9 +56,9 @@ public sealed class SafeTimeBlockViolationException : ApplicationExceptionBase
     public SafeTimeBlockViolationException() : base("Tags cannot be submitted during safe time.") { }
 }
 
-/// <summary>Thrown when a target already has an unresolved tag.</summary>
+/// <summary>Thrown when a hunter already has a pending tag against a target.</summary>
 public sealed class PendingTagExistsException : ApplicationExceptionBase
 {
     /// <summary>Initializes the exception.</summary>
-    public PendingTagExistsException(Guid targetId) : base($"Player '{targetId}' already has a pending tag.") { }
+    public PendingTagExistsException(Guid targetId) : base("You already have a pending tag against this target.") { }
 }

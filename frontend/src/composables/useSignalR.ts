@@ -1,5 +1,6 @@
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr'
 import { onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { api } from '@/api/client'
 import { useAssignmentStore, useAuthStore, useGameStore, useLeaderboardStore, useTagStore } from '@/stores'
@@ -17,6 +18,7 @@ export function useSignalR() {
   const tagStore = useTagStore()
   const leaderboardStore = useLeaderboardStore()
   const authStore = useAuthStore()
+  const router = useRouter()
 
   async function start() {
     if (connection.value) {
@@ -48,8 +50,14 @@ export function useSignalR() {
           // Current player is the hunter - set pending outgoing tag
           tagStore.setPendingOutgoingTag(tag)
         } else if (currentPlayerId === tag.targetId) {
-          // Current player is the target - set pending tag
-          tagStore.setPendingTag(tag)
+          // Current player is the target
+          if (router.currentRoute.value.name === 'tag-confirm') {
+            // Already confirming a tag — queue this one for after
+            tagStore.queuePendingTag(gameId, tag)
+          } else {
+            tagStore.setPendingTag(tag)
+            void router.push(`/games/${gameId}/tag/${tag.id}`)
+          }
         }
       }
       void leaderboardStore.loadLeaderboard(gameId)

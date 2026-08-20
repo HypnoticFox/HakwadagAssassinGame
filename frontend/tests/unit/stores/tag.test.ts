@@ -182,6 +182,52 @@ describe('tag store', () => {
     })
   })
 
+  describe('pending tag queue', () => {
+    it('queues a pending tag with its game id', () => {
+      const store = useTagStore()
+      const tag = makeTag()
+
+      store.queuePendingTag('g1', tag)
+
+      expect(store.pendingTagQueue).toStrictEqual([{ gameId: 'g1', tag }])
+    })
+
+    it('dequeues pending tags in FIFO order', () => {
+      const store = useTagStore()
+      const first = makeTag({ id: 'tag1' })
+      const second = makeTag({ id: 'tag2' })
+      store.queuePendingTag('g1', first)
+      store.queuePendingTag('g2', second)
+
+      expect(store.dequeuePendingTag()).toStrictEqual({ gameId: 'g1', tag: first })
+      expect(store.dequeuePendingTag()).toStrictEqual({ gameId: 'g2', tag: second })
+      expect(store.pendingTagQueue).toHaveLength(0)
+    })
+
+    it('returns null when the queue is empty', () => {
+      const store = useTagStore()
+
+      expect(store.dequeuePendingTag()).toBeNull()
+    })
+
+    it('clears all queued pending tags', () => {
+      const store = useTagStore()
+      store.queuePendingTag('g1', makeTag())
+
+      store.clearPendingTagQueue()
+
+      expect(store.pendingTagQueue).toHaveLength(0)
+    })
+
+    it('returns null after clearing the queue', () => {
+      const store = useTagStore()
+      store.queuePendingTag('g1', makeTag())
+      store.clearPendingTagQueue()
+
+      expect(store.dequeuePendingTag()).toBeNull()
+    })
+  })
+
   describe('clearPendingOutgoingTag', () => {
     it('clears the pending outgoing tag', () => {
       const store = useTagStore()
