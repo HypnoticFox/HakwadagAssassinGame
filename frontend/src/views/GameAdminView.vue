@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Modal from '@/components/Modal.vue'
 import { ArrowLeft, Clock, ListChecks, Settings, Shield } from '@lucide/vue'
 import { formatTimeOfDay, localTimeToDateTimeOffset } from '@/composables/useSafeTime'
@@ -263,9 +264,10 @@ async function confirmRemoveModerator() {
             <Shield :size="20" />
             <h2>{{ $t('gameDetail.admin.moderators') }}</h2>
           </div>
-          <p v-if="playersLoading" class="players-loading">
-            {{ $t('common.loading') }}
-          </p>
+          <LoadingSpinner
+            v-if="playersLoading"
+            inline
+          />
           <p v-else-if="gameStore.gamePlayers.length === 0" class="players-empty">
             {{ $t('gameDetail.admin.noPlayers') }}
           </p>
@@ -338,9 +340,7 @@ async function confirmRemoveModerator() {
       </div>
     </div>
 
-    <div v-else-if="gameStore.isLoading" class="loading">
-      {{ $t('gameDetail.loading') }}
-    </div>
+    <LoadingSpinner v-else-if="gameStore.isLoading" />
     <div v-else class="empty">
       <p>{{ $t('gameDetail.notFound') }}</p>
       <Button @click="router.push('/')">
@@ -421,7 +421,6 @@ async function confirmRemoveModerator() {
   margin: 0;
 }
 
-.players-loading,
 .players-empty {
   color: var(--text-muted);
   font-size: 0.875rem;
@@ -497,7 +496,6 @@ async function confirmRemoveModerator() {
   padding: 0.375rem 0.625rem;
 }
 
-.loading,
 .empty {
   color: var(--text-muted);
   padding: 2rem 0;

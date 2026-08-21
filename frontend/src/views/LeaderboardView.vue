@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from '@/components/Button.vue'
 import BackButton from '@/components/BackButton.vue'
 import LeaderboardTable from '@/components/LeaderboardTable.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useGameStore, useLeaderboardStore } from '@/stores'
 
@@ -40,12 +41,7 @@ onMounted(async () => {
         v-if="leaderboardStore.entries.length > 0"
         :entries="leaderboardStore.entries"
       />
-      <div
-        v-else-if="leaderboardStore.isLoading"
-        class="loading"
-      >
-        {{ $t('leaderboard.loading') }}
-      </div>
+      <LoadingSpinner v-else-if="leaderboardStore.isLoading" />
       <div
         v-else
         class="empty"
@@ -85,7 +81,6 @@ onMounted(async () => {
   gap: 0.75rem;
 }
 
-.loading,
 .empty {
   color: var(--text-muted);
   padding: 2rem 0;

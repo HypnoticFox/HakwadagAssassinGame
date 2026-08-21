@@ -6,6 +6,7 @@ import Button from '@/components/Button.vue'
 import BackButton from '@/components/BackButton.vue'
 import AssignmentCooldownTimer from '@/components/AssignmentCooldownTimer.vue'
 import ConditionCard from '@/components/ConditionCard.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Modal from '@/components/Modal.vue'
 import PendingTagCountdown from '@/components/PendingTagCountdown.vue'
 import { useSafeTime } from '@/composables/useSafeTime'
@@ -156,9 +157,7 @@ async function onSubmitTag() {
       :label="$t('common.back')"
       @click="router.push(`/games/${gameId}`)"
     />
-    <div v-if="!isReady" class="loading">
-      {{ $t('assignment.loading') }}
-    </div>
+    <LoadingSpinner v-if="!isReady" />
 
     <div
       v-else-if="isSafeTimeActive && gameStore.currentGame?.status === GameStatus.Active"
@@ -216,9 +215,7 @@ async function onSubmitTag() {
       </Button>
     </div>
 
-    <div v-else-if="assignmentStore.isLoading" class="loading">
-      {{ $t('assignment.loading') }}
-    </div>
+    <LoadingSpinner v-else-if="assignmentStore.isLoading" />
     <div v-else class="empty">
       <AssignmentCooldownTimer
         v-if="cooldownAvailableAt"
@@ -317,7 +314,6 @@ async function onSubmitTag() {
   margin: 0 0 1rem;
 }
 
-.loading,
 .empty {
   color: var(--text-muted);
   padding: 2rem 0;

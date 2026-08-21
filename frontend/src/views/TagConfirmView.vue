@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/Button.vue'
 import BackButton from '@/components/BackButton.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import { useGameSignalR } from '@/composables/useSignalR'
 import { useToast } from '@/composables/useToast'
 import { useGameStore, useTagStore } from '@/stores'
@@ -133,12 +134,7 @@ const isResolved = computed(() => {
 
 <template>
   <section class="page-section">
-    <div
-      v-if="isResolving"
-      class="loading-screen"
-    >
-      <div class="spinner" />
-    </div>
+    <LoadingSpinner v-if="isResolving" />
 
     <template v-else>
       <BackButton
@@ -216,12 +212,7 @@ const isResolved = computed(() => {
 
       </div>
 
-      <div
-        v-else-if="tagStore.isLoading"
-        class="loading"
-      >
-        {{ $t('tagConfirm.loading') }}
-      </div>
+      <LoadingSpinner v-else-if="tagStore.isLoading" />
       <div
         v-else
         class="empty"
@@ -290,32 +281,9 @@ const isResolved = computed(() => {
   margin-bottom: 1rem;
 }
 
-.loading,
 .empty {
   color: var(--text-muted);
   padding: 2rem 0;
   text-align: center;
-}
-
-.loading-screen {
-  align-items: center;
-  display: flex;
-  justify-content: center;
-  min-height: 60vh;
-}
-
-.spinner {
-  animation: spin 0.8s linear infinite;
-  border: 3px solid var(--border);
-  border-radius: 50%;
-  border-top-color: var(--primary);
-  height: 2.5rem;
-  width: 2.5rem;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

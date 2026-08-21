@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/Button.vue'
 import Input from '@/components/Input.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Modal from '@/components/Modal.vue'
 import { Copy, Crosshair, Link, LogOut } from '@lucide/vue'
 import { formatTimeOfDay, useSafeTime } from '@/composables/useSafeTime'
@@ -540,12 +541,7 @@ const formattedScheduledEndAt = computed(() => {
       </Modal>
     </div>
 
-    <div
-      v-else-if="gameStore.isLoading"
-      class="loading"
-    >
-      {{ $t('gameDetail.loading') }}
-    </div>
+    <LoadingSpinner v-else-if="gameStore.isLoading" />
     <div
       v-else
       class="empty"
@@ -910,7 +906,6 @@ const formattedScheduledEndAt = computed(() => {
   flex-wrap: wrap;
 }
 
-.loading,
 .empty {
   color: var(--text-muted);
   padding: 2rem 0;
