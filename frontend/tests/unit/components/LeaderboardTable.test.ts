@@ -48,6 +48,21 @@ describe('LeaderboardTable.vue', () => {
     expect(rows[1].text()).toContain('50')
   })
 
+  it('assigns the same rank to players with the same score (competition ranking)', () => {
+    const entries = [
+      makeEntry({ player: { id: 'p1', displayName: 'Alice', email: 'a@b.c' }, score: 100, tags: 5 }),
+      makeEntry({ player: { id: 'p2', displayName: 'Bob', email: 'b@c.d' }, score: 50, tags: 3 }),
+      makeEntry({ player: { id: 'p3', displayName: 'Carol', email: 'c@d.e' }, score: 50, tags: 2 }),
+      makeEntry({ player: { id: 'p4', displayName: 'Dave', email: 'd@e.f' }, score: 25, tags: 1 }),
+    ]
+    const wrapper = mount(LeaderboardTable, {
+      props: { entries },
+      ...withI18n(),
+    })
+    const ranks = wrapper.findAll('tbody tr .rank-badge').map(badge => badge.text())
+    expect(ranks).toEqual(['1', '2', '2', '4'])
+  })
+
   it('displays player avatar initial when no avatarUrl', () => {
     const entries = [
       makeEntry({ player: { id: 'p1', displayName: 'Charlie', email: 'c@d.e' } }),
@@ -113,6 +128,22 @@ describe('LeaderboardTable.vue', () => {
       })
       const row = wrapper.find('tbody tr')
       expect(row.classes()).toContain('leader-row')
+    })
+
+    it('highlights all rank-1 rows when scores tie for first', () => {
+      const entries = [
+        makeEntry({ player: { id: 'p1', displayName: 'Alice', email: 'a@b.c' }, score: 100, tags: 5 }),
+        makeEntry({ player: { id: 'p2', displayName: 'Bob', email: 'b@c.d' }, score: 100, tags: 3 }),
+        makeEntry({ player: { id: 'p3', displayName: 'Carol', email: 'c@d.e' }, score: 50, tags: 2 }),
+      ]
+      const wrapper = mount(LeaderboardTable, {
+        props: { entries },
+        ...withI18n(),
+      })
+      const rows = wrapper.findAll('tbody tr')
+      expect(rows[0].classes()).toContain('leader-row')
+      expect(rows[1].classes()).toContain('leader-row')
+      expect(rows[2].classes()).not.toContain('leader-row')
     })
   })
 

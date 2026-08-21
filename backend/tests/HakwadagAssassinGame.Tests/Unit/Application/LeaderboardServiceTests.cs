@@ -15,6 +15,7 @@ public sealed class LeaderboardServiceTests
     private readonly IGamePlayerRepository gamePlayerRepository = Substitute.For<IGamePlayerRepository>();
     private readonly IPlayerRepository playerRepository = Substitute.For<IPlayerRepository>();
     private readonly IAssignmentRepository assignmentRepository = Substitute.For<IAssignmentRepository>();
+    private readonly ITagSubmissionRepository tagRepository = Substitute.For<ITagSubmissionRepository>();
     private readonly LeaderboardService sut;
 
     private static readonly Guid GameId = Guid.NewGuid();
@@ -25,7 +26,23 @@ public sealed class LeaderboardServiceTests
     public LeaderboardServiceTests()
     {
         sut = new LeaderboardService(
-            gameRepository, gamePlayerRepository, playerRepository, assignmentRepository);
+            gameRepository, gamePlayerRepository, playerRepository, assignmentRepository, tagRepository);
+    }
+
+    /// <summary>Creates a confirmed tag submission for the given assignment.</summary>
+    private static TagSubmission ConfirmedTag(Assignment assignment)
+    {
+        var tag = TagSubmission.Create(assignment.Id, assignment.HunterId, assignment.TargetId, assignment.Conditions[0].Id);
+        tag.Confirm();
+        return tag;
+    }
+
+    /// <summary>Creates a denied tag submission for the given assignment.</summary>
+    private static TagSubmission DeniedTag(Assignment assignment)
+    {
+        var tag = TagSubmission.Create(assignment.Id, assignment.HunterId, assignment.TargetId, assignment.Conditions[0].Id);
+        tag.Deny();
+        return tag;
     }
 
     // ── GetLeaderboardAsync ────────────────────────────────────────────────
@@ -97,6 +114,20 @@ public sealed class LeaderboardServiceTests
         allAssignments.AddRange(charlieAssignments);
 
         assignmentRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(allAssignments);
+
+        // Set up confirmed tag submissions for each completed assignment
+        tagRepository.GetByAssignmentIdAsync(bobAssignments[0].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(bobAssignments[0]) });
+        tagRepository.GetByAssignmentIdAsync(bobAssignments[1].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(bobAssignments[1]) });
+        tagRepository.GetByAssignmentIdAsync(bobAssignments[2].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(bobAssignments[2]) });
+        tagRepository.GetByAssignmentIdAsync(aliceAssignments[0].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(aliceAssignments[0]) });
+        tagRepository.GetByAssignmentIdAsync(aliceAssignments[1].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(aliceAssignments[1]) });
+        tagRepository.GetByAssignmentIdAsync(charlieAssignments[0].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(charlieAssignments[0]) });
 
         var result = await sut.GetLeaderboardAsync(GameId);
 
@@ -187,7 +218,7 @@ public sealed class LeaderboardServiceTests
     }
 
     [Fact]
-    public async Task GetLeaderboardAsync_OnlyCompletedTags_AreCounted()
+    public async Task GetLeaderboardAsync_OnlyConfirmedTags_AreCounted()
     {
         var game = Game.Create("TestGame", "CODE",
             DateTimeOffset.UtcNow.AddDays(1), 10, 100,
@@ -218,12 +249,57 @@ public sealed class LeaderboardServiceTests
 
         assignmentRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(assignments);
 
+        // Only the completed assignment has a confirmed tag submission
+        tagRepository.GetByAssignmentIdAsync(assignments[1].Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(assignments[1]) });
+
         var result = await sut.GetLeaderboardAsync(GameId);
 
         Assert.Single(result);
-        // Only completed tags are counted (1 out of 3)
+        // Only confirmed tags are counted (1 out of 3)
         Assert.Equal(Player1Id, result[0].Player.Id);
         Assert.Equal(100, result[0].Score);
+        Assert.Equal(1, result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetLeaderboardAsync_DeniedTags_NotCounted()
+    {
+        var game = Game.Create("TestGame", "CODE",
+            DateTimeOffset.UtcNow.AddDays(1), 10, 100,
+            confirmationTimeout: TimeSpan.FromMinutes(15));
+
+        gameRepository.GetByIdAsync(GameId, Arg.Any<CancellationToken>()).Returns(game);
+
+        var player = Player.Create("player@test.com", "Player", id: Player1Id);
+        playerRepository.GetByIdAsync(Player1Id, Arg.Any<CancellationToken>()).Returns(player);
+
+        var membership = GamePlayer.Create(GameId, Player1Id, GameRole.Player);
+        membership.AddScore(50);
+        gamePlayerRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>())
+            .Returns(new List<GamePlayer> { membership });
+
+        // Two completed assignments: one with a denied tag, one with a confirmed tag
+        var deniedAssignment = Assignment.Create(GameId, Player1Id, Guid.NewGuid(),
+            new List<Condition> { AloneCondition.Create() });
+        deniedAssignment.Complete();
+
+        var confirmedAssignment = Assignment.Create(GameId, Player1Id, Guid.NewGuid(),
+            new List<Condition> { AloneCondition.Create() });
+        confirmedAssignment.Complete();
+
+        assignmentRepository.GetByGameIdAsync(GameId, Arg.Any<CancellationToken>())
+            .Returns(new List<Assignment> { deniedAssignment, confirmedAssignment });
+
+        tagRepository.GetByAssignmentIdAsync(deniedAssignment.Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { DeniedTag(deniedAssignment) });
+        tagRepository.GetByAssignmentIdAsync(confirmedAssignment.Id, Arg.Any<CancellationToken>())
+            .Returns(new List<TagSubmission> { ConfirmedTag(confirmedAssignment) });
+
+        var result = await sut.GetLeaderboardAsync(GameId);
+
+        Assert.Single(result);
+        // Denied tags do not count — only 1 confirmed tag
         Assert.Equal(1, result[0].Tags);
     }
 

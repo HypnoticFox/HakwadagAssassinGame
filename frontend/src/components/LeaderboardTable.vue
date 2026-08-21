@@ -1,9 +1,28 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { LeaderboardEntryDto } from '@/types'
 
-defineProps<{
+const props = defineProps<{
   entries: LeaderboardEntryDto[]
 }>()
+
+interface RankedEntry extends LeaderboardEntryDto {
+  rank: number
+}
+
+// Competition ranking: tied scores share a rank and the next rank skips ahead (1, 2, 2, 4).
+// The backend already sorts entries by score descending, so equal scores are contiguous.
+const rankedEntries = computed<RankedEntry[]>(() => {
+  const result: RankedEntry[] = []
+  for (let i = 0; i < props.entries.length; i++) {
+    const entry = props.entries[i]
+    const rank = i > 0 && props.entries[i - 1].score === entry.score
+      ? result[i - 1].rank
+      : i + 1
+    result.push({ ...entry, rank })
+  }
+  return result
+})
 </script>
 
 <template>
@@ -33,12 +52,12 @@ defineProps<{
       </thead>
       <tbody>
         <tr
-          v-for="(entry, index) in entries"
+          v-for="(entry, index) in rankedEntries"
           :key="entry.player.id"
-          :class="{ 'leader-row': index === 0 }"
+          :class="{ 'leader-row': entry.rank === 1 }"
         >
           <td class="rank">
-            <span class="rank-badge">{{ index + 1 }}</span>
+            <span class="rank-badge">{{ entry.rank }}</span>
           </td>
           <td class="player-cell">
             <div class="player-avatar">

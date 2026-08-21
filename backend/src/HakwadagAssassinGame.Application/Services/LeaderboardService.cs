@@ -18,18 +18,21 @@ public sealed class LeaderboardService : ILeaderboardService
     private readonly IGamePlayerRepository gamePlayerRepository;
     private readonly IPlayerRepository playerRepository;
     private readonly IAssignmentRepository assignmentRepository;
+    private readonly ITagSubmissionRepository tagRepository;
 
     /// <summary>Initializes the leaderboard service.</summary>
     public LeaderboardService(
         IGameRepository gameRepository,
         IGamePlayerRepository gamePlayerRepository,
         IPlayerRepository playerRepository,
-        IAssignmentRepository assignmentRepository)
+        IAssignmentRepository assignmentRepository,
+        ITagSubmissionRepository tagRepository)
     {
         this.gameRepository = gameRepository;
         this.gamePlayerRepository = gamePlayerRepository;
         this.playerRepository = playerRepository;
         this.assignmentRepository = assignmentRepository;
+        this.tagRepository = tagRepository;
     }
 
     /// <inheritdoc />
@@ -39,11 +42,26 @@ public sealed class LeaderboardService : ILeaderboardService
         var memberships = await gamePlayerRepository.GetByGameIdAsync(gameId, cancellationToken);
         var participatingMemberships = memberships.Where(m => m.IsActive && m.IsParticipating).ToList();
         var assignments = await assignmentRepository.GetByGameIdAsync(gameId, cancellationToken);
+
+        // Count confirmed tags per hunter. Denied or voided tags do not count,
+        // even though their assignments are marked Completed.
+        var confirmedTagsByHunter = new Dictionary<Guid, int>();
+        foreach (var assignment in assignments)
+        {
+            var submissions = await tagRepository.GetByAssignmentIdAsync(assignment.Id, cancellationToken);
+            var confirmedCount = submissions.Count(s => s.Status == TagStatus.Confirmed);
+            if (confirmedCount > 0)
+            {
+                confirmedTagsByHunter.TryGetValue(assignment.HunterId, out var current);
+                confirmedTagsByHunter[assignment.HunterId] = current + confirmedCount;
+            }
+        }
+
         var entries = new List<LeaderboardEntryDto>(participatingMemberships.Count);
         foreach (var membership in participatingMemberships)
         {
             var player = await ServiceHelpers.RequirePlayerAsync(playerRepository, membership.PlayerId, cancellationToken);
-            var tags = assignments.Count(assignment => assignment.HunterId == player.Id && assignment.Status == AssignmentStatus.Completed);
+            var tags = confirmedTagsByHunter.GetValueOrDefault(player.Id);
             entries.Add(new LeaderboardEntryDto(PlayerDto.FromEntity(player), membership.Score, tags));
         }
 
